@@ -9,7 +9,7 @@
 - `AR_REVIEW_STATUS` 由五態改為 `pending | disputed | finalized`（中文語彙 `待審 / 爭議中 / 已定稿`），沿用 `specs/annotation/015-annotation-workspace/spec.md` 之 `REVIEW_UNIT_STATUS`；
 - 移除 `REVIEW_ASSIGNMENT_MODES`（審核指派一律系統自動，見 `annotation/015-annotation-workspace` FR-093）與 `MIN_REVIEWERS_RULE`（審核單位恆為一位審核員，無門檻可設）；
 - `ARBITER_CANDIDATE_RULE` 改為 `task_role = reviewer AND membership_status = active AND can_arbitrate = true`，且仲裁時另受 `annotation/015-annotation-workspace` FR-060 之非當事人條件約束；
-- 新增 `REVIEWER_ID_FORMAT = 不透明 user id`——`reviewer_ids` 與 `arbiter_ids` 的元素為系統內部識別鍵，取值來源為 `annotation/015-annotation-workspace` 之 `REVIEWER_ROSTER`（形狀如 `reviewer_wang`）；Email 僅為成員清單的顯示屬性，不得作為比對鍵，亦不得於 014 另建第二份審核員名冊（憲法：Generalization-First）；
+- 新增 `REVIEWER_ID_FORMAT = 不透明 user id`——`reviewer_ids` 與 `arbiter_ids` 的元素為系統內部識別鍵，取值來源為本規格既有實體 `TaskMembership.user_id`，形狀比照 `annotation/015-annotation-workspace` 之 `REVIEWER_ROSTER`（如 `reviewer_wang`）；Email 僅為成員清單的顯示屬性，不得作為比對鍵，亦不得於 014 另建第二份審核員名冊（憲法：Generalization-First）；
 - 新增 `EXCEPTION_POOL_ACTIONS = adopt_annotator | adopt_reviewer | custom_answer | exclude_from_dataset`（`custom_answer` 僅 `official_run` 提供，見 `annotation/015-annotation-workspace` FR-095）；
 - `OVERVIEW_EDITABLE_FIELDS` 移除 `min_reviewers`、`review_assignment_mode`、`agreement_auto_finalize`、`arbitration_enabled`，改列 `reviewer_ids`、`arbiter_ids`。
 
@@ -85,7 +85,7 @@ Overview MUST 在「抽樣設定」之後提供獨立「審核設定」區塊。
 1. `審核員` 勾選清單——候選 = `membership_status = active AND task_role = reviewer`；勾選結果寫入 `reviewer_ids`，即系統自動指派的分派對象（`annotation/015-annotation-workspace` FR-093）；
 2. `仲裁者` 勾選清單——候選 MUST 為 `reviewer_ids` 的子集合（未被勾選為審核員者 MUST NOT 出現於仲裁者候選）；勾選結果寫入 `arbiter_ids`，即 `can_arbitrate = true` 的來源（`annotation/015-annotation-workspace` FR-060 條件一）。
 
-兩份名冊寫入的元素 MUST 遵守 `REVIEWER_ID_FORMAT`：值為不透明 user id（取值來源為 `annotation/015-annotation-workspace` 之 `REVIEWER_ROSTER`），MUST NOT 寫入 Email 或顯示名稱。消費端比對審核員身分時 MUST 以該 id 為唯一鍵；Email 僅供成員清單顯示，MUST NOT 參與比對。
+兩份名冊寫入的元素 MUST 遵守 `REVIEWER_ID_FORMAT`：值為該成員的 `TaskMembership.user_id`（不透明 user id，形狀比照 `annotation/015-annotation-workspace` 之 `REVIEWER_ROSTER`），MUST NOT 寫入 Email 或顯示名稱。消費端比對審核員身分時 MUST 以該 id 為唯一鍵；成員清單「審核負荷」欄之聚合亦 MUST 以該 id 為鍵。Email 僅供成員清單顯示，MUST NOT 參與比對。
 
 驗證：儲存時 `reviewer_ids` 至少 1 人，否則 MUST 阻擋儲存並顯示可修正錯誤訊息。`arbiter_ids` 允許為空並於摘要值標示（FR-010s-2），不阻擋儲存。取消勾選某審核員時，若其 `arbiter_ids` 亦被勾選，MUST 同步取消並於儲存前提示。
 
@@ -98,10 +98,10 @@ Overview MUST 在「抽樣設定」之後提供獨立「審核設定」區塊。
 - **AND** 取消勾選其中一位審核員時，其仲裁者勾選同步取消並於儲存前提示
 
 #### Scenario: 名冊以不透明 user id 儲存而非 Email
-- **GIVEN** 專案負責人於審核設定勾選審核員「王小明」並儲存
+- **GIVEN** 專案負責人於審核設定勾選一位啟用中審核員並儲存
 - **WHEN** 檢視該任務的 `reviewer_ids`
-- **THEN** 其元素為 `REVIEWER_ROSTER` 之 id（形如 `reviewer_wang`），不含任何 Email 字串
-- **AND** 審核工作分派與審核員身分比對皆以該 id 為鍵，Email 僅出現於成員清單顯示欄
+- **THEN** 其元素為該成員的 `TaskMembership.user_id`（形如 `reviewer_wang`），不含任何 Email 字串
+- **AND** 審核工作分派、審核負荷聚合與審核員身分比對皆以該 id 為鍵，Email 僅出現於成員清單顯示欄
 
 ### Requirement: FR-010s-2 仲裁者摘要值規則
 

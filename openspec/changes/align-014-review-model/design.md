@@ -23,9 +23,9 @@
 
 PR #683 讓 `getAssignedReviewUnits()` 改讀 `reviewer_ids` 後 20 個審核流程測試轉紅，正是因為它拿 014 的 Email 去比對 015 的 slug。
 
-**決策（維護者 2026-09-07 裁定）**：`reviewer_ids` 與 `arbiter_ids` 的元素定義為**不透明 user id**，格式沿用 `annotation/015-annotation-workspace` `REVIEWER_ROSTER` 的 slug。Email 降為成員清單的顯示屬性，**不得作為比對鍵**。014 原型 seed 的 Email 值須遷移為 slug。
+**決策（維護者 2026-09-07 裁定）**：`reviewer_ids` 與 `arbiter_ids` 的元素定義為**不透明 user id**，取值來源為 014 既有實體 `TaskMembership.user_id`，形狀沿用 `annotation/015-annotation-workspace` `REVIEWER_ROSTER` 的 slug（`reviewer_wang`）。Email 降為成員清單的顯示屬性，**不得作為比對鍵**。014 原型 seed 的 Email 值須遷移為 slug，成員名冊人選（Mandy Chen／Kevin Liu／Rachel Wu）不變，僅改配 id。
 
-理由：015 是審核模型的權威來源，其 `REVIEWER_ROSTER` 已是四個消費端（工作區、清單、歷程、儀表板）共用的識別鍵；讓 014 改邊比讓 015 改邊便宜一個數量級。「不透明 id」的措辭同時預留後端接上時換成 UUID 的空間——若把 Email 寫進契約，後端一旦不以 Email 為主鍵就得再破一次。
+理由：015 的 `REVIEWER_ROSTER` 已是四個消費端（工作區、清單、歷程、儀表板）共用的識別鍵，其 slug 形狀是本專案審核員身分的既成慣例；讓 014 改邊比讓 015 改邊便宜一個數量級。但**取值來源仍是 014 自身的 `TaskMembership.user_id`**（正典實體既有欄位），而非反向讀取 015 的示範 seed——`design/prototype/pages/annotation/annotation-workspace.data.js:2087` 的既有註解已載明架構方向是「014 的 `reviewer_ids` 成為來源、015 屆時換掉 roster」，若倒過來寫會把示範資料升格成正典。兩份 demo 名冊是不同的人（014 三位、015 四位），那是示範資料層的落差，不是契約層的落差，本 change 不處理。「不透明 id」的措辭同時預留後端接上時換成 UUID 的空間——若把 Email 寫進契約，後端一旦不以 Email 為主鍵就得再破一次。
 
 **否決方案**：在消費端加一層 Email ↔ slug 對照。這會憑空產生第二份名冊（違反 Generalization-First），且對照表本身沒有真實資料來源。
 
