@@ -107,7 +107,7 @@ New features, behavior changes, breaking API changes, and architectural changes 
 → post-merge `specs/STATUS.md` update and canonical spec movement to `specs/_archive/`
 ```
 
-For the authoritative SDD stages, Frontend Ready Gate checklist, four-gate boundaries, and archive timing, follow [docs/sdd-workflow.md](docs/sdd-workflow.md). `AGENTS.md` is a concise Codex-facing summary, not a second policy source.
+For the authoritative SDD stages, Frontend Ready Gate checklist, four-gate boundaries, and archive timing, follow [docs/sdd-workflow.md](docs/sdd-workflow.md). `AGENTS.md` is a concise Codex-facing summary, not a second policy source. The same pipeline as a diagram — four gates, TDD role split, archive timing, Lightweight Path branch: [`docs/diagrams/workflow/sdd-openspec-pipeline.html`](docs/diagrams/workflow/sdd-openspec-pipeline.html).
 
 **Skip SDD only for**: bug fixes, typo/comment changes, non-breaking dep updates, adding tests for existing behavior.
 
