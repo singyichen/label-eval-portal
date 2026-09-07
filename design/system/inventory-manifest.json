@@ -170,7 +170,7 @@
       "title": "任務詳情",
       "module": "task-management",
       "page": "pages/task-management/task-detail.html",
-      "specs": ["specs/task-management/014-task-detail", "specs/shared/008-sidebar-navbar-shared"],
+      "specs": ["specs/_archive/014-task-detail", "specs/shared/008-sidebar-navbar-shared"],
       "design": "design/system/pages/task-detail.md",
       "tests": ["design/prototype/tests/task-management/task-detail-*.spec.ts"],
       "routeKey": null,
