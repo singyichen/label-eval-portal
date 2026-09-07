@@ -145,7 +145,7 @@ Overview MUST 在「抽樣設定」之後提供獨立「審核設定」區塊。
 4. **權限**：本區塊 MUST 僅對 `project_leader` 呈現；其他角色 MUST NOT 看到此區塊，直連進入時 MUST 比照 FR-006 導回並提示無權限。
 5. **run 分流**：清單 MUST 可依 `run_type` 篩選；`dry_run` 與 `official_run` 的例外項各自獨立計數，FR-008b 第 4 項之結案閘門 MUST 僅計 `official_run` 的待處置項目。
 
-#### Scenario: SC-041 例外池清單與導頁
+#### Scenario: SC-043 例外池清單與導頁
 - **GIVEN** 某任務有 2 項 `official_run` 待處置例外
 - **WHEN** 專案負責人開啟 `annotation-progress`
 - **THEN** 「最終例外池」區塊標題顯示 2 項待處置，逐列呈現樣本 ID、標記員、審核員、爭議輸出類型、仲裁者與其理由
