@@ -1,7 +1,7 @@
 ---
 功能分支: feat/account/001-login-email-password
 建立日期: 2026-04-05
-版本: 1.2.4
+版本: 1.2.5
 狀態: Clarified
 ---
 
@@ -78,6 +78,13 @@ sequenceDiagram
 | 5 | 使用者 | 填寫 Email/Password 並送出 | 按鈕進入 loading 狀態，約 800ms 後導向 `../dashboard/dashboard.html`（原型） |
 | 6 | 使用者 | 點擊「忘記密碼？」 | 導向 `./forgot-password.html` |
 | 7 | 使用者 | 點擊「前往註冊」 | 導向 `./register.html` |
+
+### 帳號模組 token 型流程技術序列圖（參考資料，非本規格條文）
+
+以下兩張以 `archify` skill 產出的 `sequence` 圖（成對 `.json` IR + 自包含 `.html`）為 account 模組共用的 token 生命週期技術參考，供 account-001／002／004 進入實作時對齊 token 簽發、儲存位置、refresh 時機與撤銷機制。**這兩張圖不新增、不修改任何 FR/AC**：本規格第 1 條輸入規則已明確把真實身分驗證、JWT、session 與後端 API 契約排除在範圍外，圖面內容全數來自 [ADR-021](../../../docs/adr/021-jwt-refresh-token-auth.md)、[ADR-013](../../../docs/adr/013-email-service-resend.md) 與 [Foundation spec](../../foundation/000-foundation/spec.md) 的 F-04／F-05。圖上以「規格未定義」明確標示的分歧點尚無條文可依，實作前須先補規格，不得以圖面作為裁定依據。
+
+- [Auth Token 生命週期：登入 / Refresh / 登出](./diagrams/auth-token-lifecycle.html)（`diagram_type: sequence`）
+- [重設密碼 Token 流程：請求 / 寄送 / 驗證 / 設定新密碼](../004-forgot-reset-password/diagrams/password-reset-token-flow.html)（`diagram_type: sequence`；該圖歸屬 [004](../004-forgot-reset-password/spec.md)，隨 004 歸檔，此處為跨規格參照）
 
 ---
 
@@ -308,6 +315,7 @@ flowchart LR
 
 | 版本 | 日期 | 變更摘要 |
 |------|------|---------|
+| 1.2.5 | 2026-09-07 | Issue #671：於 流程圖 新增「帳號模組 token 型流程技術序列圖」小節，連結兩張 `archify` `sequence` 圖（本規格自有的 `diagrams/auth-token-lifecycle.html`，與參照自 004 的 `../004-forgot-reset-password/diagrams/password-reset-token-flow.html`）與其 `.json` IR 原始檔；圖面內容全數引自 ADR-021、ADR-013 與 Foundation F-04／F-05，未定義處以「規格未定義」標示而不自行裁定。純參考資料補充，未新增、修改或移除任何 FR/AC，走 Lightweight Path。 |
 | 1.2.4 | 2026-08-20 | Issue #261：新增 Prototype Traceability，明確對應 login 原型的 Email/Password 責任、可選 wireframe 參考與設計層驗證；Google SSO 行為仍由 002 擁有。 |
 | 1.2.3 | 2026-07-21 | AC 對齊 blueprint-grade 寫作原則：檢視型 When 改為可觀察事件；新增 `REDIRECT_DELAY_MS` 常數取代「約 800ms」；邊界情況補齊規則同時觸發、時間邊界與異常資料情境；驗收情境補上 `AC-N.N` 穩定 ID（spec-template v1.5.0）；新增 AC-4.5 覆蓋 `en → zh` 反向語言切換；移除重複的需求來源行 |
 | 1.2.2 | 2026-05-21 | 補充輸入與產生規則、已釐清事項、審查清單與執行狀態；同步功能分支格式 |

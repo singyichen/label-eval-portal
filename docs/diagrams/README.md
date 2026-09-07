@@ -20,23 +20,33 @@
 
 **再問要不要進版控做逐行比對。** 需要 → Mermaid（原始碼是純文字）或 `archify`（JSON IR 是純文字）。不需要、重點是視覺成品 → `diagram-design`。
 
-**最後確認目標圖型是否被支援。** `archify` 只有五種圖型 schema：`architecture`、`dataflow`、`lifecycle`、`sequence`、`workflow`（另有 `common.schema.json`，只是共用 `$defs` 片段，不是可選圖型）。**`archify` 沒有 ER／資料模型（data model）圖型**——需要畫資料庫實體關聯時請改用 `diagram-design`（它支援 ER/data model），不要為了遷就工具把 ER 硬塞進 `architecture` schema。
+**最後確認目標圖型是否被支援。** `archify` 只有五種圖型 schema：`architecture`、`dataflow`、`lifecycle`、`sequence`、`workflow`（另有 `common.schema.json`，只是共用 `$defs` 片段，不是可選圖型）。**`archify` 沒有 ER／資料模型（data model）圖型**——需要畫資料庫實體關聯時請改用 `diagram-design`（它支援 ER/data model）或 Mermaid `erDiagram`（見下方 ER 圖工具取捨），不要為了遷就工具把 ER 硬塞進 `architecture` schema。
 
 ## 產出位置慣例
 
-隸屬單一 spec 的圖放該 spec 的 `diagrams/` 資料夾（例如 `specs/annotation/015-annotation-workspace/diagrams/`），歸檔時隨 spec 一起進 `specs/_archive/`。跨模組、無單一歸屬 spec 的總覽圖例外保留在 `docs/diagrams/workflow/`（目前為 `system-workflow.png`、`annotation-pipeline.mmd`/`.png`，被根目錄 `README.md` 引用）。
-
-**跨模組架構圖放 `docs/diagrams/architecture/`。** 這類圖描述的是整個系統的容器邊界或跨模組資料流，不隸屬任何單一 spec，因此不進 `specs/`、也不隨任何 spec 歸檔。目前有三張，皆由 `archify` 產出：
+隸屬單一 spec 的圖放該 spec 的 `diagrams/` 資料夾（例如 `specs/annotation/015-annotation-workspace/diagrams/`、`specs/foundation/000-foundation/diagrams/`），歸檔時隨 spec 一起進 `specs/_archive/`。跨模組、無單一歸屬 spec 的總覽圖例外保留在 `docs/diagrams/workflow/`：
 
 | 檔案 | `diagram_type` | 內容 |
 |------|---------------|------|
-| [`architecture/system-container-architecture.html`](./architecture/system-container-architecture.html) | `architecture` | 系統／容器架構（issue #667） |
-| [`architecture/config-driven-task-engine-data-flow.html`](./architecture/config-driven-task-engine-data-flow.html) | `dataflow` | Config-Driven 任務引擎資料流（issue #668） |
-| [`specs/foundation/000-foundation/diagrams/backend-layering-and-celery-boundary.html`](../../specs/foundation/000-foundation/diagrams/backend-layering-and-celery-boundary.html) | `architecture` | Backend 分層契約與 Celery 任務邊界（issue #670） |
+| [`workflow/sdd-openspec-pipeline.html`](./workflow/sdd-openspec-pipeline.html) | `flowchart` ＋ `swimlane`（`diagram-design`） | SDD／OpenSpec 開發流程、四道驗證閘與微觀交付迴圈（issue #673） |
+| `workflow/annotation-pipeline.mmd` / `.png` | Mermaid flowchart | 標記流程總覽，被根目錄 `README.md` 引用 |
+| `workflow/system-workflow.png` | —（僅圖檔，無原始檔） | 系統流程總覽，被根目錄 `README.md` 引用 |
+
+`sdd-openspec-pipeline.html` 是本 README「`archify` 圖型不支援時改用 `diagram-design`」的第二個實例：`archify` 的 `workflow` schema 把節點的 `col` 限制在 `0`–`5`（見 `.claude/skills/archify/schemas/workflow.schema.json`），只能容納六個邏輯階層，而 SDD 主流程有十三個階段，且 `CLAUDE.md` 對這條 pipeline 的定義是 `each stage is a hard gate`，壓成六階會把 SSoT 明確區分的階段併掉——那正是這張圖存在的理由。
+
+**跨模組架構圖放 `docs/diagrams/architecture/`。** 這類圖描述的是整個系統的容器邊界、跨模組資料流或跨模組資料模型，不隸屬任何單一 spec，因此不進 `specs/`、也不隨任何 spec 歸檔：
+
+| 檔案 | `diagram_type` | 工具 | 內容 |
+|------|---------------|------|------|
+| [`architecture/system-container-architecture.html`](./architecture/system-container-architecture.html) | `architecture` | `archify` | 系統／容器架構（issue #667） |
+| [`architecture/config-driven-task-engine-data-flow.html`](./architecture/config-driven-task-engine-data-flow.html) | `dataflow` | `archify` | Config-Driven 任務引擎資料流（issue #668） |
+| [`architecture/core-data-model-er.md`](./architecture/core-data-model-er.md) | `er` | Mermaid `erDiagram` | 核心資料模型 ER 圖，整合各 spec 的關鍵實體（issue #669） |
 
 `archify` 要**同時提交 `.json` 與 `.html`**：`.json` 是唯一可 diff、可驗證的原始檔，`.html` 是唯一不需工具鏈即可閱讀的成品，缺任一邊都會讓圖變成不可維護的黑盒。改圖時改 `.json` 再重跑 `deliver` 重生 `.html`，不要手改 `.html`。
 
-Mermaid 要**同時提交 `.mmd` 原始檔與算繪後的 `.png`**，否則沒有 renderer 的讀者看不到內容。`diagram-design` 的 HTML 本身即成品，不需要另附圖檔；spec.md 內以相對路徑連結 HTML 即可，不另出 PNG（issue #528 決議 Q4）。
+Mermaid 以**獨立 `.mmd` 檔**提交時要**同時附上算繪後的 `.png`**，否則沒有 renderer 的讀者看不到內容。**例外：Mermaid 直接內嵌在 `.md` 的 ` ```mermaid ` 圍欄裡時不附 PNG**——GitHub 與 VS Code 原生算繪圍欄內容，讀者本來就看得到，此時額外產一份 PNG 只會製造原始碼與圖檔雙份維護。`diagram-design` 的 HTML 本身即成品，不需要另附圖檔；spec.md 內以相對路徑連結 HTML 即可，不另出 PNG（issue #528 決議 Q4）。
+
+ER／資料模型圖另有一項工具取捨：`diagram-design` 雖支援 ER 圖型，但其複雜度預算上限為 **8 個實體**；跨模組整合圖遠超此上限，且它要求手算正交折線座標，故 `docs/diagrams/architecture/core-data-model-er.md` 改用 Mermaid `erDiagram`（原生 ER 語法、版面自動計算、逐行可 diff）。單一模組、8 個實體以內的 ER 圖仍優先用 `diagram-design`。
 
 > 專案先前另有一套 D2 工具鏈（`.d2` 原始檔 + `.png`，用於 thesis 章節架構圖），因無人引用且無建置接線而移除，見 PR #474。若日後需要，可自 git 歷史取回。
 

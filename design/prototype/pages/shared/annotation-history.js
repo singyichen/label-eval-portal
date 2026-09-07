@@ -165,14 +165,17 @@
         return { start: entity.start, end: entity.end, label: entity.type, text: entity.text };
       });
     },
-    /* Tags live one per token index, so the index IS the position; every
-       non-O token is a one-unit span and a retag reads as delete + add. */
+    /* issue #581 change 2 (PR #657) moved this output type off the token
+       grid: previewState.sequence_tagging now holds `spans[]` of half-open
+       character offsets, the same shape entity_recognition already used.
+       `text` is left for the caller to resolve (this module has no access
+       to the sample's source text), matching the entity_recognition entries
+       above only where a snapshot happens to carry it already. */
     sequence_tagging: function (snapshot) {
-      var tags = ((snapshot.previewState || {}).sequence_tagging || {}).tokens;
-      return (Array.isArray(tags) ? tags : []).reduce(function (spans, tag, idx) {
-        if (tag && tag !== 'O') spans.push({ start: idx, end: idx, label: tag, text: tag });
-        return spans;
-      }, []);
+      var spans = ((snapshot.previewState || {}).sequence_tagging || {}).spans;
+      return (Array.isArray(spans) ? spans : []).map(function (span) {
+        return { start: span.start, end: span.end, label: span.label };
+      });
     },
   };
 

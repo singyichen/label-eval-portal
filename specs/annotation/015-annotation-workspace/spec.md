@@ -1,7 +1,7 @@
 ---
 功能分支: feat/review-data-layer-596
 建立日期: 2026-04-23
-版本: 6.0.0
+版本: 6.0.1
 狀態: Draft
 ---
 
@@ -123,6 +123,11 @@ sequenceDiagram
 - [審核流程總覽](./diagrams/review-flow-overview.html)
 - [試標審核詳細流程](./diagrams/review-flow-dry-run.html)
 - [正式標記審核詳細流程](./diagrams/review-flow-official-run.html)
+
+另有兩張以同一 skill 產出的**形式狀態機**圖（自包含 HTML + inline SVG，issue #672），與上述三張 UI 走查圖互補——走查圖描述畫面流程，狀態機圖描述完整狀態集合、每條合法轉換的觸發條件，並明列**不存在**的狀態與轉換：
+
+- [ReviewUnit 狀態機](./diagrams/review-unit-state-machine.html)（`pending`／`disputed`／`finalized` 三態，依 FR-051 之五句判定式）
+- [Task 狀態機](./diagrams/task-status-state-machine.html)（任務五態，依 [ADR-022](../../../docs/adr/022-task-state-machine-location.md) 之 Transition Table；本節僅引用該 ADR，不引用 `specs/task-management/014-task-detail/` 之審核設定，理由見 issue #688）
 
 ---
 
@@ -1120,6 +1125,7 @@ flowchart LR
 
 | Version | Date | Change Summary |
 |---------|------|----------------|
+| 6.0.1 | 2026-09-07 | **新增兩張形式狀態機圖**（issue #672；僅文件變更，**未新增、修改或移除任何 FR／AC**，條文一字未動）：`diagrams/review-unit-state-machine.html` 畫出 ReviewUnit 三態（`pending`／`disputed`／`finalized`）之完整狀態集合與合法轉換，狀態全部依 FR-051 之五句判定式推導，並明列 v5.0.0 移除的 `approved`／`modified` 兩個中繼態，以及 `disputed → pending`、`finalized → 任何狀態`、`reject` 退回、多數決自動收斂、依 `run_type` 分流等**不存在**的狀態與轉換；`diagrams/task-status-state-machine.html` 畫出 Task 五態（`draft` → `dry_run_in_progress` → `waiting_iaa_confirmation` → `official_run_in_progress` → `completed`），依 ADR-022 之 Transition Table，含 2026-08-19 強化後的 `completed` 五項前置條件、唯一允許的反向轉換 `waiting_iaa_confirmation → draft`（`dry_run_in_progress → draft` 為刻意排除），以及 `sample_snapshot_id` 之設定／清除不變量。ADR-022 第 2 項前置條件仍以已廢止的 `min_reviewers` 表述，圖上標註為規格待定並指向 issue #688，本規格不予裁定。`## 流程圖` 章節加入兩條連結。 |
 | 6.0.0 | 2026-09-04 | **序列標註工作區改為字元 offset span（BREAKING，issue #581，OpenSpec change `seq-tagging-span-workspace`）**：annotator 介面由「Token 網格＋依 `tagging_scheme` 選定完整 tag 再點擊 Token」改為在未切分的原始文本上拖曳圈選後點選標籤類型，產出 `spans[]`（`{ start, end, label }`，半開區間）；`sequence_tagging` 的 span 不得相交（相鄰允許），相交落點給出即時拒絕回饋。提交前驗證改為逐 span 合法性（`start >= end`／`start < 0`／`end` 越界），移除「tag 數量須等於 Token 數量」與「預標記數量不一致」兩項阻擋；payload 移除 `tokens[]`／`tags[]`／`scheme`／`unit`，改為 `spans[]`／`snap_unit`／`bypass`／`version`，BIO 不再出現於 payload。`snap_unit` 由前端 `Intl.Segmenter` 提供詞界且只影響拖曳落點，環境缺該 API 時該標註者端降級為不吸附——降級答案照常納入 IAA、共識與差異比對，不得標記為可疑、降權、排除或事後對齊詞界（本版新增規則）。CompactAnswer 的 `sequence_tagging` 形狀由 `{ text, tag }` 改為 `{ text, label, start, end }`，差異比對由逐 token 位置比對改為以 `start + end + label` 為合併鍵的集合比對，`(start, end)` 為權威、`text` 僅為呈現用去正規化欄位；FR-024L 的統計主體由帶前綴的 tag 改為標籤類型，同一個 n 字實體計為 1。同步改寫 FR-024A／FR-024A-1／FR-024A-2／FR-024A-3／FR-052／FR-024L 與 AC-2A.5／AC-3.12／AC-4.11、SC-008 控制項列舉與上游 013 依賴描述；`SEQUENCE_TOKEN_UNITS` 更名為 `SPAN_SNAP_UNITS`，`SEQ_MAJORITY_INVALID_BIO_FALLBACK` 正式廢止且 ID 不重用；ADR-031 轉為 Superseded，word-mode 分詞引擎選型的 Open Question 移除，改記匯出層 BIO 推導由 `dataset/017` 承接。 |
 | 5.0.0 | 2026-09-02 | **審核模型改為單一負責人接力（BREAKING）**（issue #596，OpenSpec change `2026-09-01-single-owner-review-relay`）：新增 `REVIEW_DECISIONS`（`approve | modify | bypass`，`reject` 移除）、`REVIEW_ASSIGNMENT_GRANULARITY`、`ARBITRATION_OUTCOMES`、`EXCEPTION_POOL_ACTIONS` 四個常數，`REVIEW_UNIT_STATUS` 自五態收斂為 `pending | disputed | finalized` 三態，`MIN_REVIEWERS_DEFAULT` 與 `DISPUTE_CONVERGENCE_RULE` 廢止（名稱保留不重用）；新增 FR-092 ~ FR-097；修訂 FR-014B、FR-016A、FR-044、FR-051、FR-053、FR-054、FR-055、FR-060、FR-061、FR-062、FR-063、FR-064、FR-070、FR-083、FR-086；整組移除 FR-014I、FR-069、FR-074、FR-085；`HISTORY_ACTIONS` 自七值改為九值 |
 | 4.64.0 | 2026-09-01 | **issue #596 propose 期預告條目與 lint 合規**（OpenSpec change `2026-09-01-single-owner-review-relay` 開啟中）：依 Project SDD lint 之 active change Source-Verify 要求，預告新增 FR-092 ~ FR-097 與 AC-1.26/1.27、AC-3.51 ~ 3.54、AC-4.52 ~ 4.57、AC-6.11（完整條文於 v5.0.0 archive 回寫時落地）；補上 `## 功能目標` 一節（清償 legacy debt，同步自 `scripts/sdd-lint-baseline.txt` 移除對應條目）；`功能分支` frontmatter 對齊 STATUS 之 change-open 分支 `feat/review-data-layer-596`。本版不改動任何既有需求條文。 |

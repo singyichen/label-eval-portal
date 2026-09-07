@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ReviewUnit 狀態機</title>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:      #F5F3FF;
+      --color-paper-2:    #FFFFFF;
+      --color-ink:        #1E1B4B;
+      --color-muted:      #64748B;
+      --color-soft:       #94A3B8;
+      --color-accent:     #6366F1;
+      --font-sans:  'Inter', 'Noto Sans TC', 'PingFang TC', -apple-system, sans-serif;
+      --font-serif: 'Crimson Pro', 'Noto Serif TC', Georgia, serif;
+      --font-mono:  'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1400px; width: 100%; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem; font-weight: 500;
+      letter-spacing: 0.18em;
+      color: var(--color-muted); margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 600; letter-spacing: -0.01em; line-height: 1.15;
+      color: var(--color-ink); margin-bottom: 0.5rem;
+    }
+    .standfirst {
+      font-family: var(--font-serif); font-style: italic;
+      font-size: 0.95rem; color: var(--color-muted);
+      margin-bottom: 1.5rem; max-width: 62ch;
+    }
+    svg { width: 100%; min-width: 1200px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">狀態機 · annotation-015 FR-051</p>
+    <h1>ReviewUnit 狀態機</h1>
+    <p class="standfirst">審核單位（<code>sample_id × annotator_id × run_type</code>）只有三個狀態：待審、爭議中、已定稿。這張圖畫出完整狀態集合、每一條合法轉換的觸發條件，以及所有<strong>不存在</strong>的狀態與轉換——後者是既有三張 UI 走查圖沒有回答的部分。狀態全部由 FR-051 的五句判定式推導，不是可以任意寫入的欄位。</p>
+
+    <svg viewBox="0 0 1200 832" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="rusm-title rusm-desc">
+      <title id="rusm-title">ReviewUnit 三態狀態機</title>
+      <desc id="rusm-desc">審核單位的狀態機共四個節點：不成立審核單位（推導為 null）、待審 pending、爭議中 disputed、已定稿 finalized，其中已定稿為終態。標記員提交且系統指派一位審核員後，審核單位由不成立轉為待審。待審有兩個出口：審核員逐項決策皆為 approve 時直接轉為已定稿；任一項決策為 modify 或 bypass 時轉為爭議中。爭議中在仍有未解決爭議項時自留於爭議中，所有爭議項皆經仲裁定案或最終例外池收尾後轉為已定稿。圖中另以清單明列不存在的狀態與轉換：v5.0.0 移除的 approved 與 modified 兩個中繼態、爭議中回退待審、已定稿再轉出、待審回退不成立、退回重標決策、多數決自動收斂、依 run_type 分流的狀態機，以及未送出草稿改變狀態。最後列出 FR-051 的五句判定式與圖例。</desc>
+
+      <defs>
+        <marker id="arw" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#64748B"/></marker>
+        <marker id="arw-ac" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6366F1"/></marker>
+        <marker id="arw-sf" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#94A3B8"/></marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#F5F3FF"/>
+
+      <text x="40" y="32" fill="#64748B" font-size="8" font-family="'JetBrains Mono', monospace" letter-spacing="0.18em">狀態轉換 · 三態線性推進，爭議中為唯一有自留迴圈的狀態</text>
+
+      <!-- ══ 連接線（先畫，壓在節點下） ══ -->
+      <path d="M 120 160 V 200" fill="none" stroke="#64748B" stroke-width="1.2" marker-end="url(#arw)"/>
+      <path d="M 200 232 H 360" fill="none" stroke="#64748B" stroke-width="1.2" marker-end="url(#arw)"/>
+      <path d="M 520 232 H 680" fill="none" stroke="#64748B" stroke-width="1.2" marker-end="url(#arw)"/>
+      <path d="M 840 232 H 1000" fill="none" stroke="#64748B" stroke-width="1.2" marker-end="url(#arw)"/>
+      <path d="M 440 200 V 144 A 8 8 0 0 1 448 136 H 1072 A 8 8 0 0 1 1080 144 V 200" fill="none" stroke="#64748B" stroke-width="1.2" marker-end="url(#arw)"/>
+      <path d="M 720 264 V 296 A 8 8 0 0 0 728 304 H 792 A 8 8 0 0 0 800 296 V 264" fill="none" stroke="#6366F1" stroke-width="1.2" marker-end="url(#arw-ac)"/>
+      <path d="M 1080 264 V 292" fill="none" stroke="#64748B" stroke-width="1.2" marker-end="url(#arw)"/>
+
+      <!-- ══ 轉換標籤（遮罩與線保持 8px 間隙） ══ -->
+      <rect x="216" y="196" width="128" height="28" rx="2" fill="#F5F3FF"/>
+      <text x="280" y="208" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="middle">標記員提交</text>
+      <text x="280" y="220" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="middle">系統指派 1 位審核員</text>
+
+      <rect x="536" y="196" width="128" height="28" rx="2" fill="#F5F3FF"/>
+      <text x="600" y="208" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="middle">任一項決策為</text>
+      <text x="600" y="220" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="middle">modify 或 bypass</text>
+
+      <rect x="680" y="100" width="176" height="28" rx="2" fill="#F5F3FF"/>
+      <text x="768" y="112" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="middle">審核員逐項決策</text>
+      <text x="768" y="124" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="middle">皆為 approve</text>
+
+      <rect x="856" y="184" width="136" height="40" rx="2" fill="#F5F3FF"/>
+      <text x="924" y="196" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="middle">所有爭議項皆已解決</text>
+      <text x="924" y="208" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="middle">仲裁定案（FR-061）</text>
+      <text x="924" y="220" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="middle">或例外池收尾（FR-095）</text>
+
+      <rect x="656" y="312" width="208" height="28" rx="2" fill="#F5F3FF"/>
+      <text x="760" y="324" fill="#6366F1" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="middle">仍有未解決的爭議項</text>
+      <text x="760" y="336" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="middle">維持 disputed，不回退</text>
+
+      <!-- ══ 節點 ══ -->
+      <circle cx="120" cy="152" r="6" fill="#1E1B4B"/>
+
+      <rect x="40" y="200" width="160" height="64" rx="6" fill="#F5F3FF"/>
+      <rect x="40" y="200" width="160" height="64" rx="6" fill="rgba(30,27,75,0.02)" stroke="rgba(30,27,75,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="120" y="228" fill="#1E1B4B" font-size="12" font-weight="600" font-family="'Inter','Noto Sans TC',sans-serif" text-anchor="middle">不成立審核單位</text>
+      <text x="120" y="246" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="middle">推導為 null</text>
+
+      <rect x="360" y="200" width="160" height="64" rx="6" fill="#F5F3FF"/>
+      <rect x="360" y="200" width="160" height="64" rx="6" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="1"/>
+      <text x="440" y="228" fill="#1E1B4B" font-size="12" font-weight="600" font-family="'Inter','Noto Sans TC',sans-serif" text-anchor="middle">待審</text>
+      <text x="440" y="246" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="middle">pending</text>
+
+      <rect x="680" y="200" width="160" height="64" rx="6" fill="#F5F3FF"/>
+      <rect x="680" y="200" width="160" height="64" rx="6" fill="#EEF2FF" stroke="#6366F1" stroke-width="1"/>
+      <text x="760" y="228" fill="#1E1B4B" font-size="12" font-weight="600" font-family="'Inter','Noto Sans TC',sans-serif" text-anchor="middle">爭議中</text>
+      <text x="760" y="246" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="middle">disputed</text>
+
+      <rect x="1000" y="200" width="160" height="64" rx="6" fill="#F5F3FF"/>
+      <rect x="1000" y="200" width="160" height="64" rx="6" fill="rgba(30,27,75,0.05)" stroke="#64748B" stroke-width="1"/>
+      <text x="1080" y="228" fill="#1E1B4B" font-size="12" font-weight="600" font-family="'Inter','Noto Sans TC',sans-serif" text-anchor="middle">已定稿</text>
+      <text x="1080" y="246" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="middle">finalized</text>
+
+      <circle cx="1080" cy="304" r="8" fill="none" stroke="#1E1B4B" stroke-width="1"/>
+      <circle cx="1080" cy="304" r="5" fill="#1E1B4B"/>
+      <text x="1096" y="308" fill="#94A3B8" font-size="8" font-family="'JetBrains Mono', monospace">終態</text>
+
+      <!-- ══ 不存在的狀態與轉換 ══ -->
+      <line x1="40" y1="372" x2="1160" y2="372" stroke="rgba(30,27,75,0.10)" stroke-width="0.8"/>
+      <text x="40" y="388" fill="#64748B" font-size="8" font-family="'JetBrains Mono', monospace" letter-spacing="0.18em">不存在的狀態與轉換 · v5.0.0 BREAKING（issue #596）</text>
+
+      <text x="40" y="412" fill="#B91C1C" font-size="9" font-family="'JetBrains Mono', monospace">✕</text>
+      <text x="56" y="412" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">approved（已同意）／modified（已修改）——v5.0.0 移除的兩個中繼態</text>
+      <text x="56" y="430" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace">存在前提是「已表態人數未達 min_reviewers 門檻」；單人接力下一個審核</text>
+      <text x="56" y="448" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace">單位恰指派一位審核員（FR-093），該區間不存在，兩態必恆為瞬時值</text>
+
+      <text x="40" y="472" fill="#B91C1C" font-size="9" font-family="'JetBrains Mono', monospace">✕</text>
+      <text x="56" y="472" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">disputed → pending——爭議中不回退，未解決項只使 disputed 自留</text>
+
+      <text x="40" y="490" fill="#B91C1C" font-size="9" font-family="'JetBrains Mono', monospace">✕</text>
+      <text x="56" y="490" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">finalized → 任何狀態——finalized 為終態，出邊為空集合</text>
+
+      <text x="40" y="508" fill="#B91C1C" font-size="9" font-family="'JetBrains Mono', monospace">✕</text>
+      <text x="56" y="508" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">pending → null——標記員提交後不會退回不成立</text>
+
+      <text x="624" y="412" fill="#B91C1C" font-size="9" font-family="'JetBrains Mono', monospace">✕</text>
+      <text x="640" y="412" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">reject（退回重標）——不在 REVIEW_DECISIONS 內，兩種 run_type 皆不得出現</text>
+      <text x="640" y="430" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace">退回控件、退回決策值、退回歷程產生點一律不存在（FR-092）</text>
+
+      <text x="624" y="448" fill="#B91C1C" font-size="9" font-family="'JetBrains Mono', monospace">✕</text>
+      <text x="640" y="448" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">自動收斂（多數決）——DISPUTE_CONVERGENCE_RULE 已於 v5.0.0 廢止</text>
+      <text x="640" y="466" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace">爭議項必須全數由仲裁者逐項裁定，不存在自動收斂路徑（FR-061）</text>
+
+      <text x="624" y="484" fill="#B91C1C" font-size="9" font-family="'JetBrains Mono', monospace">✕</text>
+      <text x="640" y="484" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">依 run_type 分流的狀態機——定址與判定於兩種 run_type 完全一致（FR-051）</text>
+
+      <text x="624" y="502" fill="#B91C1C" font-size="9" font-family="'JetBrains Mono', monospace">✕</text>
+      <text x="640" y="502" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">未送出草稿改變狀態——草稿不計入狀態解析（FR-051），盲審隔離見 FR-062</text>
+
+      <!-- ══ 判定式 ══ -->
+      <line x1="40" y1="540" x2="1160" y2="540" stroke="rgba(30,27,75,0.10)" stroke-width="0.8"/>
+      <text x="40" y="556" fill="#64748B" font-size="8" font-family="'JetBrains Mono', monospace" letter-spacing="0.18em">狀態判定式 · FR-051 恰五句，狀態為推導值而非可寫欄位</text>
+
+      <text x="40" y="576" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">1. 標記員未提交 → 不成立審核單位（推導為 null）</text>
+      <text x="40" y="594" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">2. 該單位之指派審核員（FR-093）尚未提交 → pending</text>
+      <text x="40" y="612" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">3. 審核員逐項決策皆為 approve → finalized</text>
+      <text x="40" y="630" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">4. 任一項決策為 modify 或 bypass → disputed</text>
+      <text x="40" y="648" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">5. disputed 之所有爭議項皆已解決 → finalized，否則維持 disputed</text>
+
+      <text x="624" y="576" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace">定址：REVIEW_UNIT_DIMENSIONS = sample_id × annotator_id × run_type</text>
+      <text x="624" y="594" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace">狀態解析須讀取該標記員名下所有審核員的已提交決策，不得僅讀</text>
+      <text x="624" y="612" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace">目前登入審核員自己的紀錄（沿用 FR-049 身分維度定址）</text>
+      <text x="624" y="630" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace">finalized 後審核卡改渲染唯讀純文字結果卡（FR-094）；</text>
+      <text x="624" y="648" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace">official_run 定稿即產生 gold（FR-063），dry_run 不產出 gold</text>
+
+      <text x="40" y="676" fill="#64748B" font-size="14" font-style="italic" font-family="'Crimson Pro','Noto Serif TC',serif">爭議中不是終態，但它是唯一會停在原地的狀態——出口全部要人裁定，沒有一條自動路徑。</text>
+
+      <!-- ══ 圖例 ══ -->
+      <line x1="40" y1="704" x2="1160" y2="704" stroke="rgba(30,27,75,0.10)" stroke-width="0.8"/>
+      <text x="40" y="720" fill="#64748B" font-size="8" font-family="'JetBrains Mono', monospace" letter-spacing="0.18em">圖例 · 狀態徽章與轉換記號</text>
+
+      <rect x="40" y="736" width="48" height="18" rx="9" fill="#F8FAFC" stroke="#E2E8F0" stroke-width="1"/>
+      <text x="64" y="748" fill="#64748B" font-size="9" font-family="'Inter','Noto Sans TC',sans-serif" text-anchor="middle">待審</text>
+      <text x="96" y="748" fill="#94A3B8" font-size="8.5" font-family="'Inter','Noto Sans TC',sans-serif">已指派審核員，審核員尚未提交</text>
+
+      <rect x="384" y="736" width="56" height="18" rx="9" fill="#FEF2F2" stroke="#FECACA" stroke-width="1"/>
+      <text x="412" y="748" fill="#B91C1C" font-size="9" font-family="'Inter','Noto Sans TC',sans-serif" text-anchor="middle">爭議中</text>
+      <text x="448" y="748" fill="#94A3B8" font-size="8.5" font-family="'Inter','Noto Sans TC',sans-serif">有 modify／bypass 決策，等待仲裁或例外池收尾</text>
+
+      <rect x="856" y="736" width="56" height="18" rx="9" fill="#F0FDF4" stroke="#BBF7D0" stroke-width="1"/>
+      <text x="884" y="748" fill="#15803D" font-size="9" font-family="'Inter','Noto Sans TC',sans-serif" text-anchor="middle">已定稿</text>
+      <text x="920" y="748" fill="#94A3B8" font-size="8.5" font-family="'Inter','Noto Sans TC',sans-serif">終態，出邊為空集合</text>
+
+      <circle cx="48" cy="784" r="6" fill="#1E1B4B"/>
+      <text x="64" y="788" fill="#94A3B8" font-size="8.5" font-family="'Inter','Noto Sans TC',sans-serif">起始</text>
+
+      <circle cx="152" cy="784" r="8" fill="none" stroke="#1E1B4B" stroke-width="1"/>
+      <circle cx="152" cy="784" r="5" fill="#1E1B4B"/>
+      <text x="168" y="788" fill="#94A3B8" font-size="8.5" font-family="'Inter','Noto Sans TC',sans-serif">終態</text>
+
+      <path d="M 272 784 H 312" fill="none" stroke="#64748B" stroke-width="1.2" marker-end="url(#arw)"/>
+      <text x="324" y="788" fill="#94A3B8" font-size="8.5" font-family="'Inter','Noto Sans TC',sans-serif">合法轉換</text>
+
+      <path d="M 440 784 H 480" fill="none" stroke="#6366F1" stroke-width="1.2" marker-end="url(#arw-ac)"/>
+      <text x="492" y="788" fill="#94A3B8" font-size="8.5" font-family="'Inter','Noto Sans TC',sans-serif">自留迴圈——條件未成立，狀態不變</text>
+
+      <text x="784" y="788" fill="#B91C1C" font-size="9" font-family="'JetBrains Mono', monospace">✕</text>
+      <text x="800" y="788" fill="#94A3B8" font-size="8.5" font-family="'Inter','Noto Sans TC',sans-serif">不存在的轉換——本圖不畫線，僅列於上方清單</text>
+    </svg>
+  </div>
+</body>
+</html>
