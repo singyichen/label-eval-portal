@@ -24,7 +24,15 @@
 
 ## 產出位置慣例
 
-隸屬單一 spec 的圖放該 spec 的 `diagrams/` 資料夾（例如 `specs/annotation/015-annotation-workspace/diagrams/`），歸檔時隨 spec 一起進 `specs/_archive/`。跨模組、無單一歸屬 spec 的總覽圖例外保留在 `docs/diagrams/workflow/`（目前為 `system-workflow.png`、`annotation-pipeline.mmd`/`.png`，被根目錄 `README.md` 引用）。
+隸屬單一 spec 的圖放該 spec 的 `diagrams/` 資料夾（例如 `specs/annotation/015-annotation-workspace/diagrams/`），歸檔時隨 spec 一起進 `specs/_archive/`。跨模組、無單一歸屬 spec 的總覽圖例外保留在 `docs/diagrams/workflow/`：
+
+| 檔案 | `diagram_type` | 內容 |
+|------|---------------|------|
+| [`workflow/sdd-openspec-pipeline.html`](./workflow/sdd-openspec-pipeline.html) | `flowchart` ＋ `swimlane`（`diagram-design`） | SDD／OpenSpec 開發流程、四道驗證閘與微觀交付迴圈（issue #673） |
+| `workflow/annotation-pipeline.mmd` / `.png` | Mermaid flowchart | 標記流程總覽，被根目錄 `README.md` 引用 |
+| `workflow/system-workflow.png` | —（僅圖檔，無原始檔） | 系統流程總覽，被根目錄 `README.md` 引用 |
+
+`sdd-openspec-pipeline.html` 是本 README「`archify` 圖型不支援時改用 `diagram-design`」的第二個實例：`archify` 的 `workflow` schema 把節點的 `col` 限制在 `0`–`5`（見 `.claude/skills/archify/schemas/workflow.schema.json`），只能容納六個邏輯階層，而 SDD 主流程有十三個階段，且 `CLAUDE.md` 對這條 pipeline 的定義是 `each stage is a hard gate`，壓成六階會把 SSoT 明確區分的階段併掉——那正是這張圖存在的理由。
 
 **跨模組架構圖放 `docs/diagrams/architecture/`。** 這類圖描述的是整個系統的容器邊界或跨模組資料流，不隸屬任何單一 spec，因此不進 `specs/`、也不隨任何 spec 歸檔。目前有兩張，皆由 `archify` 產出：
 

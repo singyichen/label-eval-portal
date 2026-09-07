@@ -4,6 +4,8 @@
 >
 > 機器導向的操作細節（TDD 規則全文、prototype Playwright 測試規範、Lightweight Path 觸發條件、Skip SDD 判準）由 [.claude/skills/sdd-workflow/SKILL.md](../.claude/skills/sdd-workflow/SKILL.md) 提供；本文件是 SDD 階段編排、角色與交付時序的正典說明。兩者有衝突時，依下列權威矩陣裁決。
 >
+> 視覺化摘要：[docs/diagrams/workflow/sdd-openspec-pipeline.html](diagrams/workflow/sdd-openspec-pipeline.html)（§2 巨觀主流程、§3 微觀交付迴圈與 §6.1 四層驗證閘的圖解；本文件仍是政策正本）。
+>
 > 圖例：
 > 🗣️ **手動**：需要使用者主動下提示詞觸發
 > ⚙️ **自動**：由上一步自動串接，使用者不用動手

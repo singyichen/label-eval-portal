@@ -96,6 +96,8 @@ Full pipeline — each stage is a hard gate. OpenSpec is the implementation/chan
   → post-merge `specs/STATUS.md` update and canonical spec movement to `specs/_archive/`
 ```
 
+Visual walkthrough of the same pipeline — the four gates, the TDD role split, archive timing, and the Lightweight Path branch: [docs/diagrams/workflow/sdd-openspec-pipeline.html](docs/diagrams/workflow/sdd-openspec-pipeline.html). The ASCII block above stays because it is inline context an agent reads without opening a file; the diagram is the human-facing companion, not a replacement.
+
 **TDD (REQUIRED)**: `senior-qa` owns each separate Red test task and must commit and run its expected failure before the paired Green task starts. The implementation agent owns Green work and must not weaken or rewrite the Red contract to make it pass. The main agent/team lead verifies the committed Red evidence and Green exit-0 evidence, and is the only role that updates `tasks.md` checkboxes. A static prototype shell may precede Red, but target selectors and behavior may not.
 
 **Four verification gates (REQUIRED)**: these gates have distinct responsibilities and must not be treated as equivalents:
