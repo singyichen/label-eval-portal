@@ -14,6 +14,16 @@ design/prototype/pages/[module]/   ← HTML prototypes
 
 **Feature modules**: `account` · `dashboard` · `task-management` · `annotation` · `dataset` · `admin`
 
+**Architecture diagrams** — read the one covering your module before changing cross-module wiring. Each is a standalone HTML file (open it directly in a browser); the paired `.json` is the editable source, so change the `.json` and regenerate, never hand-edit the HTML.
+
+| Diagram | Covers |
+|---------|--------|
+| [`docs/diagrams/architecture/system-container-architecture.html`](docs/diagrams/architecture/system-container-architecture.html) | System/container boundaries — which container owns which responsibility and how they talk (issue #667) |
+| [`docs/diagrams/architecture/config-driven-task-engine-data-flow.html`](docs/diagrams/architecture/config-driven-task-engine-data-flow.html) | Config-driven task engine data flow — task config → validation → workspace dispatch (issue #668) |
+| [`specs/foundation/000-foundation/diagrams/backend-layering-and-celery-boundary.html`](specs/foundation/000-foundation/diagrams/backend-layering-and-celery-boundary.html) | Backend layering contract — Router/Service/Repository/ORM responsibilities, dependency direction, and the Celery task boundary (issue #670) |
+
+Tool choice and output-location conventions for new diagrams: [`docs/diagrams/README.md`](docs/diagrams/README.md).
+
 ## Hard Rules
 
 1. **No cross-feature imports** — `features/A/` must not import from `features/B/`. Use `shared/` only when 2+ features need it.
@@ -98,7 +108,7 @@ New features, behavior changes, breaking API changes, and architectural changes 
 → post-merge `specs/STATUS.md` update and canonical spec movement to `specs/_archive/`
 ```
 
-For the authoritative SDD stages, Frontend Ready Gate checklist, four-gate boundaries, and archive timing, follow [docs/sdd-workflow.md](docs/sdd-workflow.md). `AGENTS.md` is a concise Codex-facing summary, not a second policy source.
+For the authoritative SDD stages, Frontend Ready Gate checklist, four-gate boundaries, and archive timing, follow [docs/sdd-workflow.md](docs/sdd-workflow.md). `AGENTS.md` is a concise Codex-facing summary, not a second policy source. The same pipeline as a diagram — four gates, TDD role split, archive timing, Lightweight Path branch: [`docs/diagrams/workflow/sdd-openspec-pipeline.html`](docs/diagrams/workflow/sdd-openspec-pipeline.html).
 
 **Skip SDD only for**: bug fixes, typo/comment changes, non-breaking dep updates, adding tests for existing behavior.
 

@@ -4,7 +4,7 @@
 >
 > **本檔為 generated view——請勿手動編輯。** 唯一生成來源是 [inventory-manifest.json](inventory-manifest.json)；改完 manifest 後執行 `node scripts/gen-screen-inventory.mjs` 重新產生，並以 `bash scripts/inventory-tests.sh` 驗證。元件規格唯一正典是 [MASTER.md](MASTER.md)；行為規格在 `specs/<module>/`；token 實作在 `design/prototype/assets/tokens.css`。
 >
-> **Prototype 來源 commit：** `06937dcc6f5e`（2026-09-05）——`design/prototype/pages` · `design/prototype/index.html` 的最後一次變更。
+> **Prototype 來源 commit：** `8fe47117a5f6`（2026-09-07）——`design/prototype/pages` · `design/prototype/index.html` 的最後一次變更。
 > 本檔若落後於該 commit，`node scripts/gen-screen-inventory.mjs --check` 會失敗。
 
 ---

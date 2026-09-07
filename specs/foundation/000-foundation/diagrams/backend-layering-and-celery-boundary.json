@@ -1,0 +1,273 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Backend 分層契約與 Celery 任務邊界",
+    "output": "docs/diagrams/architecture/backend-layering-and-celery-boundary.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/singyichen/label-suite",
+      "revision": "0110fd3be929333b3349f41463040475e1f1c691"
+    },
+    "viewBox": [1270, 420]
+  },
+  "components": [
+    {
+      "id": "deps",
+      "type": "security",
+      "label": "Depends() chain",
+      "sublabel": "modules/[module]/dependencies.py",
+      "tag": "FR-102",
+      "pos": [30, 30],
+      "size": [200, 74],
+      "sources": [
+        { "path": "specs/foundation/000-foundation/spec.md", "line": 377, "label": "FR-102 dependency chain" },
+        { "path": "specs/foundation/000-foundation/spec.md", "line": 358, "label": "情境 1.1 authorize" }
+      ]
+    },
+    {
+      "id": "module_router",
+      "type": "backend",
+      "label": "Router 層",
+      "sublabel": "modules/[module]/router.py",
+      "tag": "FR-008",
+      "pos": [30, 160],
+      "size": [200, 80],
+      "sources": [
+        { "path": "specs/foundation/000-foundation/spec.md", "line": 372, "label": "FR-008 只負責 HTTP 邊界" },
+        { "path": "specs/foundation/000-foundation/spec.md", "line": 358, "label": "情境 1.1 四步驟" },
+        { "path": "specs/foundation/000-foundation/spec.md", "line": 207, "label": "APIRouter 宣告基準" }
+      ]
+    },
+    {
+      "id": "service",
+      "type": "backend",
+      "label": "Service 層",
+      "sublabel": "modules/[module]/service.py",
+      "tag": "FR-009",
+      "pos": [370, 160],
+      "size": [200, 80],
+      "sources": [
+        { "path": "specs/foundation/000-foundation/spec.md", "line": 373, "label": "FR-009 唯一入口" },
+        { "path": "specs/foundation/000-foundation/spec.md", "line": 379, "label": "FR-072 transaction" },
+        { "path": "specs/foundation/000-foundation/spec.md", "line": 380, "label": "FR-073 eager load" }
+      ]
+    },
+    {
+      "id": "repository",
+      "type": "backend",
+      "label": "Repository 層",
+      "sublabel": "modules/[module]/repository.py",
+      "tag": "FR-010",
+      "pos": [710, 160],
+      "size": [200, 80],
+      "sources": [
+        { "path": "specs/foundation/000-foundation/spec.md", "line": 374, "label": "FR-010 不含應用判斷" },
+        { "path": "specs/foundation/000-foundation/spec.md", "line": 360, "label": "情境 1.3 職責上限" },
+        { "path": "specs/foundation/000-foundation/spec.md", "line": 382, "label": "FR-121 scoped query" }
+      ]
+    },
+    {
+      "id": "orm_models",
+      "type": "database",
+      "label": "ORM Model",
+      "sublabel": "modules/[module]/models.py",
+      "pos": [1050, 164],
+      "size": [180, 72],
+      "sources": [
+        { "path": "specs/foundation/000-foundation/spec.md", "line": 367, "label": "情境 2.2 不得當 response_model" },
+        { "path": "specs/foundation/000-foundation/spec.md", "line": 371, "label": "FR-007 module co-locate" }
+      ]
+    },
+    {
+      "id": "job_status",
+      "type": "backend",
+      "label": "Job 狀態端點",
+      "sublabel": "GET /api/v1/jobs/{job_id}",
+      "tag": "FR-090",
+      "pos": [30, 310],
+      "size": [200, 72],
+      "sources": [
+        { "path": "specs/foundation/000-foundation/spec.md", "line": 663, "label": "FR-090 狀態端點" },
+        { "path": "specs/foundation/000-foundation/spec.md", "line": 661, "label": "FR-045 狀態可觀測" }
+      ]
+    },
+    {
+      "id": "redis",
+      "type": "messagebus",
+      "label": "Redis",
+      "sublabel": "Celery broker · result backend",
+      "pos": [370, 310],
+      "size": [200, 72],
+      "sources": [
+        { "path": "docs/adr/007-async-tasks-celery.md", "line": 42, "label": "broker 與 result backend" },
+        { "path": "docs/adr/007-async-tasks-celery.md", "line": 87, "label": "狀態輪詢來源" }
+      ]
+    },
+    {
+      "id": "celery_task",
+      "type": "backend",
+      "label": "Celery task handler",
+      "sublabel": "app/jobs/[job_name].py",
+      "tag": "FR-089",
+      "pos": [710, 306],
+      "size": [200, 80],
+      "sources": [
+        { "path": "specs/foundation/000-foundation/spec.md", "line": 662, "label": "FR-089 獨立 sync session" },
+        { "path": "specs/foundation/000-foundation/spec.md", "line": 213, "label": "job registry 基準" },
+        { "path": "specs/foundation/000-foundation/spec.md", "line": 659, "label": "FR-043 job 宣告" }
+      ]
+    },
+    {
+      "id": "postgres",
+      "type": "database",
+      "label": "PostgreSQL",
+      "sublabel": "唯一持久化狀態",
+      "pos": [1050, 310],
+      "size": [180, 72],
+      "sources": [
+        { "path": "docs/adr/005-database-postgresql.md", "line": 32, "label": "PostgreSQL 決策" },
+        { "path": "specs/foundation/000-foundation/spec.md", "line": 536, "label": "FR-083 atomic UPSERT" }
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "app/modules/[module]/ · module 邊界（FR-007、FR-101）",
+      "wraps": ["deps", "module_router", "service", "repository", "orm_models"],
+      "pad": 20
+    },
+    {
+      "kind": "security-group",
+      "label": "Celery worker 程序 · 獨立 sync session（FR-089）",
+      "wraps": ["celery_task"],
+      "pad": 16
+    }
+  ],
+  "connections": [
+    {
+      "id": "authorize",
+      "from": "deps",
+      "to": "module_router",
+      "label": "授權・資源存在",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [215, 132]
+    },
+    {
+      "id": "router_service",
+      "from": "module_router",
+      "to": "service",
+      "label": "呼叫 service",
+      "variant": "emphasis"
+    },
+    {
+      "id": "service_repo",
+      "from": "service",
+      "to": "repository",
+      "label": "帶入已驗證 scope",
+      "variant": "emphasis"
+    },
+    {
+      "id": "repo_orm",
+      "from": "repository",
+      "to": "orm_models",
+      "label": "module-local query"
+    },
+    {
+      "id": "orm_db",
+      "from": "orm_models",
+      "to": "postgres",
+      "label": "async SQL",
+      "labelAt": [1140, 273]
+    },
+    {
+      "id": "undefined_service_orm",
+      "from": "service",
+      "to": "orm_models",
+      "label": "規格未定義：service 可否略過 repository 直接組 query",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "top",
+      "via": [[470, 120], [1140, 120]],
+      "labelAt": [805, 100]
+    },
+    {
+      "id": "enqueue",
+      "from": "service",
+      "to": "redis",
+      "label": "唯一 side effect dispatch 入口",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelAt": [470, 275]
+    },
+    {
+      "id": "queued_job",
+      "from": "redis",
+      "to": "celery_task",
+      "label": "queued job"
+    },
+    {
+      "id": "worker_db",
+      "from": "celery_task",
+      "to": "postgres",
+      "label": "獨立 sync Session"
+    },
+    {
+      "id": "undefined_task_reuse",
+      "from": "celery_task",
+      "to": "repository",
+      "label": "規格未定義：task 可否重用 module service／repository",
+      "variant": "dashed",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelAt": [810, 273]
+    },
+    {
+      "id": "status_lookup",
+      "from": "job_status",
+      "to": "redis",
+      "label": "job 狀態查詢",
+      "variant": "dashed"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "依賴方向與層次職責",
+      "items": [
+        "依賴嚴格單向 Router → Service → Repository → ORM：上層只協調下一層、不反向依賴（spec.md:105）",
+        "Router 只做 parse request → authorize dependency → call service → serialize response（FR-008、情境 1.1）",
+        "Router 不得呼叫 db.execute() / db.get() / db.query()，也不得直接建立 repository（情境 1.2、spec.md:208）",
+        "Repository 只做 owning module 的 query 與 persistence，不得含權限判斷、跨資源 workflow 或 side effect（FR-010、情境 1.3）",
+        "唯一例外是跨模組：只能走公開 dependency/service interface、domain event、background job 或 API boundary（FR-101）",
+        "本圖是 F-02／F-12 條文的衍生視圖，非程式碼快照（backend 目前僅 health module）；與條文衝突時以條文為準"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "Celery 任務邊界",
+      "items": [
+        "enqueue 屬 service：service 是 side effect dispatch 的唯一入口（FR-009）；repository 明文不得 dispatch job（情境 1.3、spec.md:209）",
+        "Job handler 須註冊 registry，並宣告 stable name、retry policy、timeout、idempotency key 與 failure handling（spec.md:213、FR-043）",
+        "Task 以獨立 sync engine 與 with Session(sync_engine) as db: 管理自身 session，不得複用 get_db（FR-089）",
+        "Task 的 DB write 須用 atomic UPSERT，讓 retry 在任何 crash point 後重跑都冪等（FR-083）",
+        "完成通知只能靠 GET /api/v1/jobs/{job_id} 輪詢或 SSE，不得以 mutation response 判定（FR-090）",
+        "落差：ADR-007:76 範例在 route handler 直接呼叫 .delay()，與 FR-009 及情境 1.1 不一致，待維護者裁決"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "規格未定義（待維護者裁決，不得逕行實作）",
+      "items": [
+        "Service 可否略過 repository 直接組 query：情境 1.2 只禁 route handler，FR-072／FR-073 卻把 transaction 與 eager load 放在 service",
+        "ORM 實例轉 response schema 屬哪一層：情境 2.2 只禁 ORM model class 當 response_model，未指定轉換位置",
+        "Celery task 可否 import module service／repository：FR-101 只管 module 互相 import，未涵蓋 app/jobs/，且 async／sync session 不相容",
+        "FR-101 允許的「公開 dependency/service interface」該放哪個路徑：同一條又禁止 import modules/B/service.py"
+      ]
+    }
+  ]
+}

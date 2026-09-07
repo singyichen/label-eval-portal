@@ -25,7 +25,9 @@
 
 ## Required reading sequence
 
-開啟任務時固定依下列順序閱讀：main constitution → applicable domain constitutions → Product Baseline → `STATUS.md` → target spec → upstream/downstream specs → shared constants → prototype/design → approved plan/tasks。
+開啟任務時固定依下列順序閱讀：main constitution → applicable domain constitutions → Product Baseline → `STATUS.md` → target spec → upstream/downstream specs → **涵蓋此模組的跨模組架構圖（若有）** → shared constants → prototype/design → approved plan/tasks。
+
+跨模組架構圖收在 [`docs/diagrams/architecture/`](../diagrams/architecture/)，用來在動工前確認本模組在系統中的位置與上下游資料流；該目錄若沒有涵蓋此模組的圖，這一步直接略過，不需為此補圖。架構圖屬 **Navigation** 層級，與 Product Baseline 同級，不得覆蓋 active spec 或 shared constants；圖與 spec 不一致時以 spec 為準，並把落差記入 [`decision-log.md`](./decision-log.md)。選圖工具與產出位置慣例見 [`docs/diagrams/README.md`](../diagrams/README.md)。
 
 ## Required task packet
 

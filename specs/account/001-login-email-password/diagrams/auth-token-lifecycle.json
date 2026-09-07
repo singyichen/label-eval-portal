@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Auth Token 生命週期：登入 / Refresh / 登出",
+    "output": "specs/account/001-login-email-password/diagrams/auth-token-lifecycle.html",
+    "viewBox": [1080, 1280],
+    "animation": "none",
+    "quality_profile": "showcase",
+    "column_fit": "spread",
+    "views": [
+      {
+        "id": "issue",
+        "label": "登入與簽發",
+        "focus": ["user", "spa", "authApi", "refreshStore"],
+        "note": "登入成功時 access token 與 refresh token 皆以 httpOnly cookie 傳送，refresh token 另存一筆 DB row。"
+      },
+      {
+        "id": "sso-gap",
+        "label": "Google SSO 分歧點",
+        "focus": ["user", "spa", "google", "authApi"],
+        "note": "account-002 明確把 OAuth callback 與 session 建立排除在範圍外，因此此分支為規格未定義。"
+      },
+      {
+        "id": "refresh",
+        "label": "401 靜默 refresh",
+        "focus": ["spa", "protectedApi", "denyList", "authApi", "refreshStore"],
+        "note": "access token 過期時前端只靜默重試一次 /auth/refresh，成功後重送原請求。"
+      },
+      {
+        "id": "revoke",
+        "label": "重用偵測與撤銷",
+        "focus": ["user", "spa", "authApi", "refreshStore", "denyList"],
+        "note": "登出以 revoked_at soft delete refresh token，並以 jti deny list 立即作廢尚未過期的 access token。"
+      }
+    ]
+  },
+  "participants": [
+    { "id": "user", "type": "external", "label": "使用者", "sublabel": "瀏覽器" },
+    { "id": "spa", "type": "frontend", "label": "React SPA", "sublabel": "useAuthStore（記憶體）" },
+    { "id": "google", "type": "external", "label": "Google OAuth", "sublabel": "規格未定義" },
+    { "id": "authApi", "type": "backend", "label": "Auth API", "sublabel": "/api/v1/auth/*" },
+    { "id": "protectedApi", "type": "backend", "label": "受保護 API", "sublabel": "current_user dependency" },
+    { "id": "refreshStore", "type": "database", "label": "refresh_tokens", "sublabel": "PostgreSQL" },
+    { "id": "denyList", "type": "database", "label": "jti deny list", "sublabel": "Redis（FR-077）" }
+  ],
+  "segments": [
+    { "from": 150, "to": 375, "label": "① 登入與簽發" },
+    { "from": 395, "to": 505, "label": "② Google SSO 分歧點（規格未定義）" },
+    { "from": 525, "to": 875, "label": "③ 帶 token 呼叫 API 與 401 refresh" },
+    { "from": 895, "to": 1215, "label": "④ 重用偵測、登出與撤銷" }
+  ],
+  "messages": [
+    { "id": "submit-credentials", "from": "user", "to": "spa", "y": 185, "label": "輸入 Email / Password 並送出", "variant": "default" },
+    { "id": "post-login", "from": "spa", "to": "authApi", "y": 228, "label": "POST /api/v1/auth/login（credentials: 'include'）", "variant": "emphasis" },
+    { "id": "persist-refresh", "from": "authApi", "to": "refreshStore", "y": 270, "label": "寫入 row：user_id / token_hash / expires_at", "variant": "security", "note": "FR-016：每次核發都寫入新 row" },
+    { "id": "refresh-row-created", "from": "refreshStore", "to": "authApi", "y": 305, "label": "expires_at = now + REFRESH_TOKEN_TTL（7 天 sliding）", "variant": "return" },
+    { "id": "set-cookies", "from": "authApi", "to": "spa", "y": 348, "label": "200 + Set-Cookie access(15 分) / refresh(7 天)：httpOnly; Secure; SameSite=Lax", "variant": "return", "note": "JWT claims 僅 sub / role / iat / exp；task role 不入 JWT" },
+    { "id": "hydrate-store", "from": "spa", "to": "user", "y": 372, "label": "以 body { user_id, role } 填入 store 後導向 dashboard", "variant": "return" },
+
+    { "id": "click-google", "from": "user", "to": "spa", "y": 425, "label": "點擊「使用 Google 帳號繼續」", "variant": "dashed" },
+    { "id": "oauth-redirect", "from": "spa", "to": "google", "y": 462, "label": "OAuth 2.0 Authorization Code Flow（規格未定義）", "variant": "dashed", "note": "account-002 FR-005：原型階段為 no-op" },
+    { "id": "oauth-callback", "from": "google", "to": "authApi", "y": 500, "label": "callback → 是否共用同一組 cookie 與 refresh_tokens？（規格未定義）", "variant": "dashed" },
+
+    { "id": "call-protected", "from": "spa", "to": "protectedApi", "y": 555, "label": "GET /api/v1/tasks/{task_id}/membership（cookie 自動附帶）", "variant": "default" },
+    { "id": "check-denylist", "from": "protectedApi", "to": "denyList", "y": 595, "label": "驗證 JWT 並比對 jti deny list", "variant": "security" },
+    { "id": "unauthorized", "from": "protectedApi", "to": "spa", "y": 635, "label": "401：access token 已過期", "variant": "return" },
+    { "id": "post-refresh", "from": "spa", "to": "authApi", "y": 678, "label": "POST /api/v1/auth/refresh（僅靜默重試一次）", "variant": "emphasis" },
+    { "id": "rotate-token", "from": "authApi", "to": "refreshStore", "y": 718, "label": "旋轉：舊 token 設 revoked_at，寫入新 row", "variant": "security", "note": "F-04 約束情境 1.3：refresh token 一次性使用" },
+    { "id": "rotate-result", "from": "refreshStore", "to": "authApi", "y": 753, "label": "新 expires_at；受 REFRESH_TOKEN_ABSOLUTE_MAX_TTL 上限約束", "variant": "return", "note": "FR-076：超過絕對上限必須強制重新登入" },
+    { "id": "reissue-cookies", "from": "authApi", "to": "spa", "y": 793, "label": "200 + 重發 access / refresh cookie", "variant": "return" },
+    { "id": "retry-request", "from": "spa", "to": "protectedApi", "y": 831, "label": "重送原請求", "variant": "default" },
+    { "id": "retry-ok", "from": "protectedApi", "to": "spa", "y": 866, "label": "200：refresh 失敗時改導向 /login", "variant": "return" },
+
+    { "id": "concurrent-reuse", "from": "spa", "to": "authApi", "y": 925, "label": "並行分頁重送同一個已作廢 refresh token", "variant": "dashed" },
+    { "id": "grace-check", "from": "authApi", "to": "refreshStore", "y": 963, "label": "落在 REFRESH_TOKEN_GRACE_PERIOD（預設 30 秒）內？", "variant": "security", "note": "FR-075 策略 A：ADR-021 已選定 grace period" },
+    { "id": "grace-result", "from": "refreshStore", "to": "authApi", "y": 1000, "label": "寬限內 → 重新核發；逾寬限 → 撤銷該使用者全部 refresh tokens", "variant": "return" },
+    { "id": "click-logout", "from": "user", "to": "spa", "y": 1043, "label": "點擊登出", "variant": "default" },
+    { "id": "post-logout", "from": "spa", "to": "authApi", "y": 1081, "label": "POST /api/v1/auth/logout", "variant": "emphasis" },
+    { "id": "revoke-refresh", "from": "authApi", "to": "refreshStore", "y": 1119, "label": "設定 revoked_at（soft delete）", "variant": "security" },
+    { "id": "deny-jti", "from": "authApi", "to": "denyList", "y": 1157, "label": "寫入 jti，entry TTL = 剩餘 ACCESS_TOKEN_TTL", "variant": "security", "note": "FR-077：高風險事件立即作廢未過期 access token" },
+    { "id": "clear-cookies", "from": "authApi", "to": "spa", "y": 1195, "label": "200 + 清除兩個 cookie，前端清空記憶體 store", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "spa", "from": 180, "to": 1200, "type": "frontend" },
+    { "participant": "authApi", "from": 223, "to": 353, "type": "backend" },
+    { "participant": "google", "from": 457, "to": 505, "type": "external" },
+    { "participant": "protectedApi", "from": 550, "to": 640, "type": "backend" },
+    { "participant": "authApi", "from": 673, "to": 798, "type": "backend" },
+    { "participant": "protectedApi", "from": 826, "to": 871, "type": "backend" },
+    { "participant": "authApi", "from": 920, "to": 1005, "type": "backend" },
+    { "participant": "authApi", "from": 1076, "to": 1200, "type": "backend" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "四項技術細節（ADR-021 / F-04 已定義）",
+      "items": [
+        "簽發：access token 為 15 分鐘 JWT，refresh token 為 7 天 sliding 的不透明 UUID",
+        "儲存位置：兩者皆走 httpOnly; Secure; SameSite=Lax cookie；前端 store 只留 user_id 與 role",
+        "refresh 時機：收到 401 時前端靜默呼叫 /auth/refresh 一次，成功後重送原請求",
+        "撤銷機制：refresh 以 refresh_tokens.revoked_at soft delete；access 以 jti deny list 立即作廢"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "規格未定義（不得由本圖裁定）",
+      "items": [
+        "Google SSO 是否共用同一組 cookie、refresh_tokens row 與撤銷路徑 — account-002 明確排除",
+        "FR-077 只寫「jti deny list 或 token_version bump」，ADR-021 未擇一，本圖畫的是 deny list 分支",
+        "access token 是否在每次請求都查 deny list，或僅在特定風險事件查，未有條文",
+        "/auth/refresh 在 refresh token 已逾期時的回應碼（401 或 419）未定義"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "來源",
+      "items": [
+        "docs/adr/021-jwt-refresh-token-auth.md",
+        "specs/foundation/000-foundation/spec.md — F-04（FR-016、FR-017、FR-075、FR-076、FR-077）",
+        "specs/account/001-login-email-password/spec.md、specs/account/002-login-google-sso/spec.md"
+      ]
+    }
+  ]
+}

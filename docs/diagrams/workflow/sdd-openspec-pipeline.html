@@ -1,0 +1,482 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SDD 開發流程與四道驗證閘</title>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F5F3FF;
+    --paper-2: #FFFFFF;
+    --ink: #1E1B4B;
+    --muted: #64748B;
+    --soft: #94A3B8;
+    --rule: rgba(30, 27, 75, 0.12);
+    --rule-solid: #C7D2FE;
+    --accent: #6366F1;
+    --accent-tint: #EEF2FF;
+    --link: #1D4ED8;
+    --font-serif: 'Crimson Pro', 'Noto Serif TC', Georgia, serif;
+    --font-sans: 'Inter', 'Noto Sans TC', 'PingFang TC', -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    margin: 0;
+    padding: 3rem 1.5rem 4rem;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 0.75rem;
+  }
+  h1 {
+    font-family: var(--font-serif);
+    font-size: clamp(1.9rem, 4vw, 2.6rem);
+    font-weight: 600;
+    line-height: 1.15;
+    margin: 0 0 0.75rem;
+  }
+  .subtitle {
+    font-size: 0.95rem;
+    line-height: 1.65;
+    color: var(--muted);
+    max-width: 62ch;
+    margin: 0 0 2.75rem;
+  }
+  h2 {
+    font-family: var(--font-serif);
+    font-size: 1.35rem;
+    font-weight: 600;
+    margin: 3rem 0 0.35rem;
+  }
+  .fig-note {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.6;
+    max-width: 70ch;
+    margin: 0 0 1.5rem;
+  }
+  .diagram-container {
+    background: transparent;
+    border: none;
+    padding: 0;
+    overflow-x: auto;
+  }
+  svg { width: 100%; min-width: 900px; display: block; }
+  .cards {
+    display: grid;
+    grid-template-columns: 1.35fr 1fr 1fr;
+    gap: 1rem;
+    margin-top: 3rem;
+  }
+  @media (max-width: 860px) { .cards { grid-template-columns: 1fr; } }
+  .card {
+    background: var(--paper-2);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 1.25rem 1.35rem;
+  }
+  .card h3 {
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin: 0 0 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .card-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .dot-accent { background: var(--accent); }
+  .dot-ink { background: var(--ink); }
+  .dot-muted { background: var(--muted); }
+  .card ul { list-style: none; padding: 0; margin: 0; }
+  .card li {
+    font-size: 0.8rem;
+    line-height: 1.62;
+    color: var(--muted);
+    padding-left: 1rem;
+    text-indent: -1rem;
+    margin-bottom: 0.5rem;
+  }
+  .card li::before { content: '— '; color: var(--soft); }
+  .card li b { color: var(--ink); font-weight: 600; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.92em;
+    color: var(--ink);
+  }
+  .footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--rule);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--soft);
+  }
+  .n-title { font-family: var(--font-sans); font-size: 12px; font-weight: 600; fill: #1E1B4B; }
+  .n-title-sm { font-family: var(--font-sans); font-size: 11.5px; font-weight: 600; fill: #1E1B4B; }
+  .n-sub { font-family: var(--font-sans); font-size: 9.5px; fill: #64748B; }
+  .n-tag { font-family: var(--font-sans); font-size: 8.5px; font-weight: 600; letter-spacing: 0.04em; fill: #94A3B8; }
+  .a-label { font-family: var(--font-sans); font-size: 9px; font-weight: 500; fill: #64748B; }
+  .eyebrow-svg { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.16em; text-transform: uppercase; fill: #94A3B8; }
+  .lane-name { font-family: var(--font-sans); font-size: 10.5px; font-weight: 600; fill: #1E1B4B; }
+  .aside { font-family: var(--font-serif); font-style: italic; font-size: 12.5px; fill: #1E1B4B; }
+  .lg-label { font-family: var(--font-mono); font-size: 8px; letter-spacing: 0.16em; text-transform: uppercase; fill: #94A3B8; }
+  .lg-item { font-family: var(--font-sans); font-size: 9.5px; fill: #64748B; }
+</style>
+
+<div class="container">
+  <p class="eyebrow">Label Suite · Spec-Driven Development</p>
+  <h1>SDD 開發流程與四道驗證閘</h1>
+  <p class="subtitle">
+    本圖把 <code>docs/sdd-workflow.md</code> 的巨觀主流程與微觀交付迴圈畫成一張圖，重點放在四件最容易被誤解的事：
+    四道驗證閘門<strong>互不取代</strong>、Red／Green 的<strong>角色分工</strong>、archive 只發生在 <strong>final PR group</strong>、
+    以及 Lightweight Path 的<strong>四個成立條件</strong>。政策正本仍是 <code>docs/sdd-workflow.md</code>，本圖只是它的視覺化摘要。
+  </p>
+
+  <h2>圖一 · 巨觀主流程與四道驗證閘</h2>
+  <p class="fig-note">
+    每個階段都是硬閘門。右欄四道驗證閘門各自只對其責任範圍負責，不能以單一「verify」名稱掩蓋差異；左側虛線是 Lightweight Path 旁路，四條件全數成立時才可走。
+  </p>
+  <div class="diagram-container">
+    <svg viewBox="0 0 1000 1288" role="img" aria-labelledby="macro-title macro-desc" xmlns="http://www.w3.org/2000/svg">
+      <title id="macro-title">SDD 巨觀主流程與四道驗證閘</title>
+      <desc id="macro-desc">垂直主流程由 brainstorm、specify、Spec Lint、prototype shell、Red、Green、page design 與 clarify、Frontend Ready Gate、opsx propose、opsx apply、opsx archive、pr-flow 到 post-merge 歸檔共十三個階段組成。右側標示四道驗證閘門：OpenSpec schema validation 與 Project SDD lint 掛在 propose，Code 與 test gates 掛在 apply，Source-Verify 與 write-back archive gate 掛在 archive。左側虛線為 Lightweight Path 旁路，跳過 OpenSpec change 容器直接匯入 pr-flow。</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#64748B"/>
+        </marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#6366F1"/>
+        </marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#1D4ED8"/>
+        </marker>
+      </defs>
+      <rect width="100%" height="100%" fill="#F5F3FF"/>
+
+      <!-- connectors drawn before boxes so lines sit behind nodes -->
+      <g fill="none" stroke="#64748B" stroke-width="1.2">
+        <line x1="490" y1="72" x2="490" y2="104" marker-end="url(#arrow)"/>
+        <line x1="490" y1="164" x2="490" y2="188" marker-end="url(#arrow)"/>
+        <line x1="490" y1="248" x2="490" y2="272" marker-end="url(#arrow)"/>
+        <line x1="490" y1="332" x2="490" y2="356" marker-end="url(#arrow)"/>
+        <line x1="490" y1="416" x2="490" y2="440" marker-end="url(#arrow)"/>
+        <line x1="490" y1="500" x2="490" y2="524" marker-end="url(#arrow)"/>
+        <line x1="490" y1="584" x2="490" y2="608" marker-end="url(#arrow)"/>
+        <line x1="490" y1="668" x2="490" y2="692" marker-end="url(#arrow)"/>
+        <line x1="490" y1="752" x2="490" y2="776" marker-end="url(#arrow)"/>
+        <line x1="490" y1="836" x2="490" y2="860" marker-end="url(#arrow)"/>
+        <line x1="490" y1="920" x2="490" y2="944" marker-end="url(#arrow)"/>
+        <line x1="490" y1="1004" x2="490" y2="1028" marker-end="url(#arrow)"/>
+        <line x1="490" y1="1088" x2="490" y2="1112" marker-end="url(#arrow)"/>
+      </g>
+      <g fill="none" stroke="#1D4ED8" stroke-width="1.2" stroke-dasharray="4,3">
+        <line x1="680" y1="790" x2="712" y2="790" marker-end="url(#arrow-link)"/>
+        <line x1="680" y1="826" x2="712" y2="826" marker-end="url(#arrow-link)"/>
+        <line x1="680" y1="898" x2="712" y2="898" marker-end="url(#arrow-link)"/>
+        <line x1="680" y1="976" x2="712" y2="976" marker-end="url(#arrow-link)"/>
+      </g>
+      <g fill="none" stroke="#6366F1" stroke-width="1.4" stroke-dasharray="5,4">
+        <path d="M 300,52 H 143 Q 135,52 135,60 V 104" marker-end="url(#arrow-accent)"/>
+        <path d="M 135,280 V 1054 Q 135,1062 143,1062 H 292" marker-end="url(#arrow-accent)"/>
+      </g>
+
+      <!-- connector labels: opaque mask + 8-14px gap to the stroke -->
+      <g>
+        <rect x="196" y="26" width="98" height="14" fill="#F5F3FF"/>
+        <text class="a-label" x="245" y="37" text-anchor="middle" fill="#6366F1">四條件全數成立</text>
+        <rect x="145" y="596" width="142" height="14" fill="#F5F3FF"/>
+        <text class="a-label" x="149" y="607" fill="#6366F1">跳過 OpenSpec change 容器</text>
+      </g>
+
+      <!-- entry -->
+      <rect x="300" y="32" width="380" height="40" rx="20" fill="rgba(100,116,139,0.10)" stroke="#94A3B8" stroke-width="1"/>
+      <text class="n-title" x="490" y="57" text-anchor="middle">新功能・行為變更・破壞性 API 變更・架構變更</text>
+
+      <!-- Lightweight Path bypass -->
+      <rect x="20" y="112" width="230" height="168" rx="6" fill="#EEF2FF" stroke="#6366F1" stroke-width="1.2" stroke-dasharray="5,4"/>
+      <text class="n-title-sm" x="32" y="134">Lightweight Path（旁路）</text>
+      <text class="n-sub" x="32" y="156">四條件須全數成立：</text>
+      <text class="n-sub" x="32" y="172">① ≤ 2 個生產程式檔</text>
+      <text class="n-sub" x="32" y="188">② 不動 API 契約</text>
+      <text class="n-sub" x="32" y="204">③ 僅需小幅 spec 更新</text>
+      <text class="n-sub" x="32" y="220">④ 不增刪 FR/AC，只釐清</text>
+      <text class="n-sub" x="32" y="240">序列：TDD → 實作 →</text>
+      <text class="n-sub" x="32" y="254">spec 一致性檢查 → /pr-flow</text>
+      <text class="n-sub" x="32" y="272" fill="#6366F1">任一條件不確定 → 走完整流程</text>
+
+      <!-- main rail -->
+      <g>
+        <rect x="300" y="112" width="380" height="52" rx="4" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="1"/>
+        <text class="n-title" x="312" y="134">[1] /superpowers:brainstorm</text>
+        <text class="n-tag" x="668" y="133" text-anchor="end">主 agent</text>
+        <text class="n-sub" x="312" y="150">需求釐清・2–3 個設計方案取捨・YAGNI</text>
+
+        <rect x="300" y="196" width="380" height="52" rx="4" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="1"/>
+        <text class="n-title" x="312" y="218">[2] /speckit.specify</text>
+        <text class="n-tag" x="668" y="217" text-anchor="end">主 agent</text>
+        <text class="n-sub" x="312" y="234">產出唯一正典 specs/[module]/NNN-feature/spec.md</text>
+
+        <rect x="300" y="280" width="380" height="52" rx="4" fill="rgba(30,27,75,0.05)" stroke="#64748B" stroke-width="1"/>
+        <text class="n-title" x="312" y="302">[2a] Spec Lint</text>
+        <text class="n-tag" x="668" y="301" text-anchor="end">階段閘門</text>
+        <text class="n-sub" x="312" y="318">檢查目標／heading／ID／依賴／STATUS 關聯（非四道閘門之一）</text>
+
+        <rect x="300" y="364" width="380" height="52" rx="4" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="1"/>
+        <text class="n-title" x="312" y="386">[3] /label-suite-design（prototype）</text>
+        <text class="n-tag" x="668" y="385" text-anchor="end">主 agent</text>
+        <text class="n-sub" x="312" y="402">先產出 static prototype shell，不得含目標 selector 或 behavior</text>
+
+        <rect x="300" y="448" width="380" height="52" rx="4" fill="rgba(100,116,139,0.10)" stroke="#94A3B8" stroke-width="1"/>
+        <text class="n-title" x="312" y="470">[3a] prototype Playwright Red tests</text>
+        <text class="n-tag" x="668" y="469" text-anchor="end">senior-qa</text>
+        <text class="n-sub" x="312" y="486">先建立並提交預期失敗的測試證據</text>
+
+        <rect x="300" y="532" width="380" height="52" rx="4" fill="rgba(100,116,139,0.10)" stroke="#94A3B8" stroke-width="1"/>
+        <text class="n-title" x="312" y="554">[3b] prototype Green behavior</text>
+        <text class="n-tag" x="668" y="553" text-anchor="end">實作 agent</text>
+        <text class="n-sub" x="312" y="570">依 Red contract 加入 data-testid 與目標 behavior</text>
+
+        <rect x="300" y="616" width="380" height="52" rx="4" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="1"/>
+        <text class="n-title" x="312" y="638">[3c] page design ＋ [4] clarify（選用）</text>
+        <text class="n-tag" x="668" y="637" text-anchor="end">主 agent</text>
+        <text class="n-sub" x="312" y="654">/speckit.clarify 回寫正典 spec 後重走受影響的 Gate</text>
+
+        <rect x="300" y="700" width="380" height="52" rx="4" fill="rgba(30,27,75,0.05)" stroke="#64748B" stroke-width="1"/>
+        <text class="n-title" x="312" y="722">[3d] Frontend Ready Gate</text>
+        <text class="n-tag" x="668" y="721" text-anchor="end">階段閘門</text>
+        <text class="n-sub" x="312" y="738">九項檢查全通過或明示 N/A 與理由，才可進 /opsx:propose</text>
+
+        <rect x="300" y="784" width="380" height="52" rx="4" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="1"/>
+        <text class="n-title" x="312" y="806">[5] /opsx:propose</text>
+        <text class="n-tag" x="668" y="805" text-anchor="end">主 agent</text>
+        <text class="n-sub" x="312" y="822">產出 change 四件套（全繁體中文）→ STATUS：change-open</text>
+
+        <rect x="300" y="868" width="380" height="52" rx="4" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="1"/>
+        <text class="n-title" x="312" y="890">[6] /opsx:apply</text>
+        <text class="n-tag" x="668" y="889" text-anchor="end">主 agent 派工</text>
+        <text class="n-sub" x="312" y="906">依 tasks.md 逐列派工 → 微觀交付迴圈（見圖二）→ 全 task [x]</text>
+
+        <rect x="300" y="952" width="380" height="52" rx="4" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="1"/>
+        <text class="n-title" x="312" y="974">[7] /opsx:archive（只在 final PR group）</text>
+        <text class="n-tag" x="668" y="973" text-anchor="end">final PR</text>
+        <text class="n-sub" x="312" y="990">合併 derived view ＋ 回寫正典 spec（版本升級 + Changelog）</text>
+
+        <rect x="300" y="1036" width="380" height="52" rx="4" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="1"/>
+        <text class="n-title" x="312" y="1058">[8] /pr-flow：final PR merge</text>
+        <text class="n-tag" x="668" y="1057" text-anchor="end">主 agent</text>
+        <text class="n-sub" x="312" y="1074">intermediate merge 後 change 保持 open；final merge 才收尾</text>
+
+        <rect x="300" y="1120" width="380" height="52" rx="4" fill="rgba(30,27,75,0.05)" stroke="#64748B" stroke-width="1"/>
+        <text class="n-title" x="312" y="1142">post-merge：正典歸檔</text>
+        <text class="n-tag" x="668" y="1141" text-anchor="end">merge 後</text>
+        <text class="n-sub" x="312" y="1158">更新 specs/STATUS.md → archived，再將正典移至 specs/_archive/</text>
+      </g>
+
+      <!-- four verification gates -->
+      <text class="eyebrow-svg" x="720" y="716">四道驗證閘門 · 責任互斥、不可互相取代</text>
+      <line x1="720" y1="726" x2="980" y2="726" stroke="#C7D2FE" stroke-width="1"/>
+
+      <rect x="720" y="740" width="260" height="64" rx="4" fill="rgba(30,27,75,0.03)" stroke="rgba(30,27,75,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text class="n-title-sm" x="732" y="760">閘門 1 · OpenSpec schema validation</text>
+      <text class="n-sub" x="732" y="776">唯一責任：schema／delta／scenario 結構</text>
+      <text class="n-sub" x="732" y="792">non-strict；不驗專案 heading／ownership／status</text>
+
+      <rect x="720" y="812" width="260" height="64" rx="4" fill="rgba(30,27,75,0.03)" stroke="rgba(30,27,75,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text class="n-title-sm" x="732" y="832">閘門 2 · Project SDD lint</text>
+      <text class="n-sub" x="732" y="848">唯一責任：專案 headings 與</text>
+      <text class="n-sub" x="732" y="864">goal／status／ownership／retired-path 規則</text>
+
+      <rect x="720" y="884" width="260" height="64" rx="4" fill="rgba(30,27,75,0.03)" stroke="rgba(30,27,75,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text class="n-title-sm" x="732" y="904">閘門 3 · Code/test gates</text>
+      <text class="n-sub" x="732" y="920">Red/Green evidence ＋ type／lint／unit／</text>
+      <text class="n-sub" x="732" y="936">integration／prototype／E2E／security</text>
+
+      <rect x="720" y="956" width="260" height="76" rx="4" fill="#EEF2FF" stroke="#6366F1" stroke-width="1.4"/>
+      <text class="n-title-sm" x="732" y="976">閘門 4 · Source-Verify + write-back</text>
+      <text class="n-sub" x="732" y="992">archive-time 正典 ID／version／Changelog</text>
+      <text class="n-sub" x="732" y="1008">archive 後逐條 grep 驗證 derived view 引用</text>
+      <text class="n-sub" x="732" y="1024" fill="#6366F1">第 1–3 層完成才可執行；只有 final PR 能通過</text>
+
+      <rect x="720" y="1048" width="260" height="52" rx="4" fill="none" stroke="rgba(30,27,75,0.20)" stroke-width="1" stroke-dasharray="4,3"/>
+      <text class="aside" x="732" y="1070">/opsx:verify 可跑適用檢查，</text>
+      <text class="aside" x="732" y="1088">但不取代任何一道閘門。</text>
+
+      <!-- legend -->
+      <line x1="20" y1="1204" x2="980" y2="1204" stroke="rgba(30,27,75,0.12)" stroke-width="1"/>
+      <text class="lg-label" x="20" y="1224">Legend</text>
+      <g>
+        <rect x="20" y="1240" width="14" height="10" rx="2" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="1"/>
+        <text class="lg-item" x="42" y="1249">主 agent 觸發的階段</text>
+        <rect x="220" y="1240" width="14" height="10" rx="2" fill="rgba(100,116,139,0.10)" stroke="#94A3B8" stroke-width="1"/>
+        <text class="lg-item" x="242" y="1249">TDD 交棒（senior-qa Red／實作 agent Green）</text>
+        <rect x="580" y="1240" width="14" height="10" rx="2" fill="rgba(30,27,75,0.05)" stroke="#64748B" stroke-width="1"/>
+        <text class="lg-item" x="602" y="1249">階段閘門（非四道驗證閘門）</text>
+      </g>
+      <g>
+        <rect x="20" y="1264" width="14" height="10" rx="2" fill="rgba(30,27,75,0.03)" stroke="rgba(30,27,75,0.30)" stroke-width="1" stroke-dasharray="4,3"/>
+        <text class="lg-item" x="42" y="1273">四道驗證閘門之一</text>
+        <rect x="220" y="1264" width="14" height="10" rx="2" fill="#EEF2FF" stroke="#6366F1" stroke-width="1.4"/>
+        <text class="lg-item" x="242" y="1273">最終寫回閘門與 Lightweight Path 旁路</text>
+        <line x1="580" y1="1269" x2="594" y2="1269" stroke="#6366F1" stroke-width="1.4" stroke-dasharray="5,4"/>
+        <text class="lg-item" x="602" y="1273">旁路路徑（跳過 OpenSpec change 容器）</text>
+      </g>
+    </svg>
+  </div>
+
+  <h2>圖二 · 微觀交付迴圈：TDD 角色分工與交付時機</h2>
+  <p class="fig-note">
+    <code>/opsx:apply</code> 內部的一輪交付。三個角色的責任不重疊：<strong>senior-qa</strong> 先提交 Red、<strong>實作 agent</strong> 交付 Green、<strong>主 agent</strong> 驗證兩份證據且是唯一可更新 <code>tasks.md</code> checkbox 的角色。最下方兩格說明中間群組與最終群組的交付差異。
+  </p>
+  <div class="diagram-container">
+    <svg viewBox="0 0 1000 664" role="img" aria-labelledby="micro-title micro-desc" xmlns="http://www.w3.org/2000/svg">
+      <title id="micro-title">微觀交付迴圈的角色分工與交付時機</title>
+      <desc id="micro-desc">五條泳道分別為 senior-qa、實作 agent、主 agent、PR 群組層審查與交付。流程依序為 senior-qa 建立並提交 Red test task、主 agent 驗證 Red 證據後打勾、實作 agent 完成 Green implementation、主 agent 執行驗證指令並在 exit 0 後打勾、PR 群組依序完成五項審查，最後分流到中間 PR 群組與最終 PR 群組兩種交付方式。</desc>
+      <rect width="100%" height="100%" fill="#F5F3FF"/>
+
+      <defs>
+        <marker id="arrow-b" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#64748B"/>
+        </marker>
+        <marker id="arrow-accent-b" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#6366F1"/>
+        </marker>
+      </defs>
+      <!-- lanes -->
+      <g>
+        <rect x="0" y="40" width="1000" height="104" fill="rgba(30,27,75,0.03)"/>
+        <rect x="0" y="248" width="1000" height="104" fill="rgba(30,27,75,0.03)"/>
+        <rect x="0" y="456" width="1000" height="104" fill="rgba(30,27,75,0.03)"/>
+        <g stroke="rgba(30,27,75,0.12)" stroke-width="1">
+          <line x1="0" y1="40" x2="1000" y2="40"/>
+          <line x1="0" y1="144" x2="1000" y2="144"/>
+          <line x1="0" y1="248" x2="1000" y2="248"/>
+          <line x1="0" y1="352" x2="1000" y2="352"/>
+          <line x1="0" y1="456" x2="1000" y2="456"/>
+          <line x1="0" y1="560" x2="1000" y2="560"/>
+          <line x1="110" y1="40" x2="110" y2="560"/>
+        </g>
+        <text class="lane-name" x="12" y="96">senior-qa</text>
+        <text class="lane-name" x="12" y="200">實作 agent</text>
+        <text class="lane-name" x="12" y="304">主 agent</text>
+        <text class="lane-name" x="12" y="400">審查</text>
+        <text class="n-sub" x="12" y="416">PR 群組層</text>
+        <text class="lane-name" x="12" y="512">交付</text>
+      </g>
+
+      <!-- connectors -->
+      <g fill="none" stroke="#64748B" stroke-width="1.2">
+        <path d="M 280,92 H 364 Q 372,92 372,100 V 256" marker-end="url(#arrow-b)"/>
+        <path d="M 452,300 H 536 Q 544,300 544,292 V 240" marker-end="url(#arrow-b)"/>
+        <path d="M 624,196 H 708 Q 716,196 716,204 V 256" marker-end="url(#arrow-b)"/>
+        <path d="M 796,300 H 880 Q 888,300 888,308 V 360" marker-end="url(#arrow-b)"/>
+        <path d="M 808,404 H 363 Q 355,404 355,412 V 464" marker-end="url(#arrow-b)"/>
+      </g>
+      <g fill="none" stroke="#6366F1" stroke-width="1.4">
+        <line x1="888" y1="440" x2="888" y2="464" marker-end="url(#arrow-accent-b)"/>
+      </g>
+      <g>
+        <rect x="448" y="380" width="108" height="14" fill="#F5F3FF"/>
+        <text class="a-label" x="502" y="391" text-anchor="middle">中間 PR 群組</text>
+        <rect x="896" y="444" width="88" height="14" fill="#F5F3FF"/>
+        <text class="a-label" x="900" y="455" fill="#6366F1">最終 PR 群組</text>
+      </g>
+
+      <!-- nodes -->
+      <rect x="120" y="56" width="160" height="72" rx="4" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="1"/>
+      <text class="n-tag" x="132" y="76">senior-qa</text>
+      <text class="n-title-sm" x="132" y="94">Red test task</text>
+      <text class="n-sub" x="132" y="110">依 SC/FR/AC 建立，</text>
+      <text class="n-sub" x="132" y="122">提交預期失敗證據</text>
+
+      <rect x="292" y="264" width="160" height="72" rx="4" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="1"/>
+      <text class="n-tag" x="304" y="284">主 agent</text>
+      <text class="n-title-sm" x="304" y="302">① 驗證 Red 證據</text>
+      <text class="n-sub" x="304" y="318">成立才標 [x]</text>
+      <text class="n-sub" x="304" y="330">不符則退回修正 ↺</text>
+
+      <rect x="464" y="160" width="160" height="72" rx="4" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="1"/>
+      <text class="n-tag" x="476" y="180">實作 agent</text>
+      <text class="n-title-sm" x="476" y="198">Green implementation</text>
+      <text class="n-sub" x="476" y="214">依已提交 Red contract</text>
+      <text class="n-sub" x="476" y="226">不得為求通過而改寫</text>
+
+      <rect x="636" y="264" width="160" height="72" rx="4" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="1"/>
+      <text class="n-tag" x="648" y="284">主 agent</text>
+      <text class="n-title-sm" x="648" y="302">② 執行驗證指令</text>
+      <text class="n-sub" x="648" y="318">pytest／mypy／ruff／tsc</text>
+      <text class="n-sub" x="648" y="330">exit 0 才標 [x] ↺</text>
+
+      <rect x="808" y="368" width="160" height="72" rx="4" fill="rgba(30,27,75,0.05)" stroke="#64748B" stroke-width="1"/>
+      <text class="n-tag" x="820" y="388">PR 群組層</text>
+      <text class="n-title-sm" x="820" y="406">③ 群組審查 a–e</text>
+      <text class="n-sub" x="820" y="422">reviewer → qa → security</text>
+      <text class="n-sub" x="820" y="434">→ perf → 使用者確認</text>
+
+      <rect x="150" y="472" width="410" height="72" rx="4" fill="rgba(100,116,139,0.10)" stroke="#94A3B8" stroke-width="1"/>
+      <text class="n-title-sm" x="162" y="496">④ intermediate PR group</text>
+      <text class="n-sub" x="162" y="514">/pr-flow 開 PR → 依 stacked 順序 merge</text>
+      <text class="n-sub" x="162" y="530">OpenSpec change 保持 open，不做 archive</text>
+
+      <rect x="590" y="472" width="380" height="72" rx="4" fill="#EEF2FF" stroke="#6366F1" stroke-width="1.4"/>
+      <text class="n-title-sm" x="602" y="496">④ final PR group（唯一可 archive 者）</text>
+      <text class="n-sub" x="602" y="514">第 1–3 層完成 → Source-Verify → /opsx:archive 回寫正典</text>
+      <text class="n-sub" x="602" y="530">merge 後才更新 STATUS 並移入 specs/_archive/</text>
+
+      <!-- legend -->
+      <line x1="0" y1="592" x2="1000" y2="592" stroke="rgba(30,27,75,0.12)" stroke-width="1"/>
+      <text class="lg-label" x="0" y="612">Legend</text>
+      <g>
+        <text class="lg-item" x="0" y="636">泳道＝責任歸屬；打勾（標 [x]）只有主 agent 可做，senior-qa 與 reviewer 皆不打勾。</text>
+        <text class="lg-item" x="560" y="636">同 task 失敗 ≥ 3 次、同群組退回 ≥ 2 次 → 停下回報使用者。</text>
+      </g>
+    </svg>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <h3><span class="card-dot dot-accent"></span>四道閘門的唯一責任</h3>
+      <ul>
+        <li><b>閘門 1 OpenSpec schema validation</b> — 只驗 schema、delta 與 scenario 結構。採 non-strict schema gate（<code>openspec validate --changes --no-interactive</code>），<b>不</b>驗專案 headings、ownership、status 與 retired path。</li>
+        <li><b>閘門 2 Project SDD lint</b> — 專案 headings 與 goal／status／ownership／retired-path 規則。工具落地前依 workflow checklist 與 review evidence 執行。</li>
+        <li><b>閘門 3 Code/test gates</b> — 受影響實作的 Red/Green evidence 與適用的 type、lint、unit、integration、prototype、E2E、security 指令，外加每個 PR 群組的審查證據。</li>
+        <li><b>閘門 4 Source-Verify + write-back/archive</b> — archive-time 正典 ID、version 與 Changelog 完整性，以及 archive 後逐條 grep 驗證 derived view 的每一條正典引用。</li>
+        <li><code>/opsx:verify</code> 可跑適用檢查，但<b>不取代任何一道閘門</b>；<code>openspec validate</code> 也只是閘門 1。</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="card-dot dot-ink"></span>Lightweight Path 的四個條件</h3>
+      <ul>
+        <li>≤ 2 個生產程式檔變更（spec 與測試檔不計）</li>
+        <li>不涉及 API 契約變更</li>
+        <li>只需小幅度的 spec 行為更新</li>
+        <li><b>不新增也不移除任何 FR／AC，只做釐清</b></li>
+        <li>四條件<b>全部成立</b>才可走 <code>TDD → 實作 → spec 一致性檢查 → /pr-flow</code>；任一條件不確定就回到完整 OpenSpec change 流程。</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="card-dot dot-muted"></span>三層 Sprint 對應</h3>
+      <ul>
+        <li><b>Planner</b> ≈ <code>/speckit.specify</code>、<code>/speckit.clarify</code> 與 OpenSpec propose</li>
+        <li><b>Generator</b> ≈ OpenSpec apply</li>
+        <li><b>Evaluator</b> ≈ 驗證指令與 write-back Source-Verify gate</li>
+        <li>Generator 啟動後範圍即鎖定，sprint 中途不得追加項目。</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>Label Suite · issue #673</span>
+    <span>來源：docs/sdd-workflow.md · CLAUDE.md</span>
+  </div>
+</div>

@@ -1,7 +1,7 @@
 ---
 功能分支: feat/dataset/017-dataset-analysis-detail
 建立日期: 2026-04-24
-版本: 2.2.1
+版本: 2.2.2
 狀態: Draft
 ---
 
@@ -153,6 +153,8 @@ sequenceDiagram
         PL->>STATS: 點擊「統計總覽」tab
     end
 ```
+
+- [試標品質判讀與開放正式標記的決策流程](./diagrams/iaa-quality-decision-flow.html)（上圖只畫雙 Tab 導航；本圖畫的是進入 quality tab 之後的判讀與決策邏輯：`IAA_GATE_EXCLUDED_TYPES` 排除、`De = 0` 無法計算、`IAA_COMPOSITE_GATE_RULE` 全數達標，以及 FR-039 第 1 點「顧問性、不得阻擋」——四種結果一律匯流到專案負責人的人工決定）
 
 | Step | Role | Action | System Response |
 |------|------|--------|----------------|
@@ -589,6 +591,7 @@ flowchart LR
 
 | Version | Date | Change Summary |
 | --- | --- | --- |
+| 2.2.2 | 2026-09-07 | **新增「試標品質判讀與開放正式標記的決策流程」圖（patch，無條文變更）**（issue #677）：本規格的 IAA 判讀規則原本只以純文字分散於規格常數區（`IAA_GATE_EXCLUDED_TYPES`、`IAA_COMPOSITE_GATE_RULE`、`IAA_SMALL_SAMPLE_THRESHOLD`、`IAA_SUMMARY_STATES`）、AC-3.16 與 FR-039，讀者必須自行拼出「一個輸出類型會走到哪一種結果」。新增 `diagrams/iaa-quality-decision-flow.html`（自給自足單檔 HTML，依 issue #528 維護者裁定 Q4：僅連結、不附 PNG），並於「流程圖」章節加上連結。圖的結構為三個判斷（要不要算一致性／算不算得出來／是否全數達標）→ 四種結果（不適用—由審核員評估、無法計算、未達標警示、全數達標）→ 一個人工決定點，共 9 節點 11 箭頭。**刻意不使用「閘門」／`gate` 字眼**：issue #677 原標題的「品質關卡」硬閘門語意與 FR-039 第 1 點「IAA 為顧問性指標⋯⋯不得阻擋使用者進入正式標記」矛盾，故改稱「判讀與決策」，並以三重視覺表達非阻擋語意——唯一的 accent 焦點節點是人工決定點、四條結果線全部以 accent 色匯流到同一終點並標註「四條路都通到這裡 · 沒有一條是門」、standfirst 明寫「這裡沒有任何一道門」；圖中不存在任何「退回修正」節點。小樣本（`IAA_SMALL_SAMPLE_THRESHOLD = 5`）依 FR-034「不阻擋達標判定」語意以編輯性旁註呈現，不佔判斷節點。圖底另附 FR-038 兩個導頁出口與 FR-029 角色限制。走 Lightweight Path：僅新增文件與連結，未新增或移除任何 FR／AC，未變更 API 契約。 |
 | 2.2.1 | 2026-09-05 | **補上 `## 功能目標` 章節與驗收情境 AC-N.N 穩定 ID（patch，無條文變更）**：本規格建立於 AC 穩定 ID 標準（spec-template v1.5.0）之前，且缺少 `## 功能目標` 章節，導致 `scripts/check-sdd.sh` 的 `SPEC_REQUIRED_HEADING`／`SPEC_REQUIRED_IDS` 規則將本檔標記為結構不完整，後續 OpenSpec change 亦無穩定情境編號可引用。本版純為結構補完：新增 `## 功能目標` 章節摘要本規格目的；依既有標準為四組使用者故事共 34 條驗收情境補上 `AC-<故事編號>.<情境序號>` 前綴（AC-1.1~1.4、AC-2.1~2.10、AC-3.1~3.17、AC-4.1~4.3）。情境文字、FR/SC 條文與編號順序皆未更動，不新增或刪除任何 FR/AC。 |
 | 2.2.0 | 2026-08-27 | **017 成為 IAA 閘門語意與標記員被修改率之跨模組唯一權威來源（SSoT，minor）**：六張 issue（#488/#489/#490/#491/#492/#456）收斂到同一根因——試標品質數值缺乏 SSoT，經維護者裁決 017 承接此角色。新增 **FR-039**（IAA 閘門語意 SSoT）：定案並升格為跨模組正典（1）IAA 為顧問性指標、`waiting_iaa_confirmation` 為軟性警告不阻擋流程（承接並升格既有 FR-034 語意）；（2）α 輸入僅限標記員原始標記，審核員修正值不計入；（3）α 以單一 `trial_round` 為計算單位、不跨回合累積；（4）`De = 0`（有效樣本 `< 2` 或有效標記員 `< 2`）時必須顯示「無法計算」，不得回退顯示 `0.00` 或阻擋流程；（5）排除規則明文引用 `task-management-014` FR-005h（排除作業不計入）與 FR-005l（停用成員既有標記仍計入），不重新定義；（6）Bypass 視為缺值，不計入分母、不得比對為空白答案。新增 **FR-040**（標記員被修改率，另立區塊）：新規格常數 `ANNOTATOR_MODIFICATION_RATE_SCOPE`（8 型全納，含 `free_text`——與 `ANNOTATOR_QUALITY_RANKING_SCOPE` 排除 `free_text` 之 7 型範圍刻意不同，理由是被修改率不依賴跨標記員比對，且是 `free_text` 唯一可能擁有的品質指標，故未併入既有 FR-036／`AnnotatorQualityRankingEntry`）；新實體 `AnnotatorModificationRateEntry`；分子明文禁止以 `annotation-015` `REVIEW_UNIT_STATUS.MODIFIED`（FR-051）狀態值計數（該狀態語意為「有改動且未達 `min_reviewers` 門檻」，會漏計所有已達門檻的改動單位），須改以 FR-052 逐輸出類型差異比對結果為準；分母排除 `pending`（未審 ≠ 未修改）；呈現形狀為任務層級表格（列 = 標記員），置於逐輸出類型迴圈之外，區塊 A-5。**run_type 範圍限縮**：指標定義本身與 `run_type` 無關（`official_run` 每筆樣本恰一位標記員、α 無法計算，被修改率為其唯一逐標記員品質訊號），但本版呈現僅落地 `dry_run` 區塊，因 quality tab 現行整體綁定 `dry_run`（`QUALITY_EMPTY_STATE_TRIGGER` 等）；`official_run` 呈現位置留待後續變更。**兩項規格可寫但原型不落實，明文記載**：(1) 排除規則一（Bypass）需要 `annotation-015` `OutputAnswer.bypass` 旗標帶入原型 `convertSubmissionAnswer()` 的 CompactAnswer 輸出（現況不帶）；(2) 排除規則二（`ExcludedAnnotationAssignment`）需要後端共用儲存，原型排除清單現為 task-detail 頁面區域記憶體變數、標記工作區零知悉。新增使用者故事 3 驗收情境 16、17 與 SC-029 ~ SC-032。**修正反向懸空引用**：規格常數區「逐型一致性最低樣本清單」段落、FR-035A、行為規則段落、`LowConsistencySampleList` 實體、規格相依性表 `annotation-015` 列、SC-026 共 6 處原引用 `annotation-015`（v3.0.0）dry_run 共識仲裁流程中的「divergent」分歧項為同源概念、並宣告「仲裁行為以 `annotation-015` 為準」——該流程已於 `annotation-015` v4.0.0（見其「使用者故事 3」的「⚠️ v4.0.0 適用範圍再次收斂（BREAKING）」段落）整批廢止，繼續援引將形成 017 ↔ 015 循環授權（017 已為 IAA SSoT，卻將仲裁權威外推回已死流程）；修正為 017 自行定義一致性最低樣本清單，不再外推仲裁規則，並改引用 `annotation-015` 現行審核單位狀態機（`ReviewUnit`／`REVIEW_UNIT_STATUS`，FR-051）與爭議池作為對照說明。規格相依性表同步更新 `task-management-014`／`annotation-015` 兩列，明確列出 FR-005h／FR-005l／FR-051／FR-052／`OutputAnswer.bypass` 為本版新增之上游引用。 |
 | 2.1.2 | 2026-08-24 | Issue #261 drift 修正（FR-002 / `INVALID_TASK_TRIGGER`）：`dataset-analysis-detail.html` 的 `applyRouteTask()` 先前對未知或缺漏的 `task_id` 靜默回退至 `DEFAULT_TASK_ID`（T001），與本規格 FR-002／邊界情況「`task_id` 不存在或無成員資格時導回 `/dataset-analysis` 並顯示錯誤提示」不符——規格條文原本正確，僅原型未落實。修正為 init 階段先驗證 `task_id` 是否存在於 `TASK_META`，不存在則導向 `dataset-analysis-list.html?invalid_task=1`，列表頁讀取該參數並顯示錯誤 toast（新增 i18n 鍵 `toastInvalidTask`，zh／en 皆定義），顯示後即由既有 `syncUrl()` 清除該查詢參數。回歸測試：`dataset-analysis-detail-registry-mirror.spec.ts` 原本鎖定「未知 ID 仍回退預設任務」的測試改為斷言正確的導回行為，並新增「缺漏 `task_id`」情境；連帶修正兩個原本依賴回退行為省略 `task_id` 查詢字串的既有測試（`dataset-analysis-detail-panel-behavior.spec.ts`、`tests/shared/page-heading-baseline.spec.ts`）改為明確帶入有效 `task_id`。規格條文未變。 |

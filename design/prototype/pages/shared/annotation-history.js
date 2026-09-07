@@ -165,17 +165,16 @@
         return { start: entity.start, end: entity.end, label: entity.type, text: entity.text };
       });
     },
-    /* Spans carry their own character offsets since issue #581 moved this
-       type off per-token BIO tags, so the token index is no longer the
-       position and a span can be longer than one unit. The retired `.tokens`
-       read that stood here survived that migration and returned an empty
-       list for every snapshot, which the panel rendered as "no change" with
-       no error to notice -- issue #684. `text` falls back to the label
-       because the restore path keeps only `(start, end, label)`. */
+    /* issue #581 change 2 (PR #657) moved this output type off the token
+       grid: previewState.sequence_tagging now holds `spans[]` of half-open
+       character offsets, the same shape entity_recognition already used.
+       `text` is left for the caller to resolve (this module has no access
+       to the sample's source text), matching the entity_recognition entries
+       above only where a snapshot happens to carry it already. */
     sequence_tagging: function (snapshot) {
       var spans = ((snapshot.previewState || {}).sequence_tagging || {}).spans;
       return (Array.isArray(spans) ? spans : []).map(function (span) {
-        return { start: span.start, end: span.end, label: span.label, text: span.text || span.label };
+        return { start: span.start, end: span.end, label: span.label };
       });
     },
   };

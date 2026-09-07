@@ -1729,10 +1729,19 @@
   /* FR-087: position-bearing types list one row per entity, so a boundary
      that moved is visible even when the entity count did not change. The
      comparator itself lives in the shared history module -- this only
-     decides how a change reads. */
+     decides how a change reads.
+
+     entity_recognition spans already carry `text` (denormalized at
+     creation, per placeCompactEntities); sequence_tagging spans do not
+     (the shared module has no access to the sample's source text), so it
+     is resolved here the same way buildSequencePairsFromSpans() does. */
+  function positionalDiffText(span) {
+    if (span.text != null) return span.text;
+    return (getDatasetPreviewText() || '').substring(span.start, span.end);
+  }
   function positionalDiffItems(outKey, before, after) {
     return window.LabelSuiteAnnotationHistory.diffPositional(outKey, before, after).map(function (change) {
-      var label = outKey + ': ' + change.span.label + ' ' + change.span.text + ' ';
+      var label = outKey + ': ' + change.span.label + ' ' + positionalDiffText(change.span) + ' ';
       return diffItem(
         change.kind,
         change.kind === 'boundary'
