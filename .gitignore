@@ -81,3 +81,4 @@ frontend/src/routes/__eslint_boundary_fixture*__/
 # Prototype analytics local config (contains dev token)
 design/prototype/assets/analytics.config.local.json
 .worktrees/
+.claude/worktrees/
