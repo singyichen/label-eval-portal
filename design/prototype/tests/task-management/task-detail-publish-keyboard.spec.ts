@@ -50,6 +50,27 @@ test.describe('Publish actions are keyboard-operable (A11Y-03)', () => {
   test('Enter on the focused 標記完成 button completes the task', async ({ page }) => {
     await page.goto(TASK_DETAIL_URL + '&status=official_run_in_progress');
 
+    // issue #688 FR-008b: completion is now gated on five preconditions.
+    // T001's DEFAULT_REVIEW_WORKLOAD/DEFAULT_ANNOTATION_PROGRESS seed a
+    // demo dispute/pending backlog that isn't meant to represent "ready to
+    // complete" -- clear it so this keyboard-activation scenario keeps
+    // testing what it actually targets (Enter fires the same handler as a
+    // click), not the unrelated gate.
+    await page.evaluate(() => {
+      const win = window as unknown as {
+        REVIEW_WORKLOAD: { unassignedCount: number; disputeCount: number; byReviewer: Record<string, { pending: number }>; exceptionPoolItems?: unknown[] };
+        ANNOTATION_PROGRESS: { official: { totalSamples: number; completedSamples: number; iaa: number | null } };
+        UNASSIGNED_ANNOTATION_ASSIGNMENTS: unknown[];
+      };
+      win.REVIEW_WORKLOAD.unassignedCount = 0;
+      win.REVIEW_WORKLOAD.disputeCount = 0;
+      Object.values(win.REVIEW_WORKLOAD.byReviewer).forEach((load) => { load.pending = 0; });
+      win.REVIEW_WORKLOAD.exceptionPoolItems = [];
+      win.UNASSIGNED_ANNOTATION_ASSIGNMENTS.length = 0;
+      win.ANNOTATION_PROGRESS.official.completedSamples = win.ANNOTATION_PROGRESS.official.totalSamples;
+      win.ANNOTATION_PROGRESS.official.iaa = 0.8;
+    });
+
     const completeBtn = page.getByRole('button', { name: '標記完成' });
     await expect(completeBtn).toBeVisible();
     await completeBtn.focus();

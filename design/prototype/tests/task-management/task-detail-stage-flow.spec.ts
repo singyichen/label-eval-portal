@@ -63,6 +63,26 @@ test('keeps the 4-stage stepper while showing a complete trial-to-official flow'
   await expect(page.locator('.exec-stage-banner #trialDecisionTitle')).toHaveText('正式標記進行中，共 3 筆');
   await expect(page.locator('#publishCompleteBtn')).toHaveText('標記完成');
 
+  // issue #688 FR-008b: completion is now gated on five preconditions.
+  // T001's DEFAULT_REVIEW_WORKLOAD/DEFAULT_ANNOTATION_PROGRESS seed a demo
+  // dispute/pending backlog that isn't meant to represent "ready to
+  // complete" -- clear it so this stage-flow scenario keeps testing the
+  // stepper/banner transition it actually targets, not the unrelated gate.
+  await page.evaluate(() => {
+    const win = window as unknown as {
+      REVIEW_WORKLOAD: { unassignedCount: number; disputeCount: number; byReviewer: Record<string, { pending: number }>; exceptionPoolItems?: unknown[] };
+      ANNOTATION_PROGRESS: { official: { totalSamples: number; completedSamples: number; iaa: number | null } };
+      UNASSIGNED_ANNOTATION_ASSIGNMENTS: unknown[];
+    };
+    win.REVIEW_WORKLOAD.unassignedCount = 0;
+    win.REVIEW_WORKLOAD.disputeCount = 0;
+    Object.values(win.REVIEW_WORKLOAD.byReviewer).forEach((load) => { load.pending = 0; });
+    win.REVIEW_WORKLOAD.exceptionPoolItems = [];
+    win.UNASSIGNED_ANNOTATION_ASSIGNMENTS.length = 0;
+    win.ANNOTATION_PROGRESS.official.completedSamples = win.ANNOTATION_PROGRESS.official.totalSamples;
+    win.ANNOTATION_PROGRESS.official.iaa = 0.8;
+  });
+
   await page.locator('#publishCompleteBtn').click();
 
   await expect(page.locator('#statusStepper .step-current .step-label-wrap')).toHaveText('已完成');
