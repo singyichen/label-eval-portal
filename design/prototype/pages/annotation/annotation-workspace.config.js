@@ -1511,8 +1511,7 @@
         currentRunType,
         unit.recordId,
         unitIdentity(unit),
-        state.selectedOutputTypes,
-        { minReviewers: currentProfile.minReviewers || 1 }
+        state.selectedOutputTypes
       ) || 'pending'
     );
   }
@@ -3376,8 +3375,7 @@
 
   function currentReviewUnitStatus() {
     return window.LabelSuiteAnnotationWorkspaceData.getReviewUnitStatus(
-      currentProfile.id, currentRunType, currentSampleId, currentIdentity, state.selectedOutputTypes,
-      { minReviewers: currentProfile.minReviewers || 1 }
+      currentProfile.id, currentRunType, currentSampleId, currentIdentity, state.selectedOutputTypes
     );
   }
 
@@ -4702,8 +4700,7 @@
        keeps any residual invocation path inert. Evaluated at entry, so the
        submit that CAUSES the finalize still goes through. */
     var lockedStatus = window.LabelSuiteAnnotationWorkspaceData.getReviewUnitStatus(
-      currentProfile.id, currentRunType, currentSampleId, currentIdentity, state.selectedOutputTypes,
-      { minReviewers: currentProfile.minReviewers || 1 }
+      currentProfile.id, currentRunType, currentSampleId, currentIdentity, state.selectedOutputTypes
     );
     if (lockedStatus === window.LabelSuiteAnnotationWorkspaceData.REVIEW_UNIT_STATUS.FINALIZED) return;
     var rowsByOutKey = {};

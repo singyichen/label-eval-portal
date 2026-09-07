@@ -69,9 +69,6 @@
          false so tasks that never set it keep today's no-gate behavior. */
       forceShowGuideline: detail.forceShowGuideline || false,
       materializedRuns: detail.materializedRuns || null,
-      /* Per-task min_reviewers threshold (review-flow demo Phase 2):
-         profiles without the seed keep MIN_REVIEWERS_DEFAULT = 1. */
-      minReviewers: detail.minReviewers || 1,
     };
   }
 
@@ -2583,7 +2580,6 @@
     var detail = findTaskDetailProfile(taskId);
     if (!listEntry || !detail) return [];
     var outKeys = listEntry.outputTypes || [];
-    var opts = { minReviewers: detail.minReviewers || 1 };
     var units = [];
     (detail.datasetRecords || []).forEach(function (record, index) {
       var sampleId = getRecordId(record, index);
@@ -2592,7 +2588,7 @@
           sampleId: sampleId,
           annotatorId: mockRow.annotator,
           status: getReviewUnitStatus(
-            taskId, runType, sampleId, { annotatorId: mockRow.annotator }, outKeys, opts),
+            taskId, runType, sampleId, { annotatorId: mockRow.annotator }, outKeys),
         });
       });
     });
