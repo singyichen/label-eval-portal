@@ -2644,6 +2644,27 @@
       disputePoolTpl: '爭議池 {count} 項待仲裁',
       exceptionPoolTpl: '例外池 {count} 項待處置',
       publishArbiterWarningText: '未指定仲裁者將導致無法結案：爭議項目將無人可仲裁，並持續堆積在爭議池中。',
+      exceptionPoolSectionTitleTpl: '最終例外池 · {count} 項待處置',
+      exceptionPoolEmptyState: '最終例外池已清空',
+      exceptionPoolFilterAll: '全部',
+      exceptionPoolFilterDry: '試標',
+      exceptionPoolFilterOfficial: '正式標記',
+      thExceptionSample: '樣本 ID',
+      thExceptionAnnotator: '標記員',
+      thExceptionReviewer: '審核員',
+      thExceptionOutputType: '爭議輸出類型',
+      thExceptionArbiter: '仲裁者',
+      thExceptionReason: '理由',
+      thExceptionEnteredAt: '落入例外池時間',
+      thExceptionActions: '操作',
+      exceptionPoolResolveBtn: '前往處置',
+      exceptionPoolTabBlocked: 'reviewer 無權限檢視最終例外池，已導回任務概覽。',
+      toastCompletionBlockedMembers: '結案前置條件尚未滿足，無法標記完成：',
+      completionGapSubmissionsPendingTpl: '正式標記作業尚有 {count} 筆未提交',
+      completionGapReviewUnitsPendingTpl: '尚有 {count} 個審核單位待定稿',
+      completionGapReviewUnitsDisputedTpl: '尚有 {count} 個審核單位爭議中',
+      completionGapExceptionPoolTpl: '最終例外池尚有 {count} 項待處置',
+      completionGapQualityMetricsTpl: '品質指標尚未計算完成',
       progressSummaryTitle: '整體進度摘要',
       progressStageDry: '試標',
       progressStageOfficial: '正式標記',
@@ -3116,6 +3137,27 @@
       disputePoolTpl: 'Dispute pool · {count} awaiting arbitration',
       exceptionPoolTpl: 'Exception pool · {count} awaiting resolution',
       publishArbiterWarningText: 'Not designating an arbiter roster will block task completion: disputed items will have no one to arbitrate and will keep piling up in the dispute pool.',
+      exceptionPoolSectionTitleTpl: 'Final exception pool · {count} pending resolution',
+      exceptionPoolEmptyState: 'Final exception pool is clear',
+      exceptionPoolFilterAll: 'All',
+      exceptionPoolFilterDry: 'Dry Run',
+      exceptionPoolFilterOfficial: 'Official Run',
+      thExceptionSample: 'Sample ID',
+      thExceptionAnnotator: 'Annotator',
+      thExceptionReviewer: 'Reviewer',
+      thExceptionOutputType: 'Disputed output type',
+      thExceptionArbiter: 'Arbiter',
+      thExceptionReason: 'Reason',
+      thExceptionEnteredAt: 'Entered pool at',
+      thExceptionActions: 'Actions',
+      exceptionPoolResolveBtn: 'Resolve',
+      exceptionPoolTabBlocked: 'reviewer has no permission to view the final exception pool; returned to task overview.',
+      toastCompletionBlockedMembers: 'Completion preconditions not met, cannot mark complete: ',
+      completionGapSubmissionsPendingTpl: '{count} official-run annotations not yet submitted',
+      completionGapReviewUnitsPendingTpl: '{count} review units still awaiting review',
+      completionGapReviewUnitsDisputedTpl: '{count} review units in dispute',
+      completionGapExceptionPoolTpl: '{count} items pending in the final exception pool',
+      completionGapQualityMetricsTpl: 'Quality metrics not yet computed',
       progressSummaryTitle: 'Progress summary',
       progressStageDry: 'Dry Run',
       progressStageOfficial: 'Official Run',
@@ -3469,6 +3511,23 @@
         user_kevin: { pending: 1, done: 2 },
         user_rachel: { pending: 0, done: 0 },
       },
+      /* FR-018 (issue #688 group 2): oft-01-final-exception (its own name,
+         REVIEW_FLOW_UNITS above) is T017's one arbitrated-reject sample --
+         two reviewers tied and the arbiter judged it "兩者皆非", so it never
+         resolves through REVIEW_FLOW_UNITS's rv/arb pair and instead needs
+         the final exception pool's own resolution screen (015 FR-095). */
+      exceptionPoolItems: [
+        {
+          sampleId: 'oft-01-final-exception',
+          runType: 'official_run',
+          annotatorId: 'kioleemg12',
+          reviewerId: 'reviewer_wang',
+          disputeOutputType: 'single_label',
+          arbiterId: 'reviewer_chen',
+          arbiterReason: '兩位審核員意見僵持不下，樣本語意本身模糊，判定為兩者皆非。',
+          enteredAt: '2026-08-22 11:20',
+        },
+      ],
     },
   };
   var REVIEW_WORKLOAD = cloneData(DEFAULT_REVIEW_WORKLOAD);
@@ -3688,6 +3747,8 @@
     publishingOfficialRun: false,
     pendingMemberAction: null,
     pendingReviewerTabToast: false,
+    pendingExceptionPoolToast: false,
+    exceptionPoolFilter: 'all',
     overviewEditMode: false,
     overviewDirty: false,
     guidelineEditMode: false,
@@ -4729,9 +4790,14 @@ function interpolate(template, payload) {
     if (tab === 'member-management') resolvedTab = 'member-management';
     if (tab === 'annotation-progress') resolvedTab = 'annotation-progress';
     if (tab === 'work-log') resolvedTab = 'work-log';
-    var allowed = setTabByRole(resolvedTab, true);
+    var focusExceptionPool = resolvedTab === 'annotation-progress' && params.get('focus') === 'exception-pool';
+    var allowed = setTabByRole(resolvedTab, true, focusExceptionPool);
     if (!allowed) {
-      state.pendingReviewerTabToast = true;
+      if (focusExceptionPool) {
+        state.pendingExceptionPoolToast = true;
+      } else {
+        state.pendingReviewerTabToast = true;
+      }
     }
   }
 
@@ -5065,6 +5131,10 @@ function interpolate(template, payload) {
     if (state.pendingReviewerTabToast) {
       state.pendingReviewerTabToast = false;
       showToast(t('reviewerTabBlocked'), true);
+    }
+    if (state.pendingExceptionPoolToast) {
+      state.pendingExceptionPoolToast = false;
+      showToast(t('exceptionPoolTabBlocked'), true);
     }
   }
 
@@ -6769,7 +6839,7 @@ function getTaskTypeLabel() {
     return role === 'reviewer' ? 'role-badge role-badge-reviewer' : 'role-badge role-badge-annotator';
   }
 
-  function setTabByRole(tabName, silent) {
+  function setTabByRole(tabName, silent, blockExceptionPoolFocus) {
     var nextTab = 'overview';
     if (tabName === 'member-management') nextTab = 'member-management';
     if (tabName === 'annotation-results') nextTab = 'annotation-results';
@@ -6781,6 +6851,18 @@ function getTaskTypeLabel() {
     if (state.taskRole === 'reviewer' && nextTab === 'member-management') {
       state.activeTab = 'overview';
       if (!silent) showToast(t('reviewerTabBlocked'), true);
+      return false;
+    }
+    /* FR-018 point 4 / FR-006 (issue #688 group 2): the exception-pool
+       section is project_leader-only, but the annotation-progress tab
+       itself stays shared -- a reviewer browsing the tab normally just
+       never sees the section (renderExceptionPool()'s own role check).
+       Only a direct link explicitly targeting the section (?focus=
+       exception-pool) is redirected + toasted, matching FR-006's own
+       member-management block. */
+    if (state.taskRole === 'reviewer' && nextTab === 'annotation-progress' && blockExceptionPoolFocus) {
+      state.activeTab = 'overview';
+      if (!silent) showToast(t('exceptionPoolTabBlocked'), true);
       return false;
     }
     state.activeTab = nextTab;
@@ -7208,7 +7290,7 @@ function getTaskTypeLabel() {
     setText('thAssignPending', t('thAssignPending'));
     setText('thAssignDone', t('thAssignDone'));
     setText('disputePoolText', interpolate(t('disputePoolTpl'), { count: REVIEW_WORKLOAD.disputeCount }));
-    setText('exceptionPoolText', interpolate(t('exceptionPoolTpl'), { count: REVIEW_WORKLOAD.exceptionCount || 0 }));
+    setText('exceptionPoolText', interpolate(t('exceptionPoolTpl'), { count: getExceptionPoolItems().length }));
 
     while (body.firstChild) body.removeChild(body.firstChild);
     getActiveReviewerMembers().forEach(function(member) {
@@ -7916,6 +7998,138 @@ function getTaskTypeLabel() {
     document.getElementById('memberProgressSection').classList.toggle('hidden', empty);
   }
 
+  /* FR-018 (issue #688 group 2): items derive from REVIEW_WORKLOAD's
+     per-task seed the same way disputeCount/unassignedCount already do --
+     no cross-module live read, matching this file's existing demo-seeded
+     convention (design.md D6's "逐列內容由審核單位推導" is satisfied by that
+     seed being an arbitrated-reject sample, not by a live localStorage
+     scan of every review unit on every render). */
+  function getExceptionPoolItems(runType) {
+    var items = REVIEW_WORKLOAD.exceptionPoolItems || [];
+    if (!runType || runType === 'all') return items;
+    return items.filter(function(item) { return item.runType === runType; });
+  }
+
+  function navigateToExceptionPoolItem(item) {
+    var params = new URLSearchParams();
+    params.set('task_id', TASK_DATA.taskId);
+    params.set('run_type', item.runType);
+    params.set('annotator_id', item.annotatorId);
+    params.set('sample_id', item.sampleId);
+    params.set('role', 'project_leader');
+    window.location.href = '../annotation/annotation-workspace.html?' + params.toString();
+  }
+
+  function renderExceptionPool() {
+    var section = document.getElementById('exceptionPoolSection');
+    if (!section) return;
+    var isLeader = state.taskRole === 'project_leader';
+    section.classList.toggle('hidden', !isLeader);
+    if (!isLeader) return;
+
+    var filterSelect = document.getElementById('exceptionPoolRunTypeFilter');
+    if (filterSelect) filterSelect.value = state.exceptionPoolFilter;
+    setText('exceptionPoolFilterAllOpt', t('exceptionPoolFilterAll'));
+    setText('exceptionPoolFilterDryOpt', t('exceptionPoolFilterDry'));
+    setText('exceptionPoolFilterOfficialOpt', t('exceptionPoolFilterOfficial'));
+    setText('thExceptionSample', t('thExceptionSample'));
+    setText('thExceptionAnnotator', t('thExceptionAnnotator'));
+    setText('thExceptionReviewer', t('thExceptionReviewer'));
+    setText('thExceptionOutputType', t('thExceptionOutputType'));
+    setText('thExceptionArbiter', t('thExceptionArbiter'));
+    setText('thExceptionReason', t('thExceptionReason'));
+    setText('thExceptionEnteredAt', t('thExceptionEnteredAt'));
+    setText('thExceptionActions', t('thExceptionActions'));
+
+    var items = getExceptionPoolItems(state.exceptionPoolFilter);
+    setText('exceptionPoolSectionTitle', interpolate(t('exceptionPoolSectionTitleTpl'), { count: items.length }));
+
+    var tableWrap = document.getElementById('exceptionPoolTableWrap');
+    var emptyEl = document.getElementById('exceptionPoolEmpty');
+    var tbody = document.getElementById('exceptionPoolBody');
+    while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+
+    if (!items.length) {
+      tableWrap.classList.add('hidden');
+      emptyEl.classList.remove('hidden');
+      emptyEl.textContent = t('exceptionPoolEmptyState');
+      return;
+    }
+    tableWrap.classList.remove('hidden');
+    emptyEl.classList.add('hidden');
+
+    items.forEach(function(item) {
+      var tr = document.createElement('tr');
+
+      function td(text) {
+        var cell = document.createElement('td');
+        cell.textContent = text;
+        return cell;
+      }
+
+      tr.appendChild(td(item.sampleId));
+      tr.appendChild(td(item.annotatorId));
+      tr.appendChild(td(item.reviewerId));
+      tr.appendChild(td(item.disputeOutputType));
+      tr.appendChild(td(item.arbiterId));
+      tr.appendChild(td(item.arbiterReason));
+      tr.appendChild(td(item.enteredAt));
+
+      var actionTd = document.createElement('td');
+      var resolveBtn = document.createElement('button');
+      resolveBtn.type = 'button';
+      resolveBtn.className = 'mini-btn mini-btn-primary';
+      resolveBtn.textContent = t('exceptionPoolResolveBtn');
+      resolveBtn.addEventListener('click', function() {
+        navigateToExceptionPoolItem(item);
+      });
+      actionTd.appendChild(resolveBtn);
+      tr.appendChild(actionTd);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  /* FR-008b (issue #688 group 2): closure gate for official_run_in_progress
+     -> completed. ANNOTATION_PROGRESS.official / REVIEW_WORKLOAD are this
+     file's existing per-task demo counters (same ones renderProgressSummary/
+     renderReviewAssignment already read); getCompletionGapReasons() is the
+     pure precondition formula (task-detail.data.js). Condition 5 (品質指標
+     計算完成可用) reuses ANNOTATION_PROGRESS.official.iaa's existing
+     null-means-not-yet-computed sentinel (renderProgressSummary already
+     treats null the same way) rather than extending computeIaaAlpha() to
+     official_run, which every current call site hardcodes to dry_run. */
+  var COMPLETION_GAP_TPL_KEYS = {
+    submissions_pending: 'completionGapSubmissionsPendingTpl',
+    review_units_pending: 'completionGapReviewUnitsPendingTpl',
+    review_units_disputed: 'completionGapReviewUnitsDisputedTpl',
+    exception_pool_pending: 'completionGapExceptionPoolTpl',
+    quality_metrics_unavailable: 'completionGapQualityMetricsTpl'
+  };
+
+  function getCompletionGapMessages() {
+    var stageData = ANNOTATION_PROGRESS.official;
+    var excludedCount = getAssignmentCount(getExcludedForStage('official'));
+    var unassignedCount = getAssignmentCount(getUnassignedForStage('official'));
+    var effectiveTotal = Math.max(0, stageData.totalSamples - excludedCount);
+    var pendingSubmissions = Math.max(0, effectiveTotal - stageData.completedSamples) + unassignedCount;
+    var pendingReviewUnits = REVIEW_WORKLOAD.unassignedCount + Object.keys(REVIEW_WORKLOAD.byReviewer).reduce(function(sum, id) {
+      return sum + REVIEW_WORKLOAD.byReviewer[id].pending;
+    }, 0);
+
+    var reasons = window.LabelSuiteTaskDetailData.getCompletionGapReasons({
+      pendingOfficialSubmissions: pendingSubmissions,
+      pendingReviewUnits: pendingReviewUnits,
+      disputedReviewUnits: REVIEW_WORKLOAD.disputeCount,
+      exceptionPoolItems: REVIEW_WORKLOAD.exceptionPoolItems || [],
+      qualityMetricsComputable: stageData.iaa != null
+    });
+
+    return reasons.map(function(reason) {
+      return interpolate(t(COMPLETION_GAP_TPL_KEYS[reason.code]), { count: reason.count });
+    });
+  }
+
   function renderAnnotationProgress() {
     renderProgressRoundPills();
     renderProgressSummary();
@@ -7923,6 +8137,7 @@ function getTaskTypeLabel() {
     renderMemberProgressTable();
     renderRoundProgressList();
     renderProgressEmptyState();
+    renderExceptionPool();
   }
 
   function getWorkLogStageLabel(stage) {
@@ -9287,6 +9502,12 @@ function getTaskTypeLabel() {
   }
 
   function publishComplete() {
+    var gapMessages = getCompletionGapMessages();
+    if (gapMessages.length) {
+      showToast(t('toastCompletionBlockedMembers') + gapMessages.join(t('memberGapJoiner')), true);
+      trackEvent('prototype_publish_failed', { reason: 'completion_gap: ' + gapMessages.join(', ') });
+      return;
+    }
     TASK_DATA.status = 'completed';
     TASK_DATA.updatedAt = '2026-05-06 18:20';
     showToast(t('toastPublishedComplete'));
@@ -9892,6 +10113,12 @@ document.getElementById('memberProgressSort').addEventListener('change', functio
       state.wlPage = 1;
       renderWorkLog();
       trackEvent('prototype_work_log_filter_changed', { filter: 'run_stage', value: state.workLogStage });
+    });
+
+    document.getElementById('exceptionPoolRunTypeFilter').addEventListener('change', function(e) {
+      state.exceptionPoolFilter = e.target.value || 'all';
+      renderExceptionPool();
+      trackEvent('prototype_exception_pool_filter_changed', { run_type: state.exceptionPoolFilter });
     });
 
     document.getElementById('workLogMemberSelect').addEventListener('change', function(e) {
