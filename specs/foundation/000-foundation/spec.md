@@ -1,7 +1,7 @@
 ---
 功能分支: feat/foundation/000-foundation
 建立日期: 2026-05-29
-版本: 1.12.4
+版本: 1.12.5
 狀態: Draft
 ---
 
@@ -350,6 +350,8 @@ Domain 常數不得放入本節。狀態節點、演算法、執行類型、保�
 ### F-02：Backend 分層架構（P0）
 
 **目標**：確保 backend 各層職責清晰分離，讓 route、service、repository helper、schema 均可獨立測試，並避免應用規則散落於 HTTP 層或 DB 操作層。
+
+**分層契約圖**：[`diagrams/backend-layering-and-celery-boundary.html`](./diagrams/backend-layering-and-celery-boundary.html)（issue #670）以圖面呈現本節與 F-12 的責任邊界、依賴方向與 Celery 任務邊界。該圖為衍生視圖，條文以本節與 F-12 為準；圖上標示為「規格未定義」的項目尚未被任何 FR 或約束情境涵蓋，不得當作已核准規則實作。
 
 **約束情境 1 — 層次職責**：
 
@@ -845,6 +847,7 @@ Domain 常數不得放入本節。狀態節點、演算法、執行類型、保�
 
 | 版本 | 日期 | 變更摘要 |
 |------|------|---------|
+| 1.12.5 | 2026-09-07 | F-02 新增 Backend 分層契約圖連結（issue #670，`specs/foundation/000-foundation/diagrams/backend-layering-and-celery-boundary.html`，依 `docs/diagrams/README.md`「隸屬單一 spec 的圖放該 spec 的 `diagrams/`、隨 spec 一起歸檔」置於本規格目錄），以圖面呈現 Router → Service → Repository/ORM 的責任邊界、依賴方向與 F-12 的 Celery 任務邊界。**無 FR/SC 新增、移除或措辭變更**——僅新增衍生視圖連結。繪製時盤點出四項既有條文未涵蓋的分層問題（service 是否可直接組 query／操作 ORM、ORM→response schema 轉換責任歸屬、Celery task 可否重用 module service／repository、FR-101 允許的「公開 dependency/service interface」置放路徑），已在圖上標示為「規格未定義」，待維護者裁決是否補條文；本次不代為裁定。另記錄一項與上游 ADR 的落差：`docs/adr/007-async-tasks-celery.md` 的整合範例在 route handler 內直接呼叫 `.delay()`，與 FR-009「service 為 side effect dispatch 唯一入口」及 F-02 約束情境 1.1 不一致，圖面依本規格繪製並標註該落差 |
 | 1.12.4 | 2026-08-25 | OpenSpec change `implement-foundation-core`（issue #356 Phase 4 pilot）歸檔回寫：Foundation-Core 範圍（plan.md v2.0.0 的 F-01–F-10、F-13、F-16、F-18）已由 9 個 stacked PR（#374、#378、#381、#379、#388、#389、#390、#391、#392）落地於 `backend/` 與 `frontend/`。**無 FR/SC 新增、移除或措辭變更**——本次為實作回寫，非需求變更。三項實作與正典文字的落差，依維護者裁決記錄於此而不改動需求原文：<br>(a) **FR-021 的實作比字面更嚴格**：原文僅要求「`ALLOWED_ORIGINS=*` 在 production 視為 CI 或 startup failure」，實作（`backend/app/core/config.py`）在**所有環境**無條件拒絕萬用字元。維護者裁決保留 FR-021 原文，因為更嚴格的實作不違反該需求，且與 CLAUDE.md Prohibitions 的 `allow_origins=["*"]` 禁令一致。<br>(b) **SC-020 僅完成第一子句**：`QueryClient` 的 401 不重試單元測試已落地（`frontend/src/shared/services/__tests__/query-client.test.ts`）；第二子句要求的「`api-client.ts` 的 401 interceptor 於 refresh 失敗情境的整合測試」尚無對應實作——Foundation-Core 沒有認證端點，refresh 流程隨 account/001 進場，該整合測試一併延後至 account/001。<br>(c) **SC-045 僅完成 bootstrap 契約部分**：`.env.example`、local service profile（`docker-compose.yml` 的 `ci` profile）、seed data 策略（`scripts/seed.sh`）、one-command verification（`scripts/verify-bootstrap.sh`）與 CI shell check 皆已落地；但 SC-045 同一條列出的「OpenAPI export / type generation command」**未實作**，該項實際歸屬 FR-071 與 SC-018，本變更範圍不含，目前全專案無對應任務。SC-045 不得被讀作已完全滿足。<br>另：F-17 Observability（FR-091–FR-100、SC-021–SC-028）與 Celery 相關需求依 plan.md 延後，不在本次實作範圍 |
 | 1.12.3 | 2026-08-25 | SC-002 驗證指令由 `uv run mypy app/ --strict` 校準為 `uv run mypy .`，與 `.github/workflows/ci.yml` 及 testing-constitution XII/XIII 實際採用的指令一致；原措辭範圍較窄，`mypy app/` 會漏掉 `tests/` 的型別錯誤，已於 foundation-core BE2 群組造成一次 CI 紅燈。新指令為原指令的嚴格超集合（`strict = true` 由 `pyproject.toml` 全樹設定），驗收語意未放寬，無 FR/SC 新增或移除 |
 | 1.12.2 | 2026-06-05 | FR-131 route gate 移除舊 `backend/app/api/routes/` 例外路徑，改為只追蹤 `backend/app/modules/*/router.py` 與 `backend/app/modules/*/router/` |
