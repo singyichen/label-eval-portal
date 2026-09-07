@@ -3473,10 +3473,18 @@
   };
   var REVIEW_WORKLOAD = cloneData(DEFAULT_REVIEW_WORKLOAD);
 
+  /* `id` here is the same canonical id carried by this person's TASK_MEMBERS
+     record (issue #688). It belongs to the platform user, not to their
+     membership in this particular task: removing a member only dissolves
+     the task-membership relation, it does not destroy the person's
+     identity. So when they rejoin via search-add (addPlatformUserToTask),
+     the id must be looked up here -- the platform-level directory -- rather
+     than reconstructed from the just-spliced TASK_MEMBERS record, which by
+     then no longer exists. */
   var PLATFORM_USERS = [
-    { account: 'alex.wang', name: 'Alex Wang', email: 'alex.wang@labelsuite.io', activeTaskCount: 1 },
-    { account: 'olivia.lin', name: 'Olivia Lin', email: 'olivia.lin@labelsuite.io', activeTaskCount: 2 },
-    { account: 'jason.h', name: 'Jason Huang', email: 'jason.h@labelsuite.io', activeTaskCount: 3 },
+    { id: 'user_alex', account: 'alex.wang', name: 'Alex Wang', email: 'alex.wang@labelsuite.io', activeTaskCount: 1 },
+    { id: 'user_olivia', account: 'olivia.lin', name: 'Olivia Lin', email: 'olivia.lin@labelsuite.io', activeTaskCount: 2 },
+    { id: 'user_jason', account: 'jason.h', name: 'Jason Huang', email: 'jason.h@labelsuite.io', activeTaskCount: 3 },
   ];
 
   var ROLE_SELF_EMAIL = {
@@ -6978,6 +6986,17 @@ function getTaskTypeLabel() {
     }
   }
 
+  /* Derives a slug-shaped id from an Email local part (issue #688), for the
+     rare case a TASK_MEMBERS record needs an id but has no canonical
+     PLATFORM_USERS entry to look one up from -- e.g. an invited-by-Email
+     member who was never a platform user. Not a substitute for the
+     PLATFORM_USERS lookup: it produces a fresh id with no history, so it is
+     only a fallback. */
+  function deriveUserIdFromEmail(email) {
+    var localPart = String(email || '').split('@')[0].toLowerCase();
+    return 'user_' + localPart.replace(/[^a-z0-9]/g, '_');
+  }
+
   function getAvailablePlatformUsers(query) {
     var needle = String(query || '').trim().toLowerCase();
     if (!needle) return [];
@@ -6993,6 +7012,7 @@ function getTaskTypeLabel() {
   function addPlatformUserToTask(user, role) {
     if (!user || TASK_MEMBERS.some(function(member) { return member.email === user.email; })) return;
     TASK_MEMBERS.push({
+      id: user.id || deriveUserIdFromEmail(user.email),
       name: user.name,
       email: user.email,
       taskRole: role,
@@ -7083,7 +7103,15 @@ function getTaskTypeLabel() {
       showToast(t('errMemberDuplicate'), true);
       return;
     }
+    /* This invited-member path is currently unreachable: invited status
+       (:6890 `if (member.status !== 'invited') return;`) has no
+       invited -> active transition anywhere in this file, so no test
+       exercises it. `id` is still added here so the TASK_MEMBERS "every
+       record has an id" invariant holds regardless of push site -- leaving
+       one push without it would let the invariant rot again the moment this
+       path becomes reachable. */
     TASK_MEMBERS.push({
+      id: deriveUserIdFromEmail(email),
       name: email,
       email: email,
       taskRole: roleSelect.value,
