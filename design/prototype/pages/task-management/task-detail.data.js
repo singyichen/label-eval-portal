@@ -1367,11 +1367,45 @@
    * 池清單／結案閘門判定使用，見 FR-018／FR-008b）。 */
   var EXCEPTION_POOL_ACTIONS = ['adopt_annotator', 'adopt_reviewer', 'custom_answer', 'exclude_from_dataset'];
 
+  /* FR-008b closure gate (issue #688 group 2). Pure derivation: the caller
+   * (task-detail.html) supplies the counts it already tracks (ANNOTATION_
+   * PROGRESS / REVIEW_WORKLOAD), so this module stays free of DOM/mutable-
+   * state access, matching every other export above. Returns one
+   * `{ code, count }` entry per unmet precondition, in spec order; an empty
+   * array means every precondition is satisfied. Point 4 counts ONLY
+   * `official_run` exception-pool items -- a `dry_run` reject never blocks
+   * completion (design.md D6: trial runs have no custom_answer exit,
+   * FR-095). */
+  function getCompletionGapReasons(input) {
+    input = input || {};
+    var reasons = [];
+    if (input.pendingOfficialSubmissions > 0) {
+      reasons.push({ code: 'submissions_pending', count: input.pendingOfficialSubmissions });
+    }
+    if (input.pendingReviewUnits > 0) {
+      reasons.push({ code: 'review_units_pending', count: input.pendingReviewUnits });
+    }
+    if (input.disputedReviewUnits > 0) {
+      reasons.push({ code: 'review_units_disputed', count: input.disputedReviewUnits });
+    }
+    var officialExceptionCount = (input.exceptionPoolItems || []).filter(function (item) {
+      return item.runType === 'official_run';
+    }).length;
+    if (officialExceptionCount > 0) {
+      reasons.push({ code: 'exception_pool_pending', count: officialExceptionCount });
+    }
+    if (!input.qualityMetricsComputable) {
+      reasons.push({ code: 'quality_metrics_unavailable', count: 0 });
+    }
+    return reasons;
+  }
+
   global.LabelSuiteTaskDetailData = {
     profiles: profiles,
     AR_REVIEW_STATUS: AR_REVIEW_STATUS,
     ARBITER_CANDIDATE_RULE: ARBITER_CANDIDATE_RULE,
     OVERVIEW_EDITABLE_FIELDS: OVERVIEW_EDITABLE_FIELDS,
-    EXCEPTION_POOL_ACTIONS: EXCEPTION_POOL_ACTIONS
+    EXCEPTION_POOL_ACTIONS: EXCEPTION_POOL_ACTIONS,
+    getCompletionGapReasons: getCompletionGapReasons
   };
 }(window));
