@@ -391,6 +391,10 @@ The following decisions include the original 2026-06-29 resolution and the 2026-
 - Hierarchical option editing requires recursive validation, accessible tree navigation, search, and bounded rendering
 - Full config-schema v2 alignment and downstream consumer contracts must be completed before implementation
 
+## Diagram
+
+[Config-Driven Task Engine Data Flow](../diagrams/architecture/config-driven-task-engine-data-flow.html) (issue #668) visualizes the `input_type + outputs[]` composition this ADR introduces, and how `OUTPUT_TYPE_REGISTRY` fans it out to the four consumers (task-new wizard, annotation-workspace rendering, IAA metric registry, dataset export). This is a derived view; this ADR's text is authoritative on conflict.
+
 ## Referenced by
 
 - ADR-010 — Config-Driven Task Architecture (evolved, not superseded)

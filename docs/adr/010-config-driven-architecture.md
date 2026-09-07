@@ -99,6 +99,10 @@ leaderboard:
 - The metric registry must be maintained as new metrics are added — undocumented metrics cannot be referenced in configs.
 - Config-driven flexibility can mask performance issues — a config that requests 10 metrics on a large dataset may be slow; the platform must validate resource constraints.
 
+## Diagram
+
+[Config-Driven Task Engine Data Flow](../diagrams/architecture/config-driven-task-engine-data-flow.html) (issue #668) visualizes how a single `input_type + outputs[]` config object drives all four consumers — task-new wizard, annotation-workspace rendering, the IAA metric registry, and dataset export — through `OUTPUT_TYPE_REGISTRY`, with no per-task-type branching. This is a derived view; this ADR's text is authoritative on conflict.
+
 ## Referenced by
 
 - [Constitution](../../.specify/memory/constitution.md) — Principle 2: Generalization-First (NON-NEGOTIABLE)
