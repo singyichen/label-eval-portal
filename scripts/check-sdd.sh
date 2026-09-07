@@ -32,6 +32,7 @@ preflight_scanned_paths() {
         esac
     done < <(
         find "$repo_root/specs" -mindepth 3 -maxdepth 3 -path '*/[0-9][0-9][0-9]-*/spec.md' -print0 2>/dev/null
+        find "$repo_root/specs" -mindepth 4 -maxdepth 4 -path '*/[0-9][0-9][0-9]-*/diagrams/*' -print0 2>/dev/null
         for scan_root in "$repo_root"/openspec/changes/*; do
             [ -d "$scan_root" ] || continue
             [ "$scan_root" != "$repo_root/openspec/changes/archive" ] || continue
@@ -418,6 +419,28 @@ else
         add_config_error INVENTORY_CHECK_CONFIG scripts/gen-screen-inventory.mjs 'inventory checker returned an unexpected result'
     fi
 fi
+# issue #674: an architecture/sequence/state-machine diagram that lives in a
+# spec's own diagrams/ folder is only "must-read" if that spec actually links
+# to it -- otherwise it is a file nobody's reading sequence ever surfaces,
+# same failure mode as screen-inventory.md before INVENTORY_FRESHNESS existed.
+# Checked by existence rather than a maintained path list (issue #666's own
+# tracking issue drifted out of date against the diagrams it named), so a
+# newly added diagram is covered without a second registry to keep in sync.
+# Scope is deliberately narrow: only *.html under specs/*/*/diagrams/, linked
+# from that same feature's spec.md by relative path containing
+# "diagrams/<basename>". Cross-module diagrams under docs/diagrams/ are
+# out of scope -- those are surfaced via agent-context-contract.md's Required
+# reading sequence instead, which this rule does not police.
+while IFS= read -r -d '' diagram_file; do
+    relative_diagram="${diagram_file#"$repo_root"/}"
+    owner_spec="$(dirname "$(dirname "$diagram_file")")/spec.md"
+    base="$(basename "$diagram_file")"
+    if [ ! -r "$owner_spec" ]; then
+        add_error DIAGRAM_LINK "$relative_diagram" 'diagram has no sibling spec.md to own it'
+        continue
+    fi
+    grep -Fq "diagrams/$base" "$owner_spec" || add_error DIAGRAM_LINK "${owner_spec#"$repo_root"/}" "must link its own diagrams/$base by relative path"
+done < <(find "$repo_root/specs" -mindepth 4 -maxdepth 4 -path '*/[0-9][0-9][0-9]-*/diagrams/*.html' -print0 2>/dev/null)
 # Local verification suites and CI jobs are a two-way contract (CLAUDE.md
 # §Verification Commands). scripts/ci-jobs.tsv is the single declaration both
 # directions are checked against: one row per script under scripts/, plus one
