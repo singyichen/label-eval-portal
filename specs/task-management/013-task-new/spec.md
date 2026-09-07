@@ -1,7 +1,7 @@
 ---
 功能分支: feat/task-list-output-types
 建立日期: 2026-04-20
-版本: 7.0.1
+版本: 7.0.2
 狀態: Draft
 ---
 
@@ -146,6 +146,12 @@ sequenceDiagram
 | 5 | `user` / `super_admin` | 完成 Step 4 標記說明設定（可略過） | 記錄說明資產與強制顯示設定 |
 | 6 | `user` / `super_admin` | 建立任務 | 建立 task、creator 的 `project_leader` membership、初始執行設定 |
 | 7 | `user` / `super_admin` | 取消建立流程 | 導回 `/task-list` |
+
+上表與上方 sequenceDiagram 只描述順利走完的主線。四步精靈的驗證關卡（每一步 `下一步` 何時才 enabled）、Step 2 由 `OUTPUT_TYPE_REGISTRY` 逐型展開同一套設定面板的機制，以及離頁確認與 F5 還原兩條例外路徑，另以一張 `diagram-design` skill 產出的示意圖（自包含 HTML + inline SVG）呈現：
+
+- [建立任務精靈流程](./diagrams/task-new-wizard-flow.html)
+
+該圖對應 FR-002／FR-002a／FR-002c-1（Step 1 關卡）、FR-003／FR-003a／FR-003b／FR-003c／FR-003d／FR-003f（Step 2 registry 驅動與關卡）、FR-004／FR-004c／FR-004d／FR-004e（Step 3 關卡）、FR-005／FR-005b／FR-005c（Step 4 選填與按鈕轉為 `建立任務`）、FR-006／FR-006a／FR-006d（建立成功導頁）與 FR-007a（離頁確認與精靈狀態還原）。
 
 ---
 
@@ -783,6 +789,7 @@ flowchart LR
 
 | 版本 | 日期 | 變更摘要 |
 |------|------|---------|
+| 7.0.2 | 2026-09-07 | **`## 流程圖` 補上四步精靈完整流程圖（patch，issue #678）**：原本該節只有一張 sequenceDiagram 與一張 `flowchart LR` 導頁圖，兩者都只畫順利走完的主線，讀者看不出「每一步的 `下一步` 何時才 enabled」「Step 2 的八種輸出類型面板是怎麼長出來的」「離頁與 F5 之後會發生什麼」。新增 `diagrams/task-new-wizard-flow.html`（`diagram-design` skill 產出的自包含 HTML + inline SVG，比照 `specs/annotation/015-annotation-workspace/diagrams/` 慣例，依 issue #528 Q4 決議不另出 PNG），畫出 Step 1–3 三道驗證關卡與未通過退回、Step 2 由 `OUTPUT_TYPE_REGISTRY` 逐型展開同一套設定面板（刻意不畫成八條硬編分支，以呈現 registry-driven 的設計）、離頁確認與 `navigation type = reload` 還原兩條例外路徑，以及 Step 4 選填且按鈕轉為 `建立任務` 的收尾分支；並在 `## 流程圖` 內嵌相對連結與 FR 對照。純文件補充，既有兩段 mermaid 區塊未改動，無新增或移除 FR/AC，無 API 契約變更。 |
 | 7.0.1 | 2026-09-05 | **釐清 FR-003d-1 相交拒絕回饋涵蓋完全覆蓋情形（patch，issue #659）**：v7.0.0 導入的相交拒絕回饋原僅描述「色條轉為錯誤色」，未涵蓋新圈選範圍完全落在既有 span 內、沒有暴露字元可上色的情形，導致該情境下畫面無任何回饋。條文明訂完全覆蓋與部分相交同屬相交、須給出等量回饋：部分相交沿用暴露字元色條，完全覆蓋改為在被撞到的既有 span 加上危險色虛線外框；兩種情形皆須顯示 `role="alert"` 拒絕訊息列，且點擊標籤類型不得清除處於拒絕狀態的暫存選取。無新增或移除 FR/AC，僅澄清既有 FR-003d-1 措辭與其實作缺口。 |
 | 7.0.0 | 2026-09-04 | **序列標註改為字元 offset span（破壞性，issue #581，OpenSpec change `seq-tagging-span-config`）**：`sequence_tagging` 的設定契約由「Token 網格＋`tagging_scheme`」改為 `entities`／`snap_unit`／`allow_bypass` 三欄，標記值改為半開區間 `spans[]`（`{ start, end, label }`）。破壞性移除 v6.2.0～v6.4.0 建立的 `tagging_scheme`（BIO／BIOES／IOB2／SINGLE）、`tokenization` 物件與其 unit-based v2 契約、Token 網格與完整 tag 按鈕、language-aware token metadata、「標記數量與 Token 數不一致」阻擋與切換單位時的重新驗證流程；BIO 改由 `dataset/017` 的匯出層自 span 推導。`snap_unit`（`SPAN_SNAP_UNITS = character | word`）只影響拖曳選取的落點吸附，不改變已存的 `start`／`end`，由前端 `Intl.Segmenter` 提供詞界，環境缺該 API 時降級為不吸附。新增型別層不變式 `SPAN_OVERLAP_POLICY_BY_OUTPUT_TYPE`：`sequence_tagging` 禁止相交（相鄰允許）且不提供 `allow_overlapping` 欄位、Code 模式帶入 `allow_overlapping: true` 須明確報錯；`entity_recognition` 維持可設定，並改為共用同一套 `snap_unit` 與圈選預覽元件。預標記改以字元 offset 落位、不做數量檢查，超出文本或 `start >= end` 者逐筆拒絕且不阻擋流程。同步改寫 FR-003d-1／FR-003d-3、AC-2.10／AC-2.11、`sequence_tagging` 六條邊界情境、`SequenceTaggingConfig` 關鍵實體與規格常數區（移除 `SEQUENCE_TAGGING_SCHEMES`／`SEQUENCE_TOKENIZATION_VERSION`／`SEQUENCE_TOKENIZATION_MODE`，`SEQUENCE_TOKEN_UNITS` 更名為 `SPAN_SNAP_UNITS`），改寫 SC-003x 並新增 SC-003y／SC-003z／SC-003aa／SC-003ab。連帶傳播：FR-003g-5 的 `sequence_tagging` 初始化子句與多 output 欄位形狀推斷子句一併改為 span 語意（本 change 的 delta 未含 FR-003g-5，此處為 FR-003d-1 的一致性傳播）；「未來版本候選」第 1 項「拖曳選取多 Token 實體」標記為已交付但形式不同；ADR-031 已轉為 Superseded，013 與 015 均不再有 production tokenizer 凍結義務。 |
 | 6.9.6 | 2026-09-04 | **驗收情境配發 AC-N.N 穩定 ID（patch，無條文變更）**：本規格建立於 AC 穩定 ID 標準（spec-template v1.5.0）之前，四組使用者故事的 40 條驗收情境長期僅以流水號指稱，導致下游 OpenSpec change 與測試無法穩定引用；本版依既有標準為每條情境補上 `AC-<故事編號>.<情境序號>` 前綴（AC-1.1~1.3、AC-2.1~2.32、AC-3.1~3.3、AC-4.1~4.2），情境文字、FR/SC 條文與編號順序皆未更動。 |
