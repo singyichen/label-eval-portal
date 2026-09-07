@@ -2684,6 +2684,8 @@
       thExceptionEnteredAt: '落入時間',
       thExceptionActions: '操作',
       finalExceptionPoolResolveBtn: '前往處置',
+      closureBlockerExceptionPoolTpl: '最終例外池尚有 {count} 項待處置',
+      toastPublishBlockedClosure: '結案前置條件未滿足，無法標記完成：',
       memberProgressTitle: '成員進度表',
       progressSortLabel: '排序',
       progressSortCompleted: '依已完成數（高到低）',
@@ -3169,6 +3171,8 @@
       thExceptionEnteredAt: 'Entered at',
       thExceptionActions: 'Actions',
       finalExceptionPoolResolveBtn: 'Resolve',
+      closureBlockerExceptionPoolTpl: 'Final exception pool still has {count} item(s) awaiting resolution',
+      toastPublishBlockedClosure: 'Closure preconditions not met, cannot mark complete: ',
       memberProgressTitle: 'Member progress',
       progressSortLabel: 'Sort by',
       progressSortCompleted: 'Completed (high to low)',
@@ -9339,6 +9343,31 @@ function getTaskTypeLabel() {
     if (window.LabelSuiteModalFocus) window.LabelSuiteModalFocus.close(modal);
   }
 
+  /* FR-008b (issue #688): official_run_in_progress -> completed closure gate.
+     Scope decision (documented in this PR's evidence, tasks.md 2.3): of the
+     delta's 5 preconditions, only the 4th (final exception pool cleared,
+     official_run only) is enforced here. Conditions 1/2/3/5 stay
+     unimplemented pre-existing gaps -- same standing as
+     xrole-canonical-journey.spec.ts's XROLE-04/20/21 test.fail() cases,
+     which this change's proposal.md explicitly keeps out of scope.
+     Enforcing condition 1 (submission completeness) against the generic
+     DEFAULT_ANNOTATION_PROGRESS seed would newly block XROLE-20/21's fresh
+     gap-fixture task for an unrelated reason and flip those test.fail()
+     cases green; condition 3 (no disputed unit at all) would permanently
+     block T017 (oft-03-modified-interim has no arbitration path in this
+     static prototype), making the "pool cleared -> completes" half of this
+     gate's own Green test unreachable on real seed data. Only the
+     exception-pool condition is both genuinely new in v3.0.0 and safely
+     testable against existing seeds without touching either gap. */
+  function getClosureBlockers() {
+    var messages = [];
+    var poolItems = getFinalExceptionPoolItems('official_run');
+    if (poolItems.length) {
+      messages.push(interpolate(t('closureBlockerExceptionPoolTpl'), { count: poolItems.length }));
+    }
+    return messages;
+  }
+
   function canPublish() {
     var result = validateSampling();
     if (!result.valid) {
@@ -9707,6 +9736,12 @@ function getTaskTypeLabel() {
 
       if (e.target.id === 'publishCompleteBtn') {
         trackEvent('prototype_cta_clicked', { cta: 'publish_complete' });
+        var closureBlockers = getClosureBlockers();
+        if (closureBlockers.length) {
+          showToast(t('toastPublishBlockedClosure') + closureBlockers.join(t('memberGapJoiner')), true);
+          trackEvent('prototype_publish_failed', { reason: 'closure_gap: ' + closureBlockers.join(', ') });
+          return;
+        }
         publishComplete();
       }
     });
