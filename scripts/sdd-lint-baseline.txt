@@ -9,4 +9,3 @@ LEGACY_SPEC_HEADING	specs/shared/008-sidebar-navbar-shared/spec.md	missing:## �
 LEGACY_SPEC_HEADING	specs/shared/018-help-button/spec.md	missing:## Prototype Traceability
 LEGACY_SPEC_HEADING	specs/shared/018-help-button/spec.md	missing:## 功能目標
 LEGACY_SPEC_HEADING	specs/shared/018-help-button/spec.md	missing:## 規格相依性
-LEGACY_SPEC_HEADING	specs/task-management/014-task-detail/spec.md	missing:## 功能目標
