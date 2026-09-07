@@ -2877,7 +2877,7 @@
          reviewer_chen's arbitration rejects BOTH sides (兩者皆非), so the
          unit stays disputed and the item queues in the final exception pool
          until a project_leader visit resolves it. */
-      { t: 'T017', r: 'official_run', s: 'oft-01-final-exception', a: A, v: 'neutral', rev: { reviewer_wang: 'positive' }, modifyBy: 'reviewer_wang', reason: '語境不足以判斷情緒傾向，正面與中性難以取捨', arbReject: true }, // disputed (reviewer modifies, arbitration rejects both sides -> final exception pool)
+      { t: 'T017', r: 'official_run', s: 'oft-01-final-exception', a: A, v: 'neutral', rev: { reviewer_wang: 'positive' }, modifyBy: 'reviewer_wang', reason: '語境不足以判斷情緒傾向，正面與中性難以取捨', arbReject: true, arbReason: '原標記與審核修正結果皆缺乏明確文本依據支持，需退回標記指南徵詢更明確判準' }, // disputed (reviewer modifies, arbitration rejects both sides -> final exception pool)
       { t: 'T017', r: 'official_run', s: 'oft-02-approved-interim', a: A, v: 'positive', rev: { reviewer_wang: 'positive' } }, // approved (1 < 2)
       { t: 'T017', r: 'official_run', s: 'oft-03-modified-interim', a: A, v: 'neutral', rev: { reviewer_wang: 'positive' } }, // modified (1 < 2)
       { t: 'T017', r: 'official_run', s: 'oft-04-unanimous-gold', a: A, v: 'positive', rev: { reviewer_wang: 'positive', reviewer_li: 'positive' } }, // finalized
@@ -2944,7 +2944,7 @@
            finalized_by for this choice by design (the absent-field
            sentinel), so passing one here would be misleading dead data. */
         submitArbitration(row.t, row.r, row.s, { annotatorId: row.a, reviewerId: 'reviewer_chen' }, [
-          { itemId: 'single_label::single_label', choice: 'reject' },
+          { itemId: 'single_label::single_label', choice: 'reject', reason: row.arbReason },
         ]);
       }
     });
