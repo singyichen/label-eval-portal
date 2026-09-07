@@ -32,7 +32,7 @@
 |------|---------------|------|
 | [`architecture/system-container-architecture.html`](./architecture/system-container-architecture.html) | `architecture` | 系統／容器架構（issue #667） |
 | [`architecture/config-driven-task-engine-data-flow.html`](./architecture/config-driven-task-engine-data-flow.html) | `dataflow` | Config-Driven 任務引擎資料流（issue #668） |
-| [`architecture/backend-layering-and-celery-boundary.html`](./architecture/backend-layering-and-celery-boundary.html) | `architecture` | Backend 分層契約與 Celery 任務邊界（issue #670） |
+| [`specs/foundation/000-foundation/diagrams/backend-layering-and-celery-boundary.html`](../../specs/foundation/000-foundation/diagrams/backend-layering-and-celery-boundary.html) | `architecture` | Backend 分層契約與 Celery 任務邊界（issue #670） |
 
 `archify` 要**同時提交 `.json` 與 `.html`**：`.json` 是唯一可 diff、可驗證的原始檔，`.html` 是唯一不需工具鏈即可閱讀的成品，缺任一邊都會讓圖變成不可維護的黑盒。改圖時改 `.json` 再重跑 `deliver` 重生 `.html`，不要手改 `.html`。
 

@@ -20,7 +20,7 @@ design/prototype/pages/[module]/   ← HTML prototypes
 |---------|--------|
 | [`docs/diagrams/architecture/system-container-architecture.html`](docs/diagrams/architecture/system-container-architecture.html) | System/container boundaries — which container owns which responsibility and how they talk (issue #667) |
 | [`docs/diagrams/architecture/config-driven-task-engine-data-flow.html`](docs/diagrams/architecture/config-driven-task-engine-data-flow.html) | Config-driven task engine data flow — task config → validation → workspace dispatch (issue #668) |
-| [`docs/diagrams/architecture/backend-layering-and-celery-boundary.html`](docs/diagrams/architecture/backend-layering-and-celery-boundary.html) | Backend layering contract — Router/Service/Repository/ORM responsibilities, dependency direction, and the Celery task boundary (issue #670) |
+| [`specs/foundation/000-foundation/diagrams/backend-layering-and-celery-boundary.html`](specs/foundation/000-foundation/diagrams/backend-layering-and-celery-boundary.html) | Backend layering contract — Router/Service/Repository/ORM responsibilities, dependency direction, and the Celery task boundary (issue #670) |
 
 Tool choice and output-location conventions for new diagrams: [`docs/diagrams/README.md`](docs/diagrams/README.md).
 
