@@ -1,13 +1,17 @@
 ---
-功能分支: docs/211-disabled-annotator-rule
+功能分支: feat/issue-688-align-014-review-model
 建立日期: 2026-04-20
-版本: 2.11.2
+版本: 2.11.3
 狀態: Draft
 ---
 
 # 功能規格：Task Detail — 任務詳情（5 Tabs + 成員管理 + 執行控制）
 
 **需求來源**: IA Spec 清單 #014 — 任務詳情（成員管理調整 / 執行控制調整 / Dry Run / Official Run / 工時紀錄 / 匯出）（`task-detail`）
+
+## 功能目標
+
+讓 Project Leader 在單一任務詳情頁完成成員與審核設定、監看試標與正式標記進度、逐筆收尾無法自動定案的爭議，並判定任務可否結案；Reviewer 與 Annotator 於同頁取得各自角色的唯讀檢視邊界。
 
 ## 已釐清事項
 
@@ -118,6 +122,7 @@ sequenceDiagram
 
 | 步驟 | 角色 | 動作 | 系統回應 |
 |------|------|------|---------|
+| 2.11.3 | 2026-09-07 | **SDD lint 合規結構補齊（patch，issue #688）**：本規格自 `align-014-review-model` 起成為 active OpenSpec change 的正典，Project SDD lint 對 active change 之正典有三項硬性要求而本檔皆缺——補上 `## 功能目標` 標題；為三個使用者故事的 23 條驗收情境指派 AC 穩定 ID（`AC-1.1`–`AC-1.7`／`AC-2.1`–`AC-2.4`／`AC-3.1`–`AC-3.12`，依 PR #117 之 AC-N.N 標準，編號一經指派不重用）；`功能分支` frontmatter 對齊 `specs/STATUS.md` 該列。情境文字逐字未改，無條文、行為或 API 契約變更，不新增或移除任何 FR/SC。 |
 | 1 | `project_leader` / `reviewer` | 進入 `/task-detail` | 驗證 task context 後顯示頁面，預設 `overview` tab |
 | 2 | `project_leader` | 管理成員 | 可新增、移除/停用任務成員；既有成員角色唯讀（承接 task-new 初始值） |
 | 3 | `project_leader` | 開始試標回合 | 狀態轉為 `dry_run_in_progress` |
@@ -139,13 +144,13 @@ Project Leader 可在任務詳情頁操作五個 tab，並執行成員調整、�
 
 **驗收情境**：
 
-1. **Given** `task_role = project_leader`，**When** 進入 `/task-detail`，**Then** 可看到五個 tab 且預設為 `overview`。
-2. **Given** 位於 `member-management`，**When** 透過搜尋平台成員或 Email 邀請加入，並對既有成員執行移除/停用，**Then** 成員列表更新且新加入成員角色生效。
-3. **Given** 任務在 `draft`，**When** 點擊「開始試標回合」，**Then** 狀態變為 `dry_run_in_progress`。
-4. **Given** 任務在 `waiting_iaa_confirmation`，**When** 點擊「開始正式標記」，**Then** 狀態變為 `official_run_in_progress`。
-5. **Given** 位於 `annotation-results`，**When** 點擊匯出，**Then** 可匯出 `json` 或 `json-min`，且欄位結構需依格式與 `task_type` 正確切換。
-6. **Given** 位於 `member-management` 且 `review_assignment_mode = manual`，**When** 於審核指派區塊操作「自動補齊」、單列「指派…」或「分派給仲裁者」，**Then** 未指派筆數、爭議池數與各審核員負荷（已指派／待審／已完成）即時更新，並同步反映於成員清單「審核負荷」欄。
-7. **Given** 一位 `membership_status = active` 的標記員持有 1 筆已提交與 2 筆未提交的標記作業，**When** `project_leader` 於 `member-management` 將其停用並確認，**Then** 已提交作業保留並繼續計入統計，2 筆未提交作業退回未指派池等待重新指派或排除，且該標記員不再出現在可指派對象中（FR-005l）。
+1. **AC-1.1**：**Given** `task_role = project_leader`，**When** 進入 `/task-detail`，**Then** 可看到五個 tab 且預設為 `overview`。
+2. **AC-1.2**：**Given** 位於 `member-management`，**When** 透過搜尋平台成員或 Email 邀請加入，並對既有成員執行移除/停用，**Then** 成員列表更新且新加入成員角色生效。
+3. **AC-1.3**：**Given** 任務在 `draft`，**When** 點擊「開始試標回合」，**Then** 狀態變為 `dry_run_in_progress`。
+4. **AC-1.4**：**Given** 任務在 `waiting_iaa_confirmation`，**When** 點擊「開始正式標記」，**Then** 狀態變為 `official_run_in_progress`。
+5. **AC-1.5**：**Given** 位於 `annotation-results`，**When** 點擊匯出，**Then** 可匯出 `json` 或 `json-min`，且欄位結構需依格式與 `task_type` 正確切換。
+6. **AC-1.6**：**Given** 位於 `member-management` 且 `review_assignment_mode = manual`，**When** 於審核指派區塊操作「自動補齊」、單列「指派…」或「分派給仲裁者」，**Then** 未指派筆數、爭議池數與各審核員負荷（已指派／待審／已完成）即時更新，並同步反映於成員清單「審核負荷」欄。
+7. **AC-1.7**：**Given** 一位 `membership_status = active` 的標記員持有 1 筆已提交與 2 筆未提交的標記作業，**When** `project_leader` 於 `member-management` 將其停用並確認，**Then** 已提交作業保留並繼續計入統計，2 筆未提交作業退回未指派池等待重新指派或排除，且該標記員不再出現在可指派對象中（FR-005l）。
 
 **介面定義（需與 IA 導覽語意一致）**：
 
@@ -392,10 +397,10 @@ Reviewer 可進入任務詳情查看必要資訊，但不得執行成員管理�
 
 **驗收情境**：
 
-1. **Given** `task_role = reviewer`，**When** 進入 `/task-detail`，**Then** 可見 `overview`、`annotation-results`、`annotation-progress`、`work-log`。
-2. **Given** `task_role = reviewer`，**When** 嘗試以直連進入 `member-management`，**Then** 導回 `overview` 並顯示無權限提示。
-3. **Given** `task_role = reviewer`，**When** 進入 `work-log`，**Then** 僅可見自己的工時資料。
-4. **Given** `task_role = annotator`，**When** 直接開啟 `/task-detail`，**Then** 系統阻擋並導回 `/task-list` 顯示無權限提示。
+1. **AC-2.1**：**Given** `task_role = reviewer`，**When** 進入 `/task-detail`，**Then** 可見 `overview`、`annotation-results`、`annotation-progress`、`work-log`。
+2. **AC-2.2**：**Given** `task_role = reviewer`，**When** 嘗試以直連進入 `member-management`，**Then** 導回 `overview` 並顯示無權限提示。
+3. **AC-2.3**：**Given** `task_role = reviewer`，**When** 進入 `work-log`，**Then** 僅可見自己的工時資料。
+4. **AC-2.4**：**Given** `task_role = annotator`，**When** 直接開啟 `/task-detail`，**Then** 系統阻擋並導回 `/task-list` 顯示無權限提示。
 
 **行為規則**：
 
@@ -416,18 +421,18 @@ Reviewer 可進入任務詳情查看必要資訊，但不得執行成員管理�
 
 **驗收情境**：
 
-1. **Given** 任務為 `draft`，**When** 開始試標回合，**Then** 狀態只能轉為 `dry_run_in_progress`。
-2. **Given** 任務內沒有未指派 Dry Run 標記作業，且每一位 `membership_status = active` 的 `annotator` 皆達到 `assigned_count == completed_count`（代表每人都完成自己被指派的全部試標內容），**When** 系統檢查完成條件，**Then** 自動轉為 `waiting_iaa_confirmation` 並對 `project_leader` 發送提醒。
-3. **Given** 任務為 `waiting_iaa_confirmation`，**When** 開始正式標記，**Then** 狀態轉為 `official_run_in_progress`。
-4. **Given** 任務資料含 Dry 與 Official 兩階段且已啟用資料隔離，**When** 查詢匯出資料，**Then** 系統不得混入不同階段的資料集。
-5. **Given** 任務為 `draft`，**When** 使用者調整每回合試標抽樣為 `N 筆`，**Then** 系統需更新後續回合使用規則；總筆數 / 已用試標 / 可進正式 的分配摘要則顯示於「任務狀態與執行控制」區塊。
-6. **Given** 使用者關閉資料隔離，**When** 發布 Run 前確認，**Then** 系統需顯示風險警告、要求二次確認並寫入審計紀錄。
-7. **Given** 任務為 `draft`，**When** `project_leader` 在「審核設定」把每筆資料審核員數改為 `3`、指派方式改為手動並勾選仲裁者，**Then** 摘要即時更新為 `3`／`手動指派`／`啟用 · 仲裁者 N 人` 且儲存後持久化。
-8. **Given** 使用者在「審核設定」輸入 `0` 或留空，**When** 儲存，**Then** 系統阻擋儲存並顯示可修正錯誤訊息，維持編輯模式。
-9. **Given** 任務為 `official_run_in_progress` 且仍有未定案 review unit 或未解決爭議，**When** `project_leader` 嘗試標記完成，**Then** 系統阻擋轉換為 `completed` 並逐項列出未滿足的前置條件（FR-008b）。
-10. **Given** 抽樣設定 `min_annotators = 3` 且任務僅有 2 位 `membership_status = active` 的標記員，**When** `project_leader` 嘗試發布試標回合，**Then** 系統阻擋發布並顯示標記員「還差 1 位」的缺口訊息（FR-010t）。
-11. **Given** 任務有 3 位 `membership_status = active` 的標記員且扣除試標後剩餘 5 筆正式標記樣本，**When** `project_leader` 開始正式標記，**Then** 系統依輪流分派建立 assignment，每筆樣本恰指派一位標記員，且任兩位標記員的分派筆數差距不超過 1（FR-010f-4）。
-12. **Given** 任務已完成 R1 試標且處於 `dry_run_in_progress`，**When** `project_leader` 點擊 `新增試標回合 R2` 但未填寫 `prior_round_findings` 與 `guideline_change_summary`、也未勾選 `no_change`，**Then** 系統阻擋建立並逐欄提示缺項；補齊必填欄位（或勾選 `no_change` 並填寫 `no_change_reason`）後方可成功建立 R2，且新建立的 `TrialRound.sampling_value` 等於本輪實際建立之試標清單筆數（FR-017、FR-010f-2）。
+1. **AC-3.1**：**Given** 任務為 `draft`，**When** 開始試標回合，**Then** 狀態只能轉為 `dry_run_in_progress`。
+2. **AC-3.2**：**Given** 任務內沒有未指派 Dry Run 標記作業，且每一位 `membership_status = active` 的 `annotator` 皆達到 `assigned_count == completed_count`（代表每人都完成自己被指派的全部試標內容），**When** 系統檢查完成條件，**Then** 自動轉為 `waiting_iaa_confirmation` 並對 `project_leader` 發送提醒。
+3. **AC-3.3**：**Given** 任務為 `waiting_iaa_confirmation`，**When** 開始正式標記，**Then** 狀態轉為 `official_run_in_progress`。
+4. **AC-3.4**：**Given** 任務資料含 Dry 與 Official 兩階段且已啟用資料隔離，**When** 查詢匯出資料，**Then** 系統不得混入不同階段的資料集。
+5. **AC-3.5**：**Given** 任務為 `draft`，**When** 使用者調整每回合試標抽樣為 `N 筆`，**Then** 系統需更新後續回合使用規則；總筆數 / 已用試標 / 可進正式 的分配摘要則顯示於「任務狀態與執行控制」區塊。
+6. **AC-3.6**：**Given** 使用者關閉資料隔離，**When** 發布 Run 前確認，**Then** 系統需顯示風險警告、要求二次確認並寫入審計紀錄。
+7. **AC-3.7**：**Given** 任務為 `draft`，**When** `project_leader` 在「審核設定」把每筆資料審核員數改為 `3`、指派方式改為手動並勾選仲裁者，**Then** 摘要即時更新為 `3`／`手動指派`／`啟用 · 仲裁者 N 人` 且儲存後持久化。
+8. **AC-3.8**：**Given** 使用者在「審核設定」輸入 `0` 或留空，**When** 儲存，**Then** 系統阻擋儲存並顯示可修正錯誤訊息，維持編輯模式。
+9. **AC-3.9**：**Given** 任務為 `official_run_in_progress` 且仍有未定案 review unit 或未解決爭議，**When** `project_leader` 嘗試標記完成，**Then** 系統阻擋轉換為 `completed` 並逐項列出未滿足的前置條件（FR-008b）。
+10. **AC-3.10**：**Given** 抽樣設定 `min_annotators = 3` 且任務僅有 2 位 `membership_status = active` 的標記員，**When** `project_leader` 嘗試發布試標回合，**Then** 系統阻擋發布並顯示標記員「還差 1 位」的缺口訊息（FR-010t）。
+11. **AC-3.11**：**Given** 任務有 3 位 `membership_status = active` 的標記員且扣除試標後剩餘 5 筆正式標記樣本，**When** `project_leader` 開始正式標記，**Then** 系統依輪流分派建立 assignment，每筆樣本恰指派一位標記員，且任兩位標記員的分派筆數差距不超過 1（FR-010f-4）。
+12. **AC-3.12**：**Given** 任務已完成 R1 試標且處於 `dry_run_in_progress`，**When** `project_leader` 點擊 `新增試標回合 R2` 但未填寫 `prior_round_findings` 與 `guideline_change_summary`、也未勾選 `no_change`，**Then** 系統阻擋建立並逐欄提示缺項；補齊必填欄位（或勾選 `no_change` 並填寫 `no_change_reason`）後方可成功建立 R2，且新建立的 `TrialRound.sampling_value` 等於本輪實際建立之試標清單筆數（FR-017、FR-010f-2）。
 
 **行為規則**：
 
