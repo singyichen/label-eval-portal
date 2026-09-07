@@ -2653,6 +2653,21 @@
       progressMetricSpeedLabel: '平均速度',
       progressMetricEtaLabel: '剩餘估計時間',
       progressMetricIAALabel: 'IAA',
+      finalExceptionPoolTpl: '最終例外池 · {count} 項待處置',
+      finalExceptionPoolSubtitle: '仲裁裁定為「兩者皆非」且尚未收尾的爭議項，逐筆進入處置畫面決定最終結果，例外池清空前任務無法標記完成。',
+      finalExceptionPoolEmptyText: '最終例外池已清空',
+      thFepSample: '樣本 ID',
+      thFepAnnotator: '標記員',
+      thFepReviewer: '審核員',
+      thFepOutputType: '爭議輸出類型',
+      thFepArbiter: '仲裁者與理由',
+      thFepFellAt: '落入例外池時間',
+      thFepActions: '操作',
+      fepResolveLinkLabel: '進入處置',
+      fepReasonFallback: '（仲裁時未填寫理由）',
+      toastCompleteBlocked: '結案前置條件尚未滿足，無法標記完成：',
+      completeBlockerExceptionPoolTpl: '最終例外池尚有 {count} 項待處置',
+      completeBlockerSubmission: '正式標記作業尚未全數提交',
       unassignedAnnotationTitle: '未指派標記作業',
       unassignedAnnotationSubtitle: '未指派試標作業會阻擋進入待 IAA 確認；正式標記未指派作業會影響完成率。請重新指派給啟用中的標記員，或排除並保留原因。',
       thUnassignedStage: '階段 / 回合',
@@ -3125,6 +3140,21 @@
       progressMetricSpeedLabel: 'Average speed',
       progressMetricEtaLabel: 'Remaining ETA',
       progressMetricIAALabel: 'IAA',
+      finalExceptionPoolTpl: 'Final exception pool · {count} pending',
+      finalExceptionPoolSubtitle: 'Items an arbiter voted "neither side" on, still unresolved. Resolve each one to reach a final value; the task cannot be marked complete until the pool is empty.',
+      finalExceptionPoolEmptyText: 'Final exception pool is empty',
+      thFepSample: 'Sample ID',
+      thFepAnnotator: 'Annotator',
+      thFepReviewer: 'Reviewer',
+      thFepOutputType: 'Disputed output type',
+      thFepArbiter: 'Arbiter & reason',
+      thFepFellAt: 'Entered pool at',
+      thFepActions: 'Actions',
+      fepResolveLinkLabel: 'Resolve',
+      fepReasonFallback: '(no reason recorded at arbitration)',
+      toastCompleteBlocked: 'Completion preconditions not met, cannot mark complete: ',
+      completeBlockerExceptionPoolTpl: 'Final exception pool still has {count} pending item(s)',
+      completeBlockerSubmission: 'Official run submissions are not yet complete',
       unassignedAnnotationTitle: 'Unassigned annotation assignments',
       unassignedAnnotationSubtitle: 'Unassigned trial work blocks Waiting IAA confirmation; unassigned official work affects completion rate. Reassign it to an active annotator, or exclude it with an audit reason.',
       thUnassignedStage: 'Stage / round',
@@ -4939,6 +4969,14 @@ function interpolate(template, payload) {
     setText('progressMetricSpeedLabel', t('progressMetricSpeedLabel'));
     setText('progressMetricEtaLabel', t('progressMetricEtaLabel'));
     setText('progressMetricIAALabel', t('progressMetricIAALabel'));
+    setText('finalExceptionPoolSubtitle', t('finalExceptionPoolSubtitle'));
+    setText('thFepSample', t('thFepSample'));
+    setText('thFepAnnotator', t('thFepAnnotator'));
+    setText('thFepReviewer', t('thFepReviewer'));
+    setText('thFepOutputType', t('thFepOutputType'));
+    setText('thFepArbiter', t('thFepArbiter'));
+    setText('thFepFellAt', t('thFepFellAt'));
+    setText('thFepActions', t('thFepActions'));
     setText('unassignedAnnotationTitle', t('unassignedAnnotationTitle'));
     setText('unassignedAnnotationSubtitle', t('unassignedAnnotationSubtitle'));
     setText('thUnassignedStage', t('thUnassignedStage'));
@@ -7916,6 +7954,90 @@ function getTaskTypeLabel() {
     document.getElementById('memberProgressSection').classList.toggle('hidden', empty);
   }
 
+  /* FR-018 point 3: the resolve link carries the full review-unit identity
+     (task_id x run_type x annotator_id x sample_id) into the FR-095
+     disposal screen (annotation-workspace.html), the same URL shape
+     annotation-list.html's buildWorkspaceUrl() uses for the reviewer path --
+     role=project_leader is the resolver identity resolveExceptionPoolItem()
+     already assumes (DEFAULT_PROJECT_LEADER_ID). */
+  function buildFinalExceptionPoolResolveUrl(item) {
+    return '../annotation/annotation-workspace.html' +
+      '?task_id=' + encodeURIComponent(item.taskId) +
+      '&sample_id=' + encodeURIComponent(item.sampleId) +
+      '&role=project_leader' +
+      '&run_type=' + encodeURIComponent(item.runType) +
+      '&annotator_id=' + encodeURIComponent(item.annotatorId);
+  }
+
+  /* FR-018: 014's only new render surface for the final exception pool --
+     the rows themselves are derived by task-detail.data.js's
+     getFinalExceptionPoolItems() straight off 015's dispute/arbitration
+     state (design.md D6). run_type follows the same round-selector state
+     the rest of this panel already uses (state.progressStage), so switching
+     the existing dry/official pills also re-scopes the pool (FR-018 point
+     5) without a second, independent filter control. */
+  function getExceptionPoolRunType() {
+    return state.progressStage === 'official' ? 'official_run' : 'dry_run';
+  }
+
+  function renderFinalExceptionPoolSection() {
+    var section = document.getElementById('finalExceptionPoolSection');
+    var tbody = document.getElementById('finalExceptionPoolBody');
+    var emptyEl = document.getElementById('finalExceptionPoolEmpty');
+    if (!section || !tbody || !emptyEl) return;
+
+    var isLeader = state.taskRole === 'project_leader';
+    section.classList.toggle('hidden', !isLeader);
+    if (!isLeader) return;
+
+    var detailData = window.LabelSuiteTaskDetailData;
+    var items = detailData
+      ? detailData.getFinalExceptionPoolItems(TASK_DATA.taskId, getExceptionPoolRunType())
+      : [];
+
+    setText('finalExceptionPoolTitle', interpolate(t('finalExceptionPoolTpl'), { count: items.length }));
+
+    while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+    emptyEl.classList.toggle('hidden', items.length > 0);
+    if (!items.length) {
+      emptyEl.textContent = t('finalExceptionPoolEmptyText');
+      return;
+    }
+
+    items.forEach(function(item) {
+      var tr = document.createElement('tr');
+      tr.setAttribute('data-testid', 'final-exception-pool-row');
+
+      function td(text, testid) {
+        var cell = document.createElement('td');
+        cell.textContent = text;
+        if (testid) cell.setAttribute('data-testid', testid);
+        return cell;
+      }
+
+      tr.appendChild(td(item.sampleId, 'fep-sample-id'));
+      tr.appendChild(td(item.annotatorId, 'fep-annotator'));
+      tr.appendChild(td(item.reviewerIds.join(', ') || '-', 'fep-reviewer'));
+      tr.appendChild(td(item.outputType, 'fep-output-type'));
+      tr.appendChild(td(
+        (item.arbiterId || '-') + ' · ' + (item.reason || t('fepReasonFallback')),
+        'fep-arbiter'
+      ));
+      tr.appendChild(td(item.fellAt || '-', 'fep-fell-at'));
+
+      var actionsTd = document.createElement('td');
+      var link = document.createElement('a');
+      link.className = 'mini-btn';
+      link.href = buildFinalExceptionPoolResolveUrl(item);
+      link.textContent = t('fepResolveLinkLabel');
+      link.setAttribute('data-testid', 'fep-resolve-link');
+      actionsTd.appendChild(link);
+      tr.appendChild(actionsTd);
+
+      tbody.appendChild(tr);
+    });
+  }
+
   function renderAnnotationProgress() {
     renderProgressRoundPills();
     renderProgressSummary();
@@ -7923,6 +8045,7 @@ function getTaskTypeLabel() {
     renderMemberProgressTable();
     renderRoundProgressList();
     renderProgressEmptyState();
+    renderFinalExceptionPoolSection();
   }
 
   function getWorkLogStageLabel(stage) {
@@ -9286,7 +9409,46 @@ function getTaskTypeLabel() {
     renderOverview();
   }
 
+  /* FR-008b: task-completion blockers, localized. Condition 4 (final
+     exception pool) is always scoped to `official_run` regardless of the
+     annotation-progress panel's currently selected round (FR-008b point 4:
+     "僅計 official_run 的待處置項目") -- unlike renderFinalExceptionPoolSection()
+     above, this never follows getExceptionPoolRunType(). See
+     task-detail.data.js's getTaskCompletionBlockers() doc comment for which
+     of the five FR-008b conditions this prototype iteration wires live. */
+  function getTaskCompletionBlockerMessages() {
+    var detailData = window.LabelSuiteTaskDetailData;
+    if (!detailData) return [];
+    /* Condition 1 (submission complete) is NOT wired as a live gate here,
+       same reasoning and same scope note as conditions 2/3/5 in
+       task-detail.data.js's getTaskCompletionBlockers() doc comment:
+       ANNOTATION_PROGRESS is decorative demo data never derived from the
+       live publishOfficialRun()/publishComplete() click flow (unlike the
+       exception pool below, which reads the REAL 015 dispute/arbitration
+       state), so gating on it here would block completion for reasons
+       unrelated to this task's actual submission state. Only FR-018's
+       exception pool (this change's actual new gate) is live-wired. */
+    var exceptionPoolPendingCount = detailData.getFinalExceptionPoolItems(TASK_DATA.taskId, 'official_run').length;
+    var blockers = detailData.getTaskCompletionBlockers({
+      submissionComplete: true,
+      exceptionPoolPendingCount: exceptionPoolPendingCount
+    });
+    return blockers.map(function(blocker) {
+      if (blocker.code === 'exception_pool_pending') {
+        return interpolate(t('completeBlockerExceptionPoolTpl'), { count: blocker.count });
+      }
+      if (blocker.code === 'submission_incomplete') return t('completeBlockerSubmission');
+      return '';
+    }).filter(function(message) { return Boolean(message); });
+  }
+
   function publishComplete() {
+    var blockerMessages = getTaskCompletionBlockerMessages();
+    if (blockerMessages.length) {
+      showToast(t('toastCompleteBlocked') + blockerMessages.join(t('memberGapJoiner')), true);
+      trackEvent('prototype_publish_failed', { reason: 'completion_blocked: ' + blockerMessages.join(', ') });
+      return;
+    }
     TASK_DATA.status = 'completed';
     TASK_DATA.updatedAt = '2026-05-06 18:20';
     showToast(t('toastPublishedComplete'));

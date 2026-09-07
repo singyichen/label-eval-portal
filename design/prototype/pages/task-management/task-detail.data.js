@@ -1426,17 +1426,18 @@
    * this function stays a pure reducer over booleans/counts so it needs no
    * DOM or global state of its own.
    *
-   * Scope note: this prototype iteration wires only conditions 1 (submission
-   * complete) and 4 (final exception pool, official_run only, FR-018) as
-   * live gates. Conditions 2/3/5 (review units finalized, no disputed unit,
-   * quality metrics ready) have no per-review-unit finalization model in 014
-   * independent of the pre-existing REVIEW_WORKLOAD demo counters (which
-   * predate this change and are shared by every seeded task) -- wiring them
-   * here would risk blocking completion on every other demo task's
-   * unrelated legacy pending/dispute figures. `submissionComplete2Of5` /
-   * `reviewFinalized3Of5` / `qualityReady5Of5` accept an explicit boolean so
-   * a future change can wire them without touching this function's shape;
-   * they default to satisfied so today's callers only need to compute 1/4. */
+   * Scope note: this prototype iteration wires only condition 4 (final
+   * exception pool, official_run only, FR-018) as a live gate. Conditions
+   * 1/2/3/5 (submission complete, review units finalized, no disputed unit,
+   * quality metrics ready) have no live-state derivation in 014 today --
+   * ANNOTATION_PROGRESS and REVIEW_WORKLOAD are decorative demo seeds never
+   * derived from the actual publish click flow (unlike the exception pool,
+   * which reads 015's real dispute/arbitration state), so gating on them
+   * would block completion for reasons unrelated to a given task's actual
+   * state. This function still accepts all five signals so a future change
+   * can wire the rest without changing its shape; each condition defaults
+   * to "satisfied" when the caller omits it, matching task-detail.html's
+   * current caller, which only computes exceptionPoolPendingCount. */
   function getTaskCompletionBlockers(context) {
     context = context || {};
     var blockers = [];
