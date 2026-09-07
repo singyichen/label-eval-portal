@@ -284,6 +284,50 @@ test_real_screen_inventory_header_marker_still_excluded() {
     record "real screen-inventory.md (header marker, padded >600 lines) still excluded" 0 "$rc"
 }
 
+# RED (issue #697): third-party generators (e.g. archify) mark their HTML
+# output with the standard `<meta name="generator" content="...">` tag, not
+# this repo's own Chinese marker string. Today's is_generated_blob() only
+# recognizes the Chinese marker, so an archify diagram this size is counted
+# and trips the line-count guard purely because of where it happened to be
+# placed (docs/diagrams/ vs specs/) rather than because it is hand-written.
+test_line_count_excludes_generator_meta_tag_files() {
+    local repo rc
+    repo="$(make_repo)"
+    mkdir -p "$repo/docs/diagrams/architecture"
+    {
+        echo "<!doctype html>"
+        echo "<html>"
+        echo "<head>"
+        echo '<meta charset="utf-8">'
+        echo '<meta name="generator" content="archify 2.17.0-dev.1">'
+        echo "</head>"
+        echo "<body>"
+        seq 1 796
+        echo "</body></html>"
+    } >"$repo/docs/diagrams/architecture/fake-archify-diagram.html"
+    gen_lines "$repo" "backend/app/small_change.py" 10
+    git -C "$repo" add .
+    rc="$(hook_exit_code "$repo")"
+    record "generator meta tag file (header, ~800 lines) excluded from line count" 0 "$rc"
+}
+
+# RED (issue #697, mirrors test_generated_marker_deep_in_body_not_header_still_blocked):
+# a generator meta tag past the header window must not retroactively excuse
+# the file — the detector stays header-scoped for both marker forms.
+test_generator_meta_tag_deep_in_body_not_header_still_blocked() {
+    local repo rc
+    repo="$(make_repo)"
+    mkdir -p "$repo/backend/app"
+    {
+        seq 1 399
+        echo '<meta name="generator" content="archify 2.17.0-dev.1">'
+        seq 400 800
+    } >"$repo/backend/app/deep_meta_tag.py"
+    git -C "$repo" add .
+    rc="$(hook_exit_code "$repo")"
+    record "generator meta tag deep in body (not header, ~800 lines) still blocked" 1 "$rc"
+}
+
 test_small_ordinary_change_allowed
 test_file_count_guard_still_blocks
 test_line_count_guard_still_blocks
@@ -297,6 +341,8 @@ test_file_count_excludes_empty_and_reexport_barrels
 test_loose_generated_view_phrase_in_prose_still_blocked
 test_generated_marker_deep_in_body_not_header_still_blocked
 test_real_screen_inventory_header_marker_still_excluded
+test_line_count_excludes_generator_meta_tag_files
+test_generator_meta_tag_deep_in_body_not_header_still_blocked
 
 echo ""
 echo "=== pre-commit guard test summary ==="
