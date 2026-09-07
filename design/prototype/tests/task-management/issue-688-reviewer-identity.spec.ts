@@ -62,6 +62,37 @@ async function openMemberTab(page: Page) {
   await expect(page.locator('#memberManagementPanel')).not.toHaveClass(/hidden/);
 }
 
+/*
+ * Removal (`TASK_MEMBERS.splice`, task-detail.html:7128) drops the member's
+ * whole record, `id` included. Re-adding them via search-add
+ * (`addPlatformUserToTask`, task-detail.html:6993) resolves them from
+ * `PLATFORM_USERS`, which never carried an `id` field, and pushes a fresh
+ * `TASK_MEMBERS` entry with no `id` at all -- a regression this Red pins
+ * down (issue #688 gap analysis). Assumes page is already on
+ * TASK_DETAIL_URL; navigates Member management -> remove -> search-add as
+ * `reviewer`, and returns the pre-removal record for comparison.
+ */
+async function removeAndRejoinMemberAsReviewer(page: Page, memberName: string): Promise<TaskMember> {
+  const membersBefore = await getTaskMembers(page);
+  const original = membersBefore.find((m) => m.name === memberName);
+  if (!original) throw new Error(`fixture regression: ${memberName} must exist in TASK_MEMBERS`);
+
+  await openMemberTab(page);
+
+  await page.locator('#memberTableBody tr').filter({ hasText: memberName }).locator('button:has-text("移除")').click();
+  await page.locator('#memberActionConfirmBtn').click();
+  await expect(page.locator('#memberTableBody')).not.toContainText(memberName);
+
+  const searchTerm = memberName.split(' ')[0].toLowerCase();
+  await page.locator('#memberSearchInput').fill(searchTerm);
+  await expect(page.locator('#memberSearchResultsBody')).toContainText(memberName);
+  await page.locator('#memberSearchRoleSelect').selectOption('reviewer');
+  await page.locator('#memberSearchResultsBody button:has-text("加入任務")').click();
+  await expect(page.locator('#memberTableBody')).toContainText(memberName);
+
+  return original;
+}
+
 test.describe.configure({ retries: 2 });
 
 test.describe('Task detail reviewer identity format — opaque user id, not Email (issue #688)', () => {
@@ -214,5 +245,58 @@ test.describe('Task detail reviewer identity format — opaque user id, not Emai
       expect(text).toContain('@');
     });
     expect(cellTexts.sort()).toEqual(members.map((m) => m.email).sort());
+  });
+
+  // Gap found while walking the member-management UI for issue #688:
+  // addPlatformUserToTask() (task-detail.html:6993) never sets `id` on the
+  // TASK_MEMBERS record it pushes. Removing a member (TASK_MEMBERS.splice,
+  // :7128) makes them reappear in "加入專案成員" search results
+  // (getAvailablePlatformUsers matches by email, :6981); re-adding them
+  // must keep their id stable, otherwise their review-workload history
+  // (byReviewer, reviewer_ids/arbiter_ids) silently disconnects from the
+  // person who accrued it.
+  test('member id survives remove-then-rejoin via search-add, unchanged from before removal', async ({ page }) => {
+    await page.goto(TASK_DETAIL_URL);
+
+    const original = await removeAndRejoinMemberAsReviewer(page, 'Alex Wang');
+
+    const membersAfter = await getTaskMembers(page);
+    const rejoined = membersAfter.find((m) => m.email === original.email);
+    if (!rejoined) throw new Error('fixture regression: Alex Wang did not reappear in TASK_MEMBERS after rejoining');
+
+    expect(typeof rejoined.id, 'rejoined member is missing an id field').toBe('string');
+    expect(rejoined.id).not.toContain('@');
+    expect(rejoined.id).not.toMatch(/\s/);
+    expect(rejoined.id).toMatch(SLUG_RE);
+    expect(
+      rejoined.id,
+      'rejoined member must keep the same id as before removal -- a new id disconnects their review-workload history'
+    ).toBe(original.id);
+  });
+
+  // Same gap, viewed from the review-settings checkbox that consumes
+  // `member.id` (renderReviewerOptionList, task-detail.html:6107): when the
+  // rejoined record has no `id`, `input.value = member.id` coerces
+  // `undefined` to the literal string "undefined", which can then be
+  // written into reviewer_ids on save.
+  test('reviewer checkbox for a rejoined member uses their id, not "undefined" or Email', async ({ page }) => {
+    await page.goto(TASK_DETAIL_URL);
+
+    const original = await removeAndRejoinMemberAsReviewer(page, 'Alex Wang');
+
+    await page.locator('#tabOverview').click();
+    await expect(page.locator('#overviewPanel')).not.toHaveClass(/hidden/);
+    await page.locator('#reviewEditBtn').click();
+
+    const alexOption = page.locator('#reviewerOptionList .reviewer-option', { hasText: 'Alex Wang' });
+    await expect(alexOption).toHaveCount(1);
+    const checkboxValue = await alexOption.locator('input').getAttribute('value');
+
+    expect(checkboxValue, 'checkbox value must not fall back to the literal string "undefined"').not.toBe(
+      'undefined'
+    );
+    expect(checkboxValue, 'checkbox value must not be the member Email').not.toBe(original.email);
+    expect(checkboxValue).not.toContain('@');
+    expect(checkboxValue).toBe(original.id);
   });
 });
