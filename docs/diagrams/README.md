@@ -26,12 +26,13 @@
 
 隸屬單一 spec 的圖放該 spec 的 `diagrams/` 資料夾（例如 `specs/annotation/015-annotation-workspace/diagrams/`），歸檔時隨 spec 一起進 `specs/_archive/`。跨模組、無單一歸屬 spec 的總覽圖例外保留在 `docs/diagrams/workflow/`（目前為 `system-workflow.png`、`annotation-pipeline.mmd`/`.png`，被根目錄 `README.md` 引用）。
 
-**跨模組架構圖放 `docs/diagrams/architecture/`。** 這類圖描述的是整個系統的容器邊界或跨模組資料流，不隸屬任何單一 spec，因此不進 `specs/`、也不隨任何 spec 歸檔。目前有兩張，皆由 `archify` 產出：
+**跨模組架構圖放 `docs/diagrams/architecture/`。** 這類圖描述的是整個系統的容器邊界或跨模組資料流，不隸屬任何單一 spec，因此不進 `specs/`、也不隨任何 spec 歸檔。目前有三張，皆由 `archify` 產出：
 
 | 檔案 | `diagram_type` | 內容 |
 |------|---------------|------|
 | [`architecture/system-container-architecture.html`](./architecture/system-container-architecture.html) | `architecture` | 系統／容器架構（issue #667） |
 | [`architecture/config-driven-task-engine-data-flow.html`](./architecture/config-driven-task-engine-data-flow.html) | `dataflow` | Config-Driven 任務引擎資料流（issue #668） |
+| [`architecture/backend-layering-and-celery-boundary.html`](./architecture/backend-layering-and-celery-boundary.html) | `architecture` | Backend 分層契約與 Celery 任務邊界（issue #670） |
 
 `archify` 要**同時提交 `.json` 與 `.html`**：`.json` 是唯一可 diff、可驗證的原始檔，`.html` 是唯一不需工具鏈即可閱讀的成品，缺任一邊都會讓圖變成不可維護的黑盒。改圖時改 `.json` 再重跑 `deliver` 重生 `.html`，不要手改 `.html`。
 
