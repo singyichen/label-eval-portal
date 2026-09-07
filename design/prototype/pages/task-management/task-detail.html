@@ -2671,6 +2671,19 @@
       unassignedIaaBlocked: '待處理',
       unassignedRateSuffixTpl: '（未指派 {unassigned}，排除 {excluded}）',
       excludedMetadataReason: 'PL 明確排除',
+      finalExceptionPoolTitleTpl: '最終例外池 {count} 項待處置',
+      finalExceptionPoolEmptyText: '最終例外池已清空',
+      finalExceptionPoolRunTypeOfficial: '正式標記',
+      finalExceptionPoolRunTypeDry: '試標',
+      thExceptionSample: '樣本 ID',
+      thExceptionAnnotator: '標記員',
+      thExceptionReviewer: '審核員',
+      thExceptionOutputType: '爭議輸出類型',
+      thExceptionArbiter: '仲裁者',
+      thExceptionReason: '理由',
+      thExceptionEnteredAt: '落入時間',
+      thExceptionActions: '操作',
+      finalExceptionPoolResolveBtn: '前往處置',
       memberProgressTitle: '成員進度表',
       progressSortLabel: '排序',
       progressSortCompleted: '依已完成數（高到低）',
@@ -3143,6 +3156,19 @@
       unassignedIaaBlocked: 'Blocked',
       unassignedRateSuffixTpl: ' (unassigned {unassigned}, excluded {excluded})',
       excludedMetadataReason: 'Explicitly excluded by PL',
+      finalExceptionPoolTitleTpl: 'Final exception pool · {count} awaiting resolution',
+      finalExceptionPoolEmptyText: 'Final exception pool is clear',
+      finalExceptionPoolRunTypeOfficial: 'Official run',
+      finalExceptionPoolRunTypeDry: 'Dry run',
+      thExceptionSample: 'Sample ID',
+      thExceptionAnnotator: 'Annotator',
+      thExceptionReviewer: 'Reviewer',
+      thExceptionOutputType: 'Disputed output type',
+      thExceptionArbiter: 'Arbiter',
+      thExceptionReason: 'Reason',
+      thExceptionEnteredAt: 'Entered at',
+      thExceptionActions: 'Actions',
+      finalExceptionPoolResolveBtn: 'Resolve',
       memberProgressTitle: 'Member progress',
       progressSortLabel: 'Sort by',
       progressSortCompleted: 'Completed (high to low)',
@@ -3677,6 +3703,7 @@
     activeRunControlTab: 'execution',
     progressStage: 'r2',
     progressSort: 'completed_desc',
+    exceptionPoolRunType: 'official_run',
     workLogDateFrom: '',
     workLogDateTo: '',
     workLogStage: 'all',
@@ -7919,10 +7946,96 @@ function getTaskTypeLabel() {
   function renderAnnotationProgress() {
     renderProgressRoundPills();
     renderProgressSummary();
+    renderFinalExceptionPool();
     renderUnassignedAnnotationAssignments();
     renderMemberProgressTable();
     renderRoundProgressList();
     renderProgressEmptyState();
+  }
+
+  /* FR-018 (issue #688): final exception pool entry, project_leader only.
+     Data comes from task-detail.data.js's getFinalExceptionPoolItems(),
+     which reads window.LabelSuiteAnnotationWorkspaceData's review-unit
+     derivation (design.md D6) -- this function only renders it and builds
+     each row's navigation link into 015's FR-095 disposition screen. */
+  function getFinalExceptionPoolItems(runType) {
+    var data = window.LabelSuiteTaskDetailData;
+    if (!data || typeof data.getFinalExceptionPoolItems !== 'function') return [];
+    return data.getFinalExceptionPoolItems(TASK_DATA.taskId, runType);
+  }
+
+  function buildExceptionPoolResolveUrl(item, runType) {
+    return '../annotation/annotation-workspace.html'
+      + '?task_id=' + encodeURIComponent(TASK_DATA.taskId)
+      + '&sample_id=' + encodeURIComponent(item.sampleId)
+      + '&role=project_leader'
+      + '&run_type=' + encodeURIComponent(runType)
+      + '&annotator_id=' + encodeURIComponent(item.annotatorId);
+  }
+
+  function renderFinalExceptionPool() {
+    var section = document.getElementById('finalExceptionPoolSection');
+    if (!section) return;
+    section.classList.toggle('hidden', state.taskRole !== 'project_leader');
+    if (state.taskRole !== 'project_leader') return;
+
+    setText('finalExceptionPoolRunTypeOfficialOpt', t('finalExceptionPoolRunTypeOfficial'));
+    setText('finalExceptionPoolRunTypeDryOpt', t('finalExceptionPoolRunTypeDry'));
+    setText('thExceptionSample', t('thExceptionSample'));
+    setText('thExceptionAnnotator', t('thExceptionAnnotator'));
+    setText('thExceptionReviewer', t('thExceptionReviewer'));
+    setText('thExceptionOutputType', t('thExceptionOutputType'));
+    setText('thExceptionArbiter', t('thExceptionArbiter'));
+    setText('thExceptionReason', t('thExceptionReason'));
+    setText('thExceptionEnteredAt', t('thExceptionEnteredAt'));
+    setText('thExceptionActions', t('thExceptionActions'));
+
+    var runTypeSelect = document.getElementById('finalExceptionPoolRunTypeFilter');
+    if (runTypeSelect) runTypeSelect.value = state.exceptionPoolRunType;
+
+    var runType = state.exceptionPoolRunType;
+    var items = getFinalExceptionPoolItems(runType);
+
+    setText('finalExceptionPoolTitle', interpolate(t('finalExceptionPoolTitleTpl'), { count: items.length }));
+
+    var tableWrap = document.getElementById('finalExceptionPoolTableWrap');
+    var emptyState = document.getElementById('finalExceptionPoolEmpty');
+    var tbody = document.getElementById('finalExceptionPoolBody');
+    if (!tableWrap || !emptyState || !tbody) return;
+
+    tableWrap.classList.toggle('hidden', !items.length);
+    emptyState.classList.toggle('hidden', !!items.length);
+    setText('finalExceptionPoolEmpty', t('finalExceptionPoolEmptyText'));
+
+    while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+    items.forEach(function(item) {
+      var tr = document.createElement('tr');
+      tr.className = 'final-exception-pool-item';
+
+      function td(text) {
+        var cell = document.createElement('td');
+        cell.textContent = text;
+        return cell;
+      }
+
+      tr.appendChild(td(item.sampleId));
+      tr.appendChild(td(item.annotatorId));
+      tr.appendChild(td((item.reviewerIds || []).join(', ')));
+      tr.appendChild(td(getOutputTypeDisplayLabel(item.outKey)));
+      tr.appendChild(td(item.arbiterId || '-'));
+      tr.appendChild(td(item.reason || '-'));
+      tr.appendChild(td(item.enteredAt || '-'));
+
+      var actionsTd = document.createElement('td');
+      var link = document.createElement('a');
+      link.className = 'mini-btn mini-btn-primary final-exception-pool-navigate-link';
+      link.href = buildExceptionPoolResolveUrl(item, runType);
+      link.textContent = t('finalExceptionPoolResolveBtn');
+      actionsTd.appendChild(link);
+      tr.appendChild(actionsTd);
+
+      tbody.appendChild(tr);
+    });
   }
 
   function getWorkLogStageLabel(stage) {
@@ -9707,6 +9820,12 @@ document.getElementById('memberProgressSort').addEventListener('change', functio
       state.progressSort = e.target.value;
       renderAnnotationProgress();
       trackEvent('prototype_progress_sort_changed', { sort_by: state.progressSort });
+    });
+
+    document.getElementById('finalExceptionPoolRunTypeFilter').addEventListener('change', function(e) {
+      state.exceptionPoolRunType = e.target.value;
+      renderFinalExceptionPool();
+      trackEvent('prototype_exception_pool_run_type_changed', { run_type: state.exceptionPoolRunType });
     });
 
     document.getElementById('memberDetailCloseBtn').addEventListener('click', function() {

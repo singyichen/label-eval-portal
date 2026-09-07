@@ -15,6 +15,42 @@
     </div>
   </section>
 
+  <!-- FR-018 (issue #688): final exception pool entry -- read-only list of
+       arbitration-rejected review units awaiting the project leader's
+       disposition on annotation/015-annotation-workspace's FR-095 screen.
+       Rendered by renderFinalExceptionPool() in task-detail.html. project_leader
+       only (FR-018 point 4); MUST NOT be hidden at count 0 (FR-018 point 1),
+       only its empty state / table swap. -->
+  <section class="panel" aria-labelledby="finalExceptionPoolTitle" id="finalExceptionPoolSection">
+    <div class="stage-filter-row">
+      <h2 class="panel-title" id="finalExceptionPoolTitle" style="margin-bottom: 0;"></h2>
+      <select class="sort-select" id="finalExceptionPoolRunTypeFilter" aria-label="Final exception pool run type filter">
+        <option value="official_run" id="finalExceptionPoolRunTypeOfficialOpt"></option>
+        <option value="dry_run" id="finalExceptionPoolRunTypeDryOpt"></option>
+      </select>
+    </div>
+    <p class="panel-subtitle hidden" id="finalExceptionPoolEmpty"></p>
+    <div class="table-wrap" id="finalExceptionPoolTableWrap">
+      <div class="table-scroll">
+        <table class="member-table" role="table" aria-label="Final exception pool table">
+          <thead>
+            <tr>
+              <th id="thExceptionSample">樣本 ID</th>
+              <th id="thExceptionAnnotator">標記員</th>
+              <th id="thExceptionReviewer">審核員</th>
+              <th id="thExceptionOutputType">爭議輸出類型</th>
+              <th id="thExceptionArbiter">仲裁者</th>
+              <th id="thExceptionReason">理由</th>
+              <th id="thExceptionEnteredAt">落入時間</th>
+              <th id="thExceptionActions">操作</th>
+            </tr>
+          </thead>
+          <tbody id="finalExceptionPoolBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
   <section class="panel hidden" aria-labelledby="unassignedAnnotationTitle" id="unassignedAnnotationSection">
     <h2 class="panel-title" id="unassignedAnnotationTitle">未指派標記作業</h2>
     <p class="panel-subtitle" id="unassignedAnnotationSubtitle">未指派試標作業會阻擋進入待 IAA 確認；正式標記未指派作業會影響完成率。請重新指派給啟用中的標記員，或排除並保留原因。</p>

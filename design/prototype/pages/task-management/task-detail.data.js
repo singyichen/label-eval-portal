@@ -1367,11 +1367,72 @@
    * 池清單／結案閘門判定使用，見 FR-018／FR-008b）。 */
   var EXCEPTION_POOL_ACTIONS = ['adopt_annotator', 'adopt_reviewer', 'custom_answer', 'exclude_from_dataset'];
 
+  /* FR-018 / FR-008b (issue #688) -- final exception pool derivation.
+   * Reads window.LabelSuiteAnnotationWorkspaceData / window.LabelSuiteTaskListData
+   * at CALL time, not at this IIFE's own load time: annotation-workspace.data.js
+   * loads AFTER this file (task-detail.html's <script> order), so those globals
+   * do not exist yet while this file's own top-level code runs, only once a
+   * caller invokes this function later during page boot.
+   *
+   * design.md D6: a review unit's outKey lands in the final exception pool
+   * once arbitration rejected it ("兩者皆非") and no exception-pool record
+   * has resolved it yet. An outKey already resolved via ANY
+   * EXCEPTION_POOL_ACTIONS entry -- including exclude_from_dataset, which
+   * leaves the unit's overall status `disputed` forever per 015 FR-063 --
+   * is handled and MUST NOT reappear here.
+   *
+   * Deliberately NOT unified with task-detail.html's REVIEW_WORKLOAD.exceptionCount
+   * (a separate, hand-seeded mock figure predating this function): that
+   * counter feeds member-management's already-shipped, already-tested
+   * `#exceptionPoolText` row (issue-596-assignment-readonly.spec.ts), and
+   * unifying the two here would risk that existing, unrelated test for a
+   * cross-surface consistency this task was not asked to guarantee.
+   *
+   * Returns one row per pending (task_id, run_type, sample_id, outKey)
+   * pair -- FR-018 point 2 asks for one dispute output type per row. */
+  function getFinalExceptionPoolItems(taskId, runType) {
+    var ws = global.LabelSuiteAnnotationWorkspaceData;
+    var lists = (global.LabelSuiteTaskListData && global.LabelSuiteTaskListData.tasks) || [];
+    if (!ws) return [];
+    var listEntry = null;
+    for (var i = 0; i < lists.length; i++) {
+      if (lists[i].id === taskId) { listEntry = lists[i]; break; }
+    }
+    if (!listEntry) return [];
+    var outKeys = listEntry.outputTypes || [];
+    var items = [];
+    ws.listReviewUnits(taskId, runType).forEach(function (unit) {
+      if (unit.status !== ws.REVIEW_UNIT_STATUS.DISPUTED) return;
+      var identity = { annotatorId: unit.annotatorId };
+      var disputeItems = ws.getDisputeItems(taskId, runType, unit.sampleId, identity, outKeys);
+      var arbState = ws.getArbitrationState(taskId, runType, unit.sampleId, identity);
+      var pool = ws.getExceptionPool(taskId, runType, unit.sampleId, identity);
+      disputeItems.forEach(function (item) {
+        if (pool[item.outKey]) return; // already resolved (any EXCEPTION_POOL_ACTIONS entry)
+        var arb = arbState[item.outKey + '::' + item.key];
+        if (!arb || arb.finalized_by) return; // never arbitrated, or arbitrated to adopt_a/adopt_b
+        var rejectVote = (arb.votes || []).filter(function (v) { return v.choice === 'reject'; }).slice(-1)[0];
+        if (!rejectVote) return;
+        items.push({
+          sampleId: unit.sampleId,
+          annotatorId: unit.annotatorId,
+          reviewerIds: Object.keys(item.reviewerValues || {}),
+          outKey: item.outKey,
+          arbiterId: rejectVote.arbiter_id,
+          reason: rejectVote.reason || '',
+          enteredAt: rejectVote.voted_at || null
+        });
+      });
+    });
+    return items;
+  }
+
   global.LabelSuiteTaskDetailData = {
     profiles: profiles,
     AR_REVIEW_STATUS: AR_REVIEW_STATUS,
     ARBITER_CANDIDATE_RULE: ARBITER_CANDIDATE_RULE,
     OVERVIEW_EDITABLE_FIELDS: OVERVIEW_EDITABLE_FIELDS,
-    EXCEPTION_POOL_ACTIONS: EXCEPTION_POOL_ACTIONS
+    EXCEPTION_POOL_ACTIONS: EXCEPTION_POOL_ACTIONS,
+    getFinalExceptionPoolItems: getFinalExceptionPoolItems
   };
 }(window));
