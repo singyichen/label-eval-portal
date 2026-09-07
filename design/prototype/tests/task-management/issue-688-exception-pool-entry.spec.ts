@@ -118,7 +118,7 @@ test.describe('Final exception pool entry + completion gate (issue #688)', () =>
   });
 
   // FR-008b point 4: a non-empty official_run final exception pool blocks
-  // "標記完成" and names the concrete reason, matching the SC-041/FR-008b
+  // "標記完成" and names the concrete reason, matching the SC-043/FR-008b
   // scenario's "最終例外池尚有 N 項待處置" copy pattern.
   test('blocks 標記完成 and names the exception-pool reason when official_run pool is non-empty', async ({ page }) => {
     await page.goto(TASK_DETAIL_URL + '?task_id=T017&status=official_run_in_progress');
