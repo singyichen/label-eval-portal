@@ -1367,11 +1367,96 @@
    * 池清單／結案閘門判定使用，見 FR-018／FR-008b）。 */
   var EXCEPTION_POOL_ACTIONS = ['adopt_annotator', 'adopt_reviewer', 'custom_answer', 'exclude_from_dataset'];
 
+  /* FR-018 (issue #688, design.md D6): the final exception pool draws its
+   * rows live from 015 annotation-workspace's already-existing dispute /
+   * arbitration primitives instead of a second, 014-only seed of the same
+   * data (Generalization-First / DRY) -- a review unit's disputed item is a
+   * pending exception when its arbitration outcome is `reject`
+   * (window.LabelSuiteAnnotationWorkspaceData.ARBITRATION_OUTCOMES) and it
+   * has not yet been resolved via EXCEPTION_POOL_ACTIONS
+   * (getExceptionPool()). Mirrors annotation-workspace.config.js's
+   * exceptionPoolQueue(), generalized from one open sample to every review
+   * unit of a task+run_type (FR-018 point 5: dry_run/official_run counted
+   * independently). Returns [] when the 015 data module or this task's
+   * profile is unavailable, rather than throwing -- annotation-workspace.data.js
+   * is a same-page script dependency (task-detail.html loads it before this
+   * file's caller runs), not a build-time import. */
+  function getFinalExceptionPoolItems(taskId, runType) {
+    var wsData = global.LabelSuiteAnnotationWorkspaceData;
+    var profile = profiles[taskId];
+    if (!wsData || !profile) return [];
+    var outKeys = (profile.outputs || []).map(function (o) { return o.type; });
+    var items = [];
+    wsData.listReviewUnits(taskId, runType).forEach(function (unit) {
+      if (unit.status !== wsData.REVIEW_UNIT_STATUS.DISPUTED) return;
+      var identity = { annotatorId: unit.annotatorId };
+      var pool = wsData.getExceptionPool(taskId, runType, unit.sampleId, identity);
+      var arbState = wsData.getArbitrationState(taskId, runType, unit.sampleId, identity);
+      var disputeItems = wsData.getDisputeItems(taskId, runType, unit.sampleId, identity, outKeys);
+      var reviewerIds = wsData.readReviewerSubmissions(taskId, runType, unit.sampleId, identity)
+        .map(function (submission) { return submission.reviewerId; });
+      disputeItems.forEach(function (item) {
+        var itemId = item.outKey + '::' + item.key;
+        var stored = arbState[itemId];
+        /* design.md D2's sentinel: a `reject` vote never writes finalized_by
+           (submitArbitration only sets it for adopt_a/adopt_b), so "stored
+           but no finalized_by" IS "arbitrated reject, still open" -- the same
+           condition exceptionPoolQueue() checks. */
+        if (!stored || stored.finalized_by || pool[item.outKey]) return;
+        var rejectVote = (stored.votes || []).filter(function (v) { return v.choice === 'reject'; }).pop();
+        items.push({
+          taskId: taskId,
+          runType: runType,
+          sampleId: unit.sampleId,
+          annotatorId: unit.annotatorId,
+          reviewerIds: reviewerIds,
+          outputType: item.outKey,
+          arbiterId: rejectVote ? rejectVote.arbiter_id : '',
+          reason: rejectVote ? (rejectVote.reason || '') : '',
+          fellAt: rejectVote ? rejectVote.voted_at : ''
+        });
+      });
+    });
+    return items;
+  }
+
+  /* FR-008b (issue #688): task-completion blocker list. `context` carries
+   * pre-computed signals from the caller (task-detail.html), which already
+   * owns TASK_DATA/ANNOTATION_PROGRESS/the exception-pool query above --
+   * this function stays a pure reducer over booleans/counts so it needs no
+   * DOM or global state of its own.
+   *
+   * Scope note: this prototype iteration wires only conditions 1 (submission
+   * complete) and 4 (final exception pool, official_run only, FR-018) as
+   * live gates. Conditions 2/3/5 (review units finalized, no disputed unit,
+   * quality metrics ready) have no per-review-unit finalization model in 014
+   * independent of the pre-existing REVIEW_WORKLOAD demo counters (which
+   * predate this change and are shared by every seeded task) -- wiring them
+   * here would risk blocking completion on every other demo task's
+   * unrelated legacy pending/dispute figures. `submissionComplete2Of5` /
+   * `reviewFinalized3Of5` / `qualityReady5Of5` accept an explicit boolean so
+   * a future change can wire them without touching this function's shape;
+   * they default to satisfied so today's callers only need to compute 1/4. */
+  function getTaskCompletionBlockers(context) {
+    context = context || {};
+    var blockers = [];
+    if (!context.submissionComplete) blockers.push({ code: 'submission_incomplete' });
+    if (context.reviewFinalized === false) blockers.push({ code: 'review_pending' });
+    if (context.noDisputedUnits === false) blockers.push({ code: 'disputed_units' });
+    if ((context.exceptionPoolPendingCount || 0) > 0) {
+      blockers.push({ code: 'exception_pool_pending', count: context.exceptionPoolPendingCount });
+    }
+    if (context.qualityMetricsReady === false) blockers.push({ code: 'quality_metrics_not_ready' });
+    return blockers;
+  }
+
   global.LabelSuiteTaskDetailData = {
     profiles: profiles,
     AR_REVIEW_STATUS: AR_REVIEW_STATUS,
     ARBITER_CANDIDATE_RULE: ARBITER_CANDIDATE_RULE,
     OVERVIEW_EDITABLE_FIELDS: OVERVIEW_EDITABLE_FIELDS,
-    EXCEPTION_POOL_ACTIONS: EXCEPTION_POOL_ACTIONS
+    EXCEPTION_POOL_ACTIONS: EXCEPTION_POOL_ACTIONS,
+    getFinalExceptionPoolItems: getFinalExceptionPoolItems,
+    getTaskCompletionBlockers: getTaskCompletionBlockers
   };
 }(window));
