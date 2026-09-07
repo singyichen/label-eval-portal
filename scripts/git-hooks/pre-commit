@@ -14,10 +14,11 @@
 #   generated files, tool/project config files, empty or re-export-only
 #   __init__.py/index.ts, and specs/**|openspec/** artifacts don't count
 #   toward either threshold. "Generated files" only counts a file whose
-#   generated-view marker appears in its HEADER (see GENERATED_HEADER_WINDOW
-#   and is_generated_blob, below) — generators must place the marker near
-#   the top of the file to opt in; mentioning it elsewhere in prose or body
-#   text does not exclude the file.
+#   generated-view marker — this repo's own marker string, or a standard
+#   HTML `<meta name="generator">` tag — appears in its HEADER (see
+#   GENERATED_HEADER_WINDOW and is_generated_blob, below) — generators must
+#   place the marker near the top of the file to opt in; mentioning it
+#   elsewhere in prose or body text does not exclude the file.
 #
 # Scope note:
 #   This guard applies to a single commit. Constitution Principle X's
@@ -70,18 +71,21 @@ is_empty_or_reexport_barrel() {
   return 0
 }
 
-# Content-based: true (0) if $1's staged blob carries the generated-view
-# marker IN ITS HEADER, mirroring design/system/screen-inventory.md:5
-# ("本檔為 generated view——請勿手動編輯"). Content-based rather than
+# Content-based: true (0) if $1's staged blob carries a generated-file
+# marker IN ITS HEADER — either this repo's own generated-view marker
+# (design/system/screen-inventory.md:5, "本檔為 generated view——請勿手動
+# 編輯") or the standard HTML `<meta name="generator" content="...">` tag
+# third-party tools (e.g. archify) emit. Content-based rather than
 # filename-based so the check can't be fooled by (or miss) a file that
 # doesn't match an assumed naming convention. Header-scoped (only the first
 # GENERATED_HEADER_WINDOW lines) and marker-specific (the full Chinese
-# phrase, not the bare English words "generated view") so ordinary prose
-# that happens to mention "generated view" elsewhere in a file — or deep in
-# its body — is never mistaken for a real generated-file marker. Fails
-# safe (not excluded) for deletions.
+# phrase or the exact meta tag, not a loose substring) so ordinary prose
+# that happens to mention "generated view" — or a generator name in body
+# text — is never mistaken for a real generated-file marker. Fails safe
+# (not excluded) for deletions. (issue #697)
 GENERATED_HEADER_WINDOW=10
 GENERATED_MARKER='本檔為 generated view——請勿手動編輯'
+GENERATED_META_REGEX='<meta[[:space:]]+name="generator"'
 is_generated_blob() {
   local path="$1" content line n=0
   content="$(git show ":$path" 2>/dev/null)" || return 1
@@ -96,6 +100,7 @@ is_generated_blob() {
     n=$((n + 1))
     [ "$n" -gt "$GENERATED_HEADER_WINDOW" ] && break
     [[ "$line" == *"$GENERATED_MARKER"* ]] && return 0
+    [[ "$line" =~ $GENERATED_META_REGEX ]] && return 0
   done <<<"$content"
   return 1
 }
