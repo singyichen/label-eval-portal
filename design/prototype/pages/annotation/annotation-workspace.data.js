@@ -1986,7 +1986,19 @@
    * is deliberately NOT consulted here -- it has no reviewer-count input
    * left to run on. That function stays defined/exported for
    * describeDisputeVotes()'s pre-decision explanation (still used by the
-   * not-yet-rewritten arbitration card), but no longer decides status. */
+   * not-yet-rewritten arbitration card), but no longer decides status.
+   *
+   * issue #627 item 5: this derivation does not check whether the
+   * reviewer(s) readReviewerSubmissions() finds are on the task's roster
+   * or were actually assigned this unit -- it reads any reviewer bucket
+   * under reviewerBucketPrefix(), keyed by whatever reviewerId wrote it.
+   * That is deliberate: deriving a unit's status from what was submitted
+   * is not the same job as gating who may see or submit it, and this
+   * function does the former. getAssignedReviewUnits() is what filters
+   * which units a reviewer's list page shows. A fixture that submits
+   * under a reviewerId absent from the roster still produces a status
+   * here -- expected, not a bug, but it means a test can accidentally
+   * assert against a submission no live reviewer could have produced. */
   function getReviewUnitStatus(taskId, runType, sampleId, identity, outKeys) {
     var annotatorSubmission = getSubmission(taskId, 'annotator', runType, sampleId, identity);
     if (!annotatorSubmission) return null;
