@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task 狀態機</title>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:      #F5F3FF;
+      --color-paper-2:    #FFFFFF;
+      --color-ink:        #1E1B4B;
+      --color-muted:      #64748B;
+      --color-soft:       #94A3B8;
+      --color-accent:     #6366F1;
+      --font-sans:  'Inter', 'Noto Sans TC', 'PingFang TC', -apple-system, sans-serif;
+      --font-serif: 'Crimson Pro', 'Noto Serif TC', Georgia, serif;
+      --font-mono:  'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1400px; width: 100%; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem; font-weight: 500;
+      letter-spacing: 0.18em;
+      color: var(--color-muted); margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 600; letter-spacing: -0.01em; line-height: 1.15;
+      color: var(--color-ink); margin-bottom: 0.5rem;
+    }
+    .standfirst {
+      font-family: var(--font-serif); font-style: italic;
+      font-size: 0.95rem; color: var(--color-muted);
+      margin-bottom: 1.5rem; max-width: 62ch;
+    }
+    svg { width: 100%; min-width: 1200px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">狀態機 · ADR-022 Transition Table</p>
+    <h1>Task 狀態機</h1>
+    <p class="standfirst">任務的五個狀態一路向前，只有一條反向出口：<code>waiting_iaa_confirmation → draft</code>。最容易被誤解的是 <code>dry_run_in_progress → draft</code>——它<strong>刻意</strong>不被允許，而不是還沒實作。這張圖畫出完整狀態集合、每條合法轉換的前置條件、<code>completed</code> 於 2026-08-19 強化後的五項條件，以及 <code>sample_snapshot_id</code> 的設定／清除不變量。</p>
+
+    <svg viewBox="0 0 1200 960" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="tssm-title tssm-desc">
+      <title id="tssm-title">Task 五態狀態機</title>
+      <desc id="tssm-desc">任務狀態機由上而下五個節點：草稿 draft、試標進行中 dry_run_in_progress、等待 IAA 確認 waiting_iaa_confirmation、正式標記進行中 official_run_in_progress、已完成 completed，已完成為終態。向前的四條轉換各有前置條件：草稿轉試標需至少兩位標記員已指派、設定通過驗證、樣本快照鎖定，並於首次轉入時設定 sample_snapshot_id；試標轉等待確認需所有試標標記已提交且 IAA 已計算；等待確認轉正式標記需專案負責人確認 IAA 並記錄 confirmed_by；正式標記轉已完成需五項前置條件全數成立。唯一允許的反向轉換是等待 IAA 確認回到草稿，觸發條件為專案負責人否決 IAA，並清除 sample_snapshot_id。試標進行中回到草稿刻意不被允許，圖上以叉號與不允許徽章標示。右欄依序列出已完成的五項前置條件與其中第二項的規格待定註記、sample_snapshot_id 不變量、所有不允許的轉換，以及每次成功轉換的稽核與副作用契約。</desc>
+
+      <defs>
+        <marker id="arw" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#64748B"/></marker>
+        <marker id="arw-ac" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#6366F1"/></marker>
+        <marker id="arw-sf" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#94A3B8"/></marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#F5F3FF"/>
+
+      <text x="40" y="32" fill="#64748B" font-size="8" font-family="'JetBrains Mono', monospace" letter-spacing="0.18em">狀態轉換 · 五態單向推進，唯一反向出口為否決 IAA</text>
+
+      <!-- ══ 連接線（先畫，壓在節點下） ══ -->
+      <path d="M 400 112 V 152" fill="none" stroke="#64748B" stroke-width="1.2" marker-end="url(#arw)"/>
+      <path d="M 400 216 V 288" fill="none" stroke="#64748B" stroke-width="1.2" marker-end="url(#arw)"/>
+      <path d="M 400 352 V 424" fill="none" stroke="#64748B" stroke-width="1.2" marker-end="url(#arw)"/>
+      <path d="M 400 488 V 560" fill="none" stroke="#64748B" stroke-width="1.2" marker-end="url(#arw)"/>
+      <path d="M 400 624 V 696" fill="none" stroke="#64748B" stroke-width="1.2" marker-end="url(#arw)"/>
+      <path d="M 400 760 V 788" fill="none" stroke="#64748B" stroke-width="1.2" marker-end="url(#arw)"/>
+      <path d="M 280 456 H 168 A 8 8 0 0 1 160 448 V 192 A 8 8 0 0 1 168 184 H 280" fill="none" stroke="#6366F1" stroke-width="1.2" marker-end="url(#arw-ac)"/>
+      <path d="M 280 320 H 244" fill="none" stroke="#94A3B8" stroke-width="1.2" stroke-dasharray="4,3"/>
+
+      <!-- ══ 轉換標籤（遮罩與線保持 8px 間隙） ══ -->
+      <rect x="408" y="236" width="280" height="32" rx="2" fill="#F5F3FF"/>
+      <text x="416" y="250" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">≥ 2 位標記員已指派 · 設定通過驗證 · 樣本快照鎖定</text>
+      <text x="416" y="264" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace">/ 首次轉入時設定 sample_snapshot_id</text>
+
+      <rect x="408" y="380" width="232" height="18" rx="2" fill="#F5F3FF"/>
+      <text x="416" y="392" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">所有試標標記已提交 · IAA 已計算</text>
+
+      <rect x="408" y="508" width="232" height="32" rx="2" fill="#F5F3FF"/>
+      <text x="416" y="522" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">專案負責人確認 IAA</text>
+      <text x="416" y="536" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace">/ 記錄 confirmed_by</text>
+
+      <rect x="408" y="644" width="272" height="32" rx="2" fill="#F5F3FF"/>
+      <text x="416" y="658" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">五項前置條件全數成立</text>
+      <text x="416" y="672" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace">→ 見右欄 ① completed 前置條件</text>
+
+      <rect x="40" y="280" width="112" height="48" rx="2" fill="#F5F3FF"/>
+      <text x="144" y="292" fill="#6366F1" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="end">專案負責人否決 IAA</text>
+      <text x="144" y="306" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="end">/ 清除</text>
+      <text x="144" y="320" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="end">sample_snapshot_id</text>
+
+      <text x="144" y="356" fill="#6366F1" font-size="14" font-style="italic" font-family="'Crimson Pro','Noto Serif TC',serif" text-anchor="end">唯一允許的</text>
+      <text x="144" y="376" fill="#6366F1" font-size="14" font-style="italic" font-family="'Crimson Pro','Noto Serif TC',serif" text-anchor="end">反向轉換</text>
+
+      <!-- ══ 刻意排除的反向轉換 ══ -->
+      <path d="M 232 316 L 240 324" fill="none" stroke="#B91C1C" stroke-width="1.2"/>
+      <path d="M 240 316 L 232 324" fill="none" stroke="#B91C1C" stroke-width="1.2"/>
+      <rect x="204" y="332" width="56" height="16" rx="8" fill="#FEF2F2" stroke="#FECACA" stroke-width="1"/>
+      <text x="232" y="344" fill="#B91C1C" font-size="9" font-family="'Inter','Noto Sans TC',sans-serif" text-anchor="middle">不允許</text>
+      <text x="204" y="364" fill="#94A3B8" font-size="8" font-family="'JetBrains Mono', monospace">刻意排除，非疏漏</text>
+      <text x="204" y="378" fill="#94A3B8" font-size="8" font-family="'JetBrains Mono', monospace">見 ADR-022 Design note</text>
+
+      <!-- ══ 節點 ══ -->
+      <circle cx="400" cy="104" r="6" fill="#1E1B4B"/>
+
+      <rect x="280" y="152" width="240" height="64" rx="6" fill="#F5F3FF"/>
+      <rect x="280" y="152" width="240" height="64" rx="6" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="1"/>
+      <text x="400" y="180" fill="#1E1B4B" font-size="12" font-weight="600" font-family="'Inter','Noto Sans TC',sans-serif" text-anchor="middle">草稿</text>
+      <text x="400" y="198" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="middle">draft</text>
+
+      <rect x="280" y="288" width="240" height="64" rx="6" fill="#F5F3FF"/>
+      <rect x="280" y="288" width="240" height="64" rx="6" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="1"/>
+      <text x="400" y="316" fill="#1E1B4B" font-size="12" font-weight="600" font-family="'Inter','Noto Sans TC',sans-serif" text-anchor="middle">試標進行中</text>
+      <text x="400" y="334" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="middle">dry_run_in_progress</text>
+
+      <rect x="280" y="424" width="240" height="64" rx="6" fill="#F5F3FF"/>
+      <rect x="280" y="424" width="240" height="64" rx="6" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="1"/>
+      <text x="400" y="452" fill="#1E1B4B" font-size="12" font-weight="600" font-family="'Inter','Noto Sans TC',sans-serif" text-anchor="middle">等待 IAA 確認</text>
+      <text x="400" y="470" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="middle">waiting_iaa_confirmation</text>
+
+      <rect x="280" y="560" width="240" height="64" rx="6" fill="#F5F3FF"/>
+      <rect x="280" y="560" width="240" height="64" rx="6" fill="#FFFFFF" stroke="#1E1B4B" stroke-width="1"/>
+      <text x="400" y="588" fill="#1E1B4B" font-size="12" font-weight="600" font-family="'Inter','Noto Sans TC',sans-serif" text-anchor="middle">正式標記進行中</text>
+      <text x="400" y="606" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="middle">official_run_in_progress</text>
+
+      <rect x="280" y="696" width="240" height="64" rx="6" fill="#F5F3FF"/>
+      <rect x="280" y="696" width="240" height="64" rx="6" fill="#EEF2FF" stroke="#6366F1" stroke-width="1"/>
+      <text x="400" y="724" fill="#1E1B4B" font-size="12" font-weight="600" font-family="'Inter','Noto Sans TC',sans-serif" text-anchor="middle">已完成</text>
+      <text x="400" y="742" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace" text-anchor="middle">completed</text>
+
+      <circle cx="400" cy="800" r="8" fill="none" stroke="#1E1B4B" stroke-width="1"/>
+      <circle cx="400" cy="800" r="5" fill="#1E1B4B"/>
+      <text x="416" y="804" fill="#94A3B8" font-size="8" font-family="'JetBrains Mono', monospace">終態</text>
+
+      <!-- ══ ① completed 前置條件 ══ -->
+      <line x1="712" y1="88" x2="1160" y2="88" stroke="rgba(30,27,75,0.10)" stroke-width="0.8"/>
+      <text x="712" y="104" fill="#64748B" font-size="8" font-family="'JetBrains Mono', monospace" letter-spacing="0.18em">① completed 前置條件 · 2026-08-19 強化（issue #180／#190 決策 D2）</text>
+
+      <text x="712" y="124" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">1. 所有正式標記已提交（排除的指派不計入）</text>
+      <text x="712" y="142" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">2. 依生效審核設定，所有必要審核單位已定稿</text>
+      <text x="932" y="142" fill="#B91C1C" font-size="9" font-family="'JetBrains Mono', monospace">⚠</text>
+      <text x="712" y="160" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">3. 無未解決的爭議</text>
+      <text x="712" y="178" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">4. 所有必要仲裁皆已完成</text>
+      <text x="712" y="196" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">5. 最終品質分數已計算且可取得</text>
+      <text x="712" y="218" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace">check_preconditions 須逐項評估；失敗時回報未達成的具體條件，不得回泛用錯誤</text>
+
+      <text x="712" y="244" fill="#B91C1C" font-size="8" font-family="'JetBrains Mono', monospace">⚠ 規格待定，見 issue #688</text>
+      <text x="712" y="258" fill="#94A3B8" font-size="8" font-family="'JetBrains Mono', monospace">ADR-022:101 第 2 項以 min_reviewers 表述審核人數門檻，但 annotation-015</text>
+      <text x="712" y="272" fill="#94A3B8" font-size="8" font-family="'JetBrains Mono', monospace">已於 v5.0.0 廢止該常數（單人接力：每個審核單位恰一位審核員，FR-093）。</text>
+      <text x="712" y="286" fill="#94A3B8" font-size="8" font-family="'JetBrains Mono', monospace">本圖不引用 spec 014 的 min_reviewers／review_assignment_mode／</text>
+      <text x="712" y="300" fill="#94A3B8" font-size="8" font-family="'JetBrains Mono', monospace">agreement_auto_finalize 等已廢止的多審核員設定。</text>
+
+      <!-- ══ ② sample_snapshot_id 不變量 ══ -->
+      <line x1="712" y1="324" x2="1160" y2="324" stroke="rgba(30,27,75,0.10)" stroke-width="0.8"/>
+      <text x="712" y="340" fill="#64748B" font-size="8" font-family="'JetBrains Mono', monospace" letter-spacing="0.18em">② sample_snapshot_id 不變量 · ADR-022:142–144</text>
+
+      <text x="712" y="360" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">設定：首次轉入 dry_run_in_progress 且欄位為空時建立樣本快照</text>
+      <text x="712" y="378" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">清除：waiting_iaa_confirmation → draft（否決 IAA）時設為 null</text>
+      <text x="712" y="396" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">效果：專案負責人得以修改設定或資料集後重新試標</text>
+      <text x="712" y="414" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace">由服務層單點強制，任何功能皆不得繞過</text>
+
+      <!-- ══ ③ 不允許的轉換 ══ -->
+      <line x1="712" y1="440" x2="1160" y2="440" stroke="rgba(30,27,75,0.10)" stroke-width="0.8"/>
+      <text x="712" y="456" fill="#64748B" font-size="8" font-family="'JetBrains Mono', monospace" letter-spacing="0.18em">③ 不允許的轉換 · 一律拋出 InvalidTransitionError</text>
+
+      <text x="712" y="480" fill="#B91C1C" font-size="9" font-family="'JetBrains Mono', monospace">✕</text>
+      <text x="728" y="480" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">dry_run_in_progress → draft（刻意排除，非疏漏）</text>
+      <text x="728" y="498" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace">需取消進行中的試標並處理已提交者，會產生孤兒標記資料；</text>
+      <text x="728" y="516" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace">復原路徑改走否決 IAA，使清理邏輯集中在單一轉換</text>
+
+      <text x="712" y="540" fill="#B91C1C" font-size="9" font-family="'JetBrains Mono', monospace">✕</text>
+      <text x="728" y="540" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">waiting_iaa_confirmation → dry_run_in_progress</text>
+
+      <text x="712" y="558" fill="#B91C1C" font-size="9" font-family="'JetBrains Mono', monospace">✕</text>
+      <text x="728" y="558" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">official_run_in_progress → waiting_iaa_confirmation ／ draft</text>
+
+      <text x="712" y="576" fill="#B91C1C" font-size="9" font-family="'JetBrains Mono', monospace">✕</text>
+      <text x="728" y="576" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">completed → 任何狀態（終態，ALLOWED_TRANSITIONS 對應空集合）</text>
+
+      <text x="712" y="594" fill="#B91C1C" font-size="9" font-family="'JetBrains Mono', monospace">✕</text>
+      <text x="728" y="594" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">draft → 除 dry_run_in_progress 外的任何狀態（不得跳階）</text>
+
+      <!-- ══ ④ 成功轉換的副作用 ══ -->
+      <line x1="712" y1="620" x2="1160" y2="620" stroke="rgba(30,27,75,0.10)" stroke-width="0.8"/>
+      <text x="712" y="636" fill="#64748B" font-size="8" font-family="'JetBrains Mono', monospace" letter-spacing="0.18em">④ 每次成功轉換的副作用 · ADR-022 服務層契約</text>
+
+      <text x="712" y="660" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">record_transition 寫入 run_state_transitions：from_status／to_status／</text>
+      <text x="712" y="678" fill="#64748B" font-size="9" font-family="'JetBrains Mono', monospace">triggered_by／triggered_at／notes，與狀態更新同一 DB transaction</text>
+      <text x="712" y="696" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace">dispatch_side_effects 派送 Celery 與通知；ADR-022 要求其為 idempotent-safe</text>
+      <text x="712" y="714" fill="#94A3B8" font-size="9" font-family="'JetBrains Mono', monospace">狀態機邏輯僅實作於 app/services/task_service.py（ADR-022 Decision）</text>
+
+      <text x="712" y="748" fill="#64748B" font-size="14" font-style="italic" font-family="'Crimson Pro','Noto Serif TC',serif">設定錯了要重來，只有一條路：把試標跑完、否決 IAA、回到草稿。</text>
+      <text x="712" y="768" fill="#64748B" font-size="14" font-style="italic" font-family="'Crimson Pro','Noto Serif TC',serif">清理邏輯只寫在那一條轉換裡，不是兩條。</text>
+
+      <!-- ══ 圖例 ══ -->
+      <line x1="40" y1="856" x2="1160" y2="856" stroke="rgba(30,27,75,0.10)" stroke-width="0.8"/>
+      <text x="40" y="872" fill="#64748B" font-size="8" font-family="'JetBrains Mono', monospace" letter-spacing="0.18em">圖例 · 節點與轉換記號</text>
+
+      <circle cx="48" cy="892" r="6" fill="#1E1B4B"/>
+      <text x="64" y="896" fill="#94A3B8" font-size="8.5" font-family="'Inter','Noto Sans TC',sans-serif">起始</text>
+
+      <circle cx="152" cy="892" r="8" fill="none" stroke="#1E1B4B" stroke-width="1"/>
+      <circle cx="152" cy="892" r="5" fill="#1E1B4B"/>
+      <text x="168" y="896" fill="#94A3B8" font-size="8.5" font-family="'Inter','Noto Sans TC',sans-serif">終態</text>
+
+      <path d="M 272 892 H 312" fill="none" stroke="#64748B" stroke-width="1.2" marker-end="url(#arw)"/>
+      <text x="324" y="896" fill="#94A3B8" font-size="8.5" font-family="'Inter','Noto Sans TC',sans-serif">合法轉換</text>
+
+      <path d="M 440 892 H 480" fill="none" stroke="#6366F1" stroke-width="1.2" marker-end="url(#arw-ac)"/>
+      <text x="492" y="896" fill="#94A3B8" font-size="8.5" font-family="'Inter','Noto Sans TC',sans-serif">唯一允許的反向轉換（清除 sample_snapshot_id）</text>
+
+      <path d="M 840 892 H 872" fill="none" stroke="#94A3B8" stroke-width="1.2" stroke-dasharray="4,3"/>
+      <path d="M 880 888 L 888 896" fill="none" stroke="#B91C1C" stroke-width="1.2"/>
+      <path d="M 888 888 L 880 896" fill="none" stroke="#B91C1C" stroke-width="1.2"/>
+      <text x="900" y="896" fill="#94A3B8" font-size="8.5" font-family="'Inter','Noto Sans TC',sans-serif">刻意排除的轉換——不畫為轉換線</text>
+    </svg>
+  </div>
+</body>
+</html>
