@@ -114,6 +114,37 @@
     <p class="member-detail-empty hidden" id="memberDetailEmpty"></p>
   </section>
 
+  <section class="panel hidden" aria-labelledby="exceptionPoolSectionTitle" id="exceptionPoolSection">
+    <div class="stage-filter-row">
+      <h2 class="panel-title" id="exceptionPoolSectionTitle" style="margin-bottom: 0;"></h2>
+      <select class="sort-select" id="exceptionPoolRunTypeFilter" aria-label="Final exception pool run type filter">
+        <option value="all" id="exceptionPoolFilterAllOpt">全部</option>
+        <option value="dry_run" id="exceptionPoolFilterDryOpt">試標</option>
+        <option value="official_run" id="exceptionPoolFilterOfficialOpt">正式標記</option>
+      </select>
+    </div>
+    <div class="table-wrap" id="exceptionPoolTableWrap">
+      <div class="table-scroll">
+        <table class="member-table" role="table" aria-label="Final exception pool table">
+          <thead>
+            <tr>
+              <th id="thExceptionSample">樣本 ID</th>
+              <th id="thExceptionAnnotator">標記員</th>
+              <th id="thExceptionReviewer">審核員</th>
+              <th id="thExceptionOutputType">爭議輸出類型</th>
+              <th id="thExceptionArbiter">仲裁者</th>
+              <th id="thExceptionReason">理由</th>
+              <th id="thExceptionEnteredAt">落入例外池時間</th>
+              <th id="thExceptionActions">操作</th>
+            </tr>
+          </thead>
+          <tbody id="exceptionPoolBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <p class="member-detail-empty hidden" id="exceptionPoolEmpty"></p>
+  </section>
+
   <section class="panel hidden" aria-labelledby="progressEmptyTitle" id="progressEmptyState">
     <div class="progress-empty-state">
       <p class="progress-empty-title" id="progressEmptyTitle">尚無成員進度資料</p>
