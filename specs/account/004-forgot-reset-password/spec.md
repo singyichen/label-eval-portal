@@ -83,9 +83,9 @@ sequenceDiagram
 
 ### 重設密碼 token 技術序列圖（參考資料，非本規格條文）
 
-上圖為原型層行為（`RESET_TOKEN_STATES` 由頁面內切換鈕控制，見邊界情況「reset 頁不透過 URL token 直接判斷狀態」）。真正的後端 token 序列——請求重設 → Resend 寄送一次性連結 → 驗證 token 的 `valid` / `expired` / `used` 三種結果 → 設定新密碼並作廢 token——另有一張技術序列圖，與 account 模組其他 token 型流程同放 001 的 `diagrams/` 資料夾：
+上圖為原型層行為（`RESET_TOKEN_STATES` 由頁面內切換鈕控制，見邊界情況「reset 頁不透過 URL token 直接判斷狀態」）。真正的後端 token 序列——請求重設 → Resend 寄送一次性連結 → 驗證 token 的 `valid` / `expired` / `used` 三種結果 → 設定新密碼並作廢 token——另有一張技術序列圖，置於本規格的 `diagrams/` 資料夾（隨本規格一起歸檔），並由 [001](../001-login-email-password/spec.md) 的 account 模組 token 型流程小節一併參照：
 
-- [重設密碼 Token 流程：請求 / 寄送 / 驗證 / 設定新密碼](../001-login-email-password/diagrams/password-reset-token-flow.html)（`archify` `sequence` 圖，成對 `.json` IR + 自包含 `.html`）
+- [重設密碼 Token 流程：請求 / 寄送 / 驗證 / 設定新密碼](./diagrams/password-reset-token-flow.html)（`archify` `sequence` 圖，成對 `.json` IR + 自包含 `.html`）
 
 該圖內容全數引自 [ADR-013](../../../docs/adr/013-email-service-resend.md) 的 Password Reset Flow 與本規格 FR-001–FR-010，**不新增、不修改任何 FR/AC**；ADR-013 未擇一或本規格未涵蓋之處（例如 token 存放於資料表或 Redis TTL key）皆在圖上標示為「規格未定義」，實作前須先補條文，不得以圖面作為裁定依據。
 
@@ -313,7 +313,7 @@ flowchart LR
 
 | 版本 | 日期 | 變更摘要 |
 |------|------|---------|
-| 1.1.5 | 2026-09-07 | Issue #671：於 流程圖 新增「重設密碼 token 技術序列圖」小節，連結置於 `specs/account/001-login-email-password/diagrams/` 的 `password-reset-token-flow.html`（`archify` `sequence` 圖），補上原型層狀態切換之外的後端 token 序列（Resend 寄送、`valid` / `expired` / `used` 三種驗證結果、作廢 token）；圖面內容引自 ADR-013 與本規格 FR-001–FR-010，未定義處標示為「規格未定義」而不自行裁定。純參考資料補充，未新增、修改或移除任何 FR/AC，走 Lightweight Path。 |
+| 1.1.5 | 2026-09-07 | Issue #671：於 流程圖 新增「重設密碼 token 技術序列圖」小節，連結置於本規格 `diagrams/` 的 `password-reset-token-flow.html`（`archify` `sequence` 圖），補上原型層狀態切換之外的後端 token 序列（Resend 寄送、`valid` / `expired` / `used` 三種驗證結果、作廢 token）；圖面內容引自 ADR-013 與本規格 FR-001–FR-010，未定義處標示為「規格未定義」而不自行裁定。純參考資料補充，未新增、修改或移除任何 FR/AC，走 Lightweight Path。 |
 | 1.1.4 | 2026-08-20 | Issue #261：新增 Prototype Traceability，分別對應 forgot 與 reset 原型、全頁 loading lock、可選 wireframe 參考及兩個設計層驗證檔；本規格維持多頁擁有權。 |
 | 1.1.3 | 2026-05-22 | 釐清 forgot/reset 送出後 loading 期間全頁不可互動，並同步更新流程、FR、狀態模型與成功標準 |
 | 1.1.2 | 2026-05-21 | 補充輸入與產生規則、已釐清事項、審查清單與執行狀態；同步功能分支格式 |
