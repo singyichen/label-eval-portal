@@ -1032,8 +1032,8 @@
     T014: {
       taskCategories: ['classification'],
       taskInputTypes: ['single_item'],
-      reviewerIds: ['mandy@labelsuite.io', 'kevin.liu@labelsuite.io', 'rachel.wu@labelsuite.io'],
-      arbiterIds: ['mandy@labelsuite.io'],
+      reviewerIds: ['user_mandy', 'user_kevin', 'user_rachel'],
+      arbiterIds: ['user_mandy'],
       outputs: [
         {
           type: 'single_label',
@@ -1085,8 +1085,8 @@
     T015: {
       taskCategories: ['classification'],
       taskInputTypes: ['single_item'],
-      reviewerIds: ['mandy@labelsuite.io', 'kevin.liu@labelsuite.io', 'rachel.wu@labelsuite.io'],
-      arbiterIds: ['mandy@labelsuite.io'],
+      reviewerIds: ['user_mandy', 'user_kevin', 'user_rachel'],
+      arbiterIds: ['user_mandy'],
       outputs: [
         {
           type: 'single_label',
@@ -1138,8 +1138,8 @@
     T016: {
       taskCategories: ['classification'],
       taskInputTypes: ['single_item'],
-      reviewerIds: ['mandy@labelsuite.io', 'kevin.liu@labelsuite.io', 'rachel.wu@labelsuite.io'],
-      arbiterIds: ['mandy@labelsuite.io'],
+      reviewerIds: ['user_mandy', 'user_kevin', 'user_rachel'],
+      arbiterIds: ['user_mandy'],
       outputs: [
         {
           type: 'single_label',
@@ -1191,8 +1191,8 @@
     T017: {
       taskCategories: ['classification'],
       taskInputTypes: ['single_item'],
-      reviewerIds: ['mandy@labelsuite.io', 'kevin.liu@labelsuite.io', 'rachel.wu@labelsuite.io'],
-      arbiterIds: ['mandy@labelsuite.io'],
+      reviewerIds: ['user_mandy', 'user_kevin', 'user_rachel'],
+      arbiterIds: ['user_mandy'],
       outputs: [
         {
           type: 'single_label',

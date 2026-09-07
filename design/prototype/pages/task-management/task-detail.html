@@ -3347,7 +3347,7 @@
     isolationEnabled: true,
     isolationLastActor: 'Mandy Chen',
     isolationLastUpdated: '2026-04-20 19:42',
-    reviewerIds: ['mandy@labelsuite.io', 'kevin.liu@labelsuite.io', 'rachel.wu@labelsuite.io'],
+    reviewerIds: ['user_mandy', 'user_kevin', 'user_rachel'],
     arbiterIds: [],
     trialRounds: [
       {
@@ -3391,20 +3391,27 @@
     sentence_pairs:                  { targetIAA: 0.76, targetStd: 0.15, minAnnotators: 3, trialPercent: 12 },
   };
 
+  /* FR-010s-1 (issue #688): `id` is this member's TaskMembership.user_id --
+     an opaque id, distinct from `email` (display-only, see the member-list
+     rendering below) and from `taskRole` (mutable via member management).
+     reviewer_ids/arbiter_ids and the byReviewer workload tables key off this
+     `id`, never off `email` or a role-prefixed slug: encoding taskRole into
+     the id would go stale the moment a member's role changes, since
+     TaskMembership stores user_id and task_role as independent fields. */
   var TASK_MEMBERS = [
-    { name: 'Mandy Chen', email: 'mandy@labelsuite.io', taskRole: 'reviewer', status: 'active', joinedAt: '2026-04-20 10:13', lastActive: '2026-04-21 09:42' },
-    { name: 'Kevin Liu', email: 'kevin.liu@labelsuite.io', taskRole: 'reviewer', status: 'active', joinedAt: '2026-04-20 10:14', lastActive: '2026-04-21 09:31' },
-    { name: 'Rachel Wu', email: 'rachel.wu@labelsuite.io', taskRole: 'reviewer', status: 'active', joinedAt: '2026-04-20 10:14', lastActive: '2026-04-21 08:47' },
-    { name: 'Alex Wang', email: 'alex.wang@labelsuite.io', taskRole: 'annotator', status: 'active', joinedAt: '2026-04-20 10:15', lastActive: '2026-04-21 09:12' },
-    { name: 'Olivia Lin', email: 'olivia.lin@labelsuite.io', taskRole: 'annotator', status: 'active', joinedAt: '2026-04-20 10:16', lastActive: '2026-04-21 08:58' },
-    { name: 'Jason Huang', email: 'jason.h@labelsuite.io', taskRole: 'annotator', status: 'disabled', joinedAt: '2026-04-20 10:18', lastActive: '2026-04-20 16:11' },
+    { id: 'user_mandy', name: 'Mandy Chen', email: 'mandy@labelsuite.io', taskRole: 'reviewer', status: 'active', joinedAt: '2026-04-20 10:13', lastActive: '2026-04-21 09:42' },
+    { id: 'user_kevin', name: 'Kevin Liu', email: 'kevin.liu@labelsuite.io', taskRole: 'reviewer', status: 'active', joinedAt: '2026-04-20 10:14', lastActive: '2026-04-21 09:31' },
+    { id: 'user_rachel', name: 'Rachel Wu', email: 'rachel.wu@labelsuite.io', taskRole: 'reviewer', status: 'active', joinedAt: '2026-04-20 10:14', lastActive: '2026-04-21 08:47' },
+    { id: 'user_alex', name: 'Alex Wang', email: 'alex.wang@labelsuite.io', taskRole: 'annotator', status: 'active', joinedAt: '2026-04-20 10:15', lastActive: '2026-04-21 09:12' },
+    { id: 'user_olivia', name: 'Olivia Lin', email: 'olivia.lin@labelsuite.io', taskRole: 'annotator', status: 'active', joinedAt: '2026-04-20 10:16', lastActive: '2026-04-21 08:58' },
+    { id: 'user_jason', name: 'Jason Huang', email: 'jason.h@labelsuite.io', taskRole: 'annotator', status: 'disabled', joinedAt: '2026-04-20 10:18', lastActive: '2026-04-20 16:11' },
     /* issue #505: 4th active annotator so the default seed has 3 *active*
        annotators (Alex, Olivia, Derek) against DEFAULT_TASK_DATA.minAnnotators=3
        -- the FR-010t publish gate (getMembershipGapMessages()) counts active
        members. Jason Huang stays disabled: DEFAULT_UNASSIGNED_ANNOTATION_ASSIGNMENTS
        seeds a "member removed mid-run" backstory attributed to him, and the
        member table keeps one disabled-status demo row. */
-    { name: 'Derek Yeh', email: 'derek.yeh@labelsuite.io', taskRole: 'annotator', status: 'active', joinedAt: '2026-04-20 10:19', lastActive: '2026-04-21 09:05' },
+    { id: 'user_derek', name: 'Derek Yeh', email: 'derek.yeh@labelsuite.io', taskRole: 'annotator', status: 'active', joinedAt: '2026-04-20 10:19', lastActive: '2026-04-21 09:05' },
   ];
 
   /* Review workload seed (issue #148). `已指派` is always derived as
@@ -3418,9 +3425,9 @@
     unassignedCount: 18,
     disputeCount: 7,
     byReviewer: {
-      'mandy@labelsuite.io': { pending: 12, done: 28 },
-      'kevin.liu@labelsuite.io': { pending: 31, done: 9 },
-      'rachel.wu@labelsuite.io': { pending: 5, done: 13 },
+      user_mandy: { pending: 12, done: 28 },
+      user_kevin: { pending: 31, done: 9 },
+      user_rachel: { pending: 5, done: 13 },
     },
   };
   var REVIEW_WORKLOAD_BY_TASK = {
@@ -3431,45 +3438,53 @@
       unassignedCount: 2,
       disputeCount: 0,
       byReviewer: {
-        'mandy@labelsuite.io': { pending: 1, done: 2 },
-        'kevin.liu@labelsuite.io': { pending: 1, done: 1 },
-        'rachel.wu@labelsuite.io': { pending: 0, done: 1 },
+        user_mandy: { pending: 1, done: 2 },
+        user_kevin: { pending: 1, done: 1 },
+        user_rachel: { pending: 0, done: 1 },
       },
     },
     T015: {
       unassignedCount: 1,
       disputeCount: 1,
       byReviewer: {
-        'mandy@labelsuite.io': { pending: 1, done: 2 },
-        'kevin.liu@labelsuite.io': { pending: 0, done: 1 },
-        'rachel.wu@labelsuite.io': { pending: 0, done: 0 },
+        user_mandy: { pending: 1, done: 2 },
+        user_kevin: { pending: 0, done: 1 },
+        user_rachel: { pending: 0, done: 0 },
       },
     },
     T016: {
       unassignedCount: 3,
       disputeCount: 1,
       byReviewer: {
-        'mandy@labelsuite.io': { pending: 2, done: 4 },
-        'kevin.liu@labelsuite.io': { pending: 1, done: 3 },
-        'rachel.wu@labelsuite.io': { pending: 1, done: 1 },
+        user_mandy: { pending: 2, done: 4 },
+        user_kevin: { pending: 1, done: 3 },
+        user_rachel: { pending: 1, done: 1 },
       },
     },
     T017: {
       unassignedCount: 2,
       disputeCount: 1,
       byReviewer: {
-        'mandy@labelsuite.io': { pending: 1, done: 3 },
-        'kevin.liu@labelsuite.io': { pending: 1, done: 2 },
-        'rachel.wu@labelsuite.io': { pending: 0, done: 0 },
+        user_mandy: { pending: 1, done: 3 },
+        user_kevin: { pending: 1, done: 2 },
+        user_rachel: { pending: 0, done: 0 },
       },
     },
   };
   var REVIEW_WORKLOAD = cloneData(DEFAULT_REVIEW_WORKLOAD);
 
+  /* `id` here is the same canonical id carried by this person's TASK_MEMBERS
+     record (issue #688). It belongs to the platform user, not to their
+     membership in this particular task: removing a member only dissolves
+     the task-membership relation, it does not destroy the person's
+     identity. So when they rejoin via search-add (addPlatformUserToTask),
+     the id must be looked up here -- the platform-level directory -- rather
+     than reconstructed from the just-spliced TASK_MEMBERS record, which by
+     then no longer exists. */
   var PLATFORM_USERS = [
-    { account: 'alex.wang', name: 'Alex Wang', email: 'alex.wang@labelsuite.io', activeTaskCount: 1 },
-    { account: 'olivia.lin', name: 'Olivia Lin', email: 'olivia.lin@labelsuite.io', activeTaskCount: 2 },
-    { account: 'jason.h', name: 'Jason Huang', email: 'jason.h@labelsuite.io', activeTaskCount: 3 },
+    { id: 'user_alex', account: 'alex.wang', name: 'Alex Wang', email: 'alex.wang@labelsuite.io', activeTaskCount: 1 },
+    { id: 'user_olivia', account: 'olivia.lin', name: 'Olivia Lin', email: 'olivia.lin@labelsuite.io', activeTaskCount: 2 },
+    { id: 'user_jason', account: 'jason.h', name: 'Jason Huang', email: 'jason.h@labelsuite.io', activeTaskCount: 3 },
   ];
 
   var ROLE_SELF_EMAIL = {
@@ -6043,26 +6058,26 @@ function getTaskTypeLabel() {
     });
   }
 
-  /* Stored arbiter emails can go stale when a member is removed or disabled
+  /* Stored arbiter ids can go stale when a member is removed or disabled
      via member management; those entries have no checkbox to uncheck, so
      every consumer must filter against the current active-reviewer set. */
   function getEffectiveArbiterIds(ids) {
-    var activeEmails = getActiveReviewerMembers().map(function(member) { return member.email; });
-    return (ids || []).filter(function(email) { return activeEmails.indexOf(email) >= 0; });
+    var activeIds = getActiveReviewerMembers().map(function(member) { return member.id; });
+    return (ids || []).filter(function(id) { return activeIds.indexOf(id) >= 0; });
   }
 
-  /* Stored reviewer emails can go stale the same way arbiter emails can
+  /* Stored reviewer ids can go stale the same way arbiter ids can
      (member removed/disabled via member management); filter against the
      current active-reviewer set the same way getEffectiveArbiterIds does. */
   function getEffectiveReviewerIds(ids) {
-    var activeEmails = getActiveReviewerMembers().map(function(member) { return member.email; });
-    return (ids || []).filter(function(email) { return activeEmails.indexOf(email) >= 0; });
+    var activeIds = getActiveReviewerMembers().map(function(member) { return member.id; });
+    return (ids || []).filter(function(id) { return activeIds.indexOf(id) >= 0; });
   }
 
   function createReviewDraft() {
     var reviewerIds = getEffectiveReviewerIds(TASK_DATA.reviewerIds);
-    var arbiterIds = getEffectiveArbiterIds(TASK_DATA.arbiterIds).filter(function(email) {
-      return reviewerIds.indexOf(email) >= 0;
+    var arbiterIds = getEffectiveArbiterIds(TASK_DATA.arbiterIds).filter(function(id) {
+      return reviewerIds.indexOf(id) >= 0;
     });
     return {
       reviewerIds: reviewerIds,
@@ -6106,8 +6121,8 @@ function getTaskTypeLabel() {
       option.className = 'reviewer-option';
       var input = document.createElement('input');
       input.type = 'checkbox';
-      input.value = member.email;
-      input.checked = (data.reviewerIds || []).indexOf(member.email) >= 0;
+      input.value = member.id;
+      input.checked = (data.reviewerIds || []).indexOf(member.id) >= 0;
       input.disabled = !editable;
       var text = document.createElement('span');
       text.textContent = member.name;
@@ -6125,14 +6140,14 @@ function getTaskTypeLabel() {
     mount.innerHTML = '';
     var reviewerIds = data.reviewerIds || [];
     getActiveReviewerMembers()
-      .filter(function(member) { return reviewerIds.indexOf(member.email) >= 0; })
+      .filter(function(member) { return reviewerIds.indexOf(member.id) >= 0; })
       .forEach(function(member) {
         var option = document.createElement('label');
         option.className = 'arbiter-option';
         var input = document.createElement('input');
         input.type = 'checkbox';
-        input.value = member.email;
-        input.checked = (data.arbiterIds || []).indexOf(member.email) >= 0;
+        input.value = member.id;
+        input.checked = (data.arbiterIds || []).indexOf(member.id) >= 0;
         input.disabled = !editable;
         var text = document.createElement('span');
         text.textContent = member.name;
@@ -6846,7 +6861,7 @@ function getTaskTypeLabel() {
       tdRole.appendChild(roleBadge);
       tr.appendChild(tdRole);
 
-      tr.appendChild(tdWithClass(member.taskRole === 'reviewer' ? formatReviewLoad(member.email) : '—'));
+      tr.appendChild(tdWithClass(member.taskRole === 'reviewer' ? formatReviewLoad(member.id) : '—'));
 
       var tdStatus = document.createElement('td');
       var statusBadge = document.createElement('span');
@@ -6971,6 +6986,17 @@ function getTaskTypeLabel() {
     }
   }
 
+  /* Derives a slug-shaped id from an Email local part (issue #688), for the
+     rare case a TASK_MEMBERS record needs an id but has no canonical
+     PLATFORM_USERS entry to look one up from -- e.g. an invited-by-Email
+     member who was never a platform user. Not a substitute for the
+     PLATFORM_USERS lookup: it produces a fresh id with no history, so it is
+     only a fallback. */
+  function deriveUserIdFromEmail(email) {
+    var localPart = String(email || '').split('@')[0].toLowerCase();
+    return 'user_' + localPart.replace(/[^a-z0-9]/g, '_');
+  }
+
   function getAvailablePlatformUsers(query) {
     var needle = String(query || '').trim().toLowerCase();
     if (!needle) return [];
@@ -6986,6 +7012,7 @@ function getTaskTypeLabel() {
   function addPlatformUserToTask(user, role) {
     if (!user || TASK_MEMBERS.some(function(member) { return member.email === user.email; })) return;
     TASK_MEMBERS.push({
+      id: user.id || deriveUserIdFromEmail(user.email),
       name: user.name,
       email: user.email,
       taskRole: role,
@@ -7076,7 +7103,15 @@ function getTaskTypeLabel() {
       showToast(t('errMemberDuplicate'), true);
       return;
     }
+    /* This invited-member path is currently unreachable: invited status
+       (:6890 `if (member.status !== 'invited') return;`) has no
+       invited -> active transition anywhere in this file, so no test
+       exercises it. `id` is still added here so the TASK_MEMBERS "every
+       record has an id" invariant holds regardless of push site -- leaving
+       one push without it would let the invariant rot again the moment this
+       path becomes reachable. */
     TASK_MEMBERS.push({
+      id: deriveUserIdFromEmail(email),
       name: email,
       email: email,
       taskRole: roleSelect.value,
@@ -7135,14 +7170,14 @@ function getTaskTypeLabel() {
     renderReviewEditState();
   }
 
-  function getReviewWorkload(email) {
+  function getReviewWorkload(id) {
     var byReviewer = REVIEW_WORKLOAD.byReviewer;
-    if (!byReviewer[email]) byReviewer[email] = { pending: 0, done: 0 };
-    return byReviewer[email];
+    if (!byReviewer[id]) byReviewer[id] = { pending: 0, done: 0 };
+    return byReviewer[id];
   }
 
-  function formatReviewLoad(email) {
-    var load = getReviewWorkload(email);
+  function formatReviewLoad(id) {
+    var load = getReviewWorkload(id);
     return interpolate(t('reviewLoadTpl'), { assigned: load.pending + load.done, pending: load.pending });
   }
 
@@ -7150,7 +7185,7 @@ function getTaskTypeLabel() {
      units: pending flows back to the unassigned pool, done stays as
      historical stats (mirrors FR-005f for annotators). */
   function releaseReviewerPendingLoad(member) {
-    var load = REVIEW_WORKLOAD.byReviewer[member.email];
+    var load = REVIEW_WORKLOAD.byReviewer[member.id];
     if (!load || !load.pending) return;
     REVIEW_WORKLOAD.unassignedCount += load.pending;
     load.pending = 0;
@@ -7177,13 +7212,13 @@ function getTaskTypeLabel() {
 
     while (body.firstChild) body.removeChild(body.firstChild);
     getActiveReviewerMembers().forEach(function(member) {
-      var load = getReviewWorkload(member.email);
+      var load = getReviewWorkload(member.id);
       var tr = document.createElement('tr');
 
       var tdName = document.createElement('td');
       tdName.className = 'member-name';
       tdName.textContent = member.name;
-      if (arbiters.indexOf(member.email) >= 0) {
+      if (arbiters.indexOf(member.id) >= 0) {
         var tag = document.createElement('span');
         tag.className = 'arbiter-tag';
         tag.textContent = t('arbiterTagLabel');

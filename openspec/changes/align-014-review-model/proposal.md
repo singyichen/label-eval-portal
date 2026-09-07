@@ -29,7 +29,7 @@
 - **仲裁指派改為系統判定合格非當事人**：FR-005k 的「分派給仲裁者」按鈕移除，爭議池與最終例外池兩列皆為唯讀資訊列，仲裁資格由系統依 `ARBITER_CANDIDATE_RULE` 加 `annotation/015-annotation-workspace` FR-060 之非當事人條件判定（此行為已由 `XROLE-17` 覆蓋，規格為追上既有實作，不需改測試）。
 - **`ARBITER_CANDIDATE_RULE` 加上 `can_arbitrate = true`**：候選集合收斂為「被勾選進 `arbiter_ids` 的啟用中審核員」，取代原本的「任一未參與該筆審核的審核員皆可認領」。
 - **`AR_REVIEW_STATUS` 五態改三態（**BREAKING**）**：`pending | approved | modified | disputed | finalized` 改為 `pending | disputed | finalized`，與 015 `REVIEW_UNIT_STATUS` 同值同形狀；`approved`／`modified` 兩個「已審但未達門檻」的中繼態在恆一位審核員的模型下結構上不可達。
-- **`reviewer_ids` 身分格式定案（issue #688 第 ⑦ 項，本 change 相對 deferred 計畫的增量）**：`reviewer_ids`／`arbiter_ids` 之元素定義為**不透明 user id**，格式沿用 `annotation/015-annotation-workspace` `REVIEWER_ROSTER` 的 slug（`reviewer_wang`），Email 降為成員清單的顯示屬性、不得作為比對鍵。原型 seed 之 Email 值須一併遷移。
+- **`reviewer_ids` 身分格式定案（issue #688 第 ⑦ 項，本 change 相對 deferred 計畫的增量）**：`reviewer_ids`／`arbiter_ids` 之元素定義為**不透明 user id**，取值來源為 014 既有實體 `TaskMembership.user_id`，形狀沿用 `annotation/015-annotation-workspace` `REVIEWER_ROSTER` 的 slug（`reviewer_wang`），Email 降為成員清單的顯示屬性、不得作為比對鍵。原型 seed 之 Email 值須一併遷移為 slug，成員名冊人選不變。
 - **發布前檢查改單審核員模型**：FR-010t 之「active reviewer 人數 `>= min_reviewers`」改為「被勾選且啟用中的審核員 `>= 1`」；`arbiter_ids` 為空不阻擋發布，但須於確認畫面顯示「爭議項將無人可仲裁而堆積」的警示。
 - **結案前置條件納入例外池清空**：FR-008b 移除 `min_reviewers` 語意，並新增「最終例外池已清空」為第 4 項條件。
 - **最終例外池入口（新能力）**：新增 FR-018，於 `annotation-progress` 頁籤提供專案負責人逐筆收尾爭議的區塊入口與導頁，收尾畫面本身由 `annotation/015-annotation-workspace` FR-095 承接。
@@ -76,7 +76,7 @@
 - **PR #683 / issue #617**：`getAssignedReviewUnits` 改讀 `reviewer_ids` 後 20 個審核流程測試轉紅，根因為 014 未定義 `reviewer_ids` 內容。本 change 群組 1 的身分遷移是該 PR 的解鎖前提；#683 須待本 change 群組 1 合併後重做。
 - **`XROLE-17`**（`design/prototype/tests/cross-role/xrole-canonical-journey.spec.ts:856`）：已覆蓋「仲裁入口僅提供給合格的非當事人仲裁者」，即 FR-005k 改版後的行為。本 change 對 FR-005k 的修改是規格追上既有實作，MUST NOT 修改該測試。
 - **`XROLE-04` / `XROLE-20` / `XROLE-21`**：三個 `test.fail` 形式的已知落差文件（`min_annotators` 未對實際人數強制、結案未被未解爭議阻擋、結案無二次確認）。FR-010t 與 FR-008b 的改版**不解除**這三個落差——它們是 014 既有債，不在本 change 範圍；若實作使其意外轉綠，須於任務驗證時明示並另開 issue。
-- **`annotation/015-annotation-workspace` `REVIEWER_ROSTER`**：`reviewer_wang / reviewer_li / reviewer_chen（can_arbitrate = true）/ reviewer_lin` 是 `reviewer_ids` 的唯一合法取值來源；其地位同 `REVIEWER_MOCK_ANNOTATORS`，後端接上後由真實帳號取代。014 MUST NOT 另建第二份名冊。
+- **`annotation/015-annotation-workspace` `REVIEWER_ROSTER`**：`reviewer_wang / reviewer_li / reviewer_chen（can_arbitrate = true）/ reviewer_lin` 是 `reviewer_ids` 元素**形狀**的參照基準（slug 形式的不透明 id）；其地位同 `REVIEWER_MOCK_ANNOTATORS`，後端接上後由真實帳號取代。014 的取值來源是自身的 `TaskMembership.user_id`，MUST NOT 另建第二份審核員名冊，亦 MUST NOT 反向讀取 015 的示範 seed。
 
 ## Constitution Check
 
