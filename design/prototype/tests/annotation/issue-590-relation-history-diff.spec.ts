@@ -232,4 +232,169 @@ test.describe('issue #590 -- relation_identification position-bearing history di
 
     assertNoPageErrors(errors);
   });
+
+  /* issue #590 / OpenSpec change carry-relation-span-offsets, tasks.md 3.3
+   * (FR-098 §6, per-snapshot-pair fallback to plain-value comparison).
+   *
+   * FR-098 §6: the per-entity diff above is only trustworthy when BOTH the
+   * before and after snapshot produced at least one triple with a real
+   * offset. `hasComparablePositions()` (annotation-history.js:233) already
+   * encodes that check and is exported, but as of 3.2 nothing calls it --
+   * `buildHistoryDiff()` (annotation-workspace.config.js:1753) dispatches on
+   * `isPositionalOutput()` alone, which is true for `relation_identification`
+   * unconditionally once 3.2 registered its extractor. FR-098 §6's own
+   * rationale: skipping this fallback does not merely "not improve" the two
+   * known no-offset source shapes (gold plain-string triples,
+   * task-config.engine.js:1867-1873; the built-in ABSA demo's string
+   * concatenation, task-config.engine.js:1874-1880) -- it makes them WORSE
+   * than before FR-098, degrading from "today's plain-value diff" to a
+   * silent EMPTY diff, because every triple's index key
+   * (`start + NUL + label`, annotation-history.js:218) collapses to the
+   * same `"null" + NUL + label` on both sides whenever the relation key is
+   * unchanged, so `diffPositional` sees identical keys with identical (null)
+   * `end` values and emits nothing.
+   *
+   * The three tests below seed exactly that shape directly through
+   * `data.markSampleSaved`/`markSampleSubmitted` (same seeding path 3.1
+   * already established for this file) rather than driving the task-new
+   * wizard UI, but every triple's field values are independently computed
+   * from the SAME two engine branches / demo record FR-098 §7 names as the
+   * known gap, so the shape itself is the one those branches actually
+   * produce, not an invented one:
+   *
+   * - "gold" test: matches task-config.engine.js:1868-1873's `tripShape ===
+   *   'gold'` branch output verbatim (subj/rel/obj passed through, relType
+   *   from `relation_type`, all four offsets hard-`null`).
+   * - "built-in demo" test: matches task-config.engine.js:1874-1880's
+   *   `tripShape === 'absa'` branch output verbatim for T013's own
+   *   `absa-001` record (task-detail.data.js) and T013's own
+   *   `relation_identification` config (`relation_types: ['has_aspect',
+   *   'has_opinion']`) and `entity_recognition` config (entity names
+   *   `Target`/`Aspect`), producing `subj: 'Note 10 plus/Target'`, `obj:
+   *   '過熱問題/Aspect'`, `rel: 'has_aspect'`, all four offsets `null` (that
+   *   branch never sets `relType` at all, so this file writes it as
+   *   explicit `null` per the same "hard-null over omitted key" convention
+   *   task 1.2's evidence already used). These are rendered inside T008's
+   *   workspace purely as a seeding host -- `buildHistoryDiff` and
+   *   `SPAN_EXTRACTORS.relation_identification` read only the snapshot's
+   *   own `previewTriples`/`previewState`, never the hosting task's config,
+   *   so which task_id renders the panel does not change what is under
+   *   test here.
+   * - "mixed" test: one side reuses test 1's own already-verified
+   *   `subjStart:0/subjEnd:3/objStart:14/objEnd:18`; the other side is the
+   *   null-offset "gold" shape above. FR-098 §6 requires BOTH snapshots to
+   *   have a comparable span before trusting the per-entity diff, so a
+   *   real position on only one side must also fall back.
+   *
+   * All three keep each triple's relationKey (relType, since every triple
+   * here sets one) IDENTICAL between before and after, and change only a
+   * display-string field (`subj`/`obj`) -- so a correct implementation must
+   * detect the change via the plain-value string compare, not via the
+   * index-key machinery, which by construction cannot see it.
+   *
+   * Today (this test's Red state), the "gold" and "built-in demo" cases
+   * degrade to a silently empty diff (`.history-diff-item` count 0, not the
+   * expected 1), and the "mixed" case wrongly emits 4 position-tagged
+   * add/remove rows (2 "removed" from the position-bearing side, 2 "added"
+   * with null positions from the other) instead of collapsing to one
+   * plain-value row -- both are the FR-098 §6 gap this task locks.
+   */
+  test('gold-shaped plain-string triples with no offsets on either snapshot fall back to a single plain-value diff line instead of degrading to an empty diff', async ({ page }) => {
+    const errors = trackPageErrors(page);
+    await skipGuidelineModal(page);
+    await page.goto(buildWorkspaceUrl({ task_id: TASK, sample_id: SAMPLE, annotator_id: ANNOTATOR }));
+
+    await seedTwoSnapshots(
+      page,
+      [
+        { subj: '高血壓', rel: '導致', relType: 'causes', obj: '動脈硬化', subjStart: null, subjEnd: null, objStart: null, objEnd: null },
+      ],
+      [
+        /* Only the subject's display text changes; relationKey ('causes')
+           is unchanged on both sides, so the index-key path sees no change
+           at all and would silently drop this edit without the fallback. */
+        { subj: '高血壓合併症', rel: '導致', relType: 'causes', obj: '動脈硬化', subjStart: null, subjEnd: null, objStart: null, objEnd: null },
+      ]
+    );
+    await openHistory(page);
+
+    const items = latestCard(page).locator('.history-diff-item');
+    await expect(items).toHaveCount(1);
+
+    await expect(items.filter({ has: page.locator('[data-diff-kind]') })).toHaveCount(0);
+    await expect(items).toContainText('relation_identification:');
+    await expect(items).toContainText('高血壓 -> 導致 -> 動脈硬化');
+    await expect(items).toContainText('高血壓合併症 -> 導致 -> 動脈硬化');
+    await expect(items).toContainText('→');
+
+    assertNoPageErrors(errors);
+  });
+
+  test('a built-in ABSA demo relation (string-concatenated, no offsets) also falls back to a single plain-value diff line instead of an empty diff', async ({ page }) => {
+    const errors = trackPageErrors(page);
+    await skipGuidelineModal(page);
+    await page.goto(buildWorkspaceUrl({ task_id: TASK, sample_id: SAMPLE, annotator_id: ANNOTATOR }));
+
+    await seedTwoSnapshots(
+      page,
+      [
+        /* task-config.engine.js:1874-1880 absa branch output for T013's
+           absa-001 gold_triplets[0] (target_text 'Note 10 plus', aspect_text
+           '過熱問題') under T013's own entity names (Target/Aspect) and
+           relation_types[0] ('has_aspect'). relType is explicit null: the
+           absa branch never sets that key at all. */
+        { subj: 'Note 10 plus/Target', rel: 'has_aspect', relType: null, obj: '過熱問題/Aspect', subjStart: null, subjEnd: null, objStart: null, objEnd: null },
+      ],
+      [
+        /* Same relationKey ('has_aspect', since relType stays null on both
+           sides); only the aspect's concatenated display text is corrected. */
+        { subj: 'Note 10 plus/Target', rel: 'has_aspect', relType: null, obj: '過熱與當機問題/Aspect', subjStart: null, subjEnd: null, objStart: null, objEnd: null },
+      ]
+    );
+    await openHistory(page);
+
+    const items = latestCard(page).locator('.history-diff-item');
+    await expect(items).toHaveCount(1);
+
+    await expect(items.filter({ has: page.locator('[data-diff-kind]') })).toHaveCount(0);
+    await expect(items).toContainText('relation_identification:');
+    await expect(items).toContainText('Note 10 plus/Target -> has_aspect -> 過熱問題/Aspect');
+    await expect(items).toContainText('Note 10 plus/Target -> has_aspect -> 過熱與當機問題/Aspect');
+    await expect(items).toContainText('→');
+
+    assertNoPageErrors(errors);
+  });
+
+  test('a snapshot pair where only one side has comparable positions also falls back to a single plain-value diff line instead of mismatched position-tagged rows', async ({ page }) => {
+    const errors = trackPageErrors(page);
+    await skipGuidelineModal(page);
+    await page.goto(buildWorkspaceUrl({ task_id: TASK, sample_id: SAMPLE, annotator_id: ANNOTATOR }));
+
+    await seedTwoSnapshots(
+      page,
+      [
+        /* Same offsets as test 1's own before-snapshot triple, already
+           independently verified against T008/rel-001's text. */
+        { subj: '高血壓', rel: '導致', relType: 'causes', obj: '動脈硬化', subjStart: 0, subjEnd: 3, objStart: 14, objEnd: 18 },
+      ],
+      [
+        /* relationKey ('causes') unchanged; the object's display text is
+           corrected AND this snapshot carries no offsets at all, so only
+           one side (the "before" one) has a comparable position. */
+        { subj: '高血壓', rel: '導致', relType: 'causes', obj: '動脈硬化併發症', subjStart: null, subjEnd: null, objStart: null, objEnd: null },
+      ]
+    );
+    await openHistory(page);
+
+    const items = latestCard(page).locator('.history-diff-item');
+    await expect(items).toHaveCount(1);
+
+    await expect(items.filter({ has: page.locator('[data-diff-kind]') })).toHaveCount(0);
+    await expect(items).toContainText('relation_identification:');
+    await expect(items).toContainText('高血壓 -> 導致 -> 動脈硬化');
+    await expect(items).toContainText('高血壓 -> 導致 -> 動脈硬化併發症');
+    await expect(items).toContainText('→');
+
+    assertNoPageErrors(errors);
+  });
 });
