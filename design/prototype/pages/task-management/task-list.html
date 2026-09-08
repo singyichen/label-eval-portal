@@ -526,6 +526,7 @@
       pageSizeLabel: ' 筆/頁',
       paginationTpl: '共 {total} 筆 · 第 {page} / {totalPages} 頁',
       toastNoPermission: '無權限檢視任務詳情',
+      toastUnauthorizedAnnotator: '你目前的角色無法檢視任務設定，已為你返回任務列表',
       toastNavigating: '前往任務詳情…',
       toastTaskSoftDeleted: '任務已移至封存（軟刪除）',
       toastDeleteNotAllowed: '此任務狀態不允許刪除',
@@ -587,6 +588,7 @@
       pageSizeLabel: ' / page',
       paginationTpl: 'Total {total} · Page {page} / {totalPages}',
       toastNoPermission: 'No permission to view task detail',
+      toastUnauthorizedAnnotator: 'Your role cannot view task settings, so you were returned to the task list',
       toastNavigating: 'Navigating to task detail…',
       toastTaskSoftDeleted: 'Task moved to archive (soft deleted)',
       toastDeleteNotAllowed: 'This task status cannot be deleted',
@@ -644,7 +646,7 @@
   var RUN_BADGE_CLS = { unmaterialized: 'badge-run-unmaterialized', dry_run: 'badge-dry-run', official_run: 'badge-official' };
 
   /* ── State ───────────────────────────────────────────────────── */
-  var state = { lang: 'zh', keyword: '', outputType: '', runType: '', status: '', limit: 20, offset: 0, loadFailed: !TASK_LIST_DATA_READY };
+  var state = { lang: 'zh', keyword: '', outputType: '', runType: '', status: '', limit: 20, offset: 0, loadFailed: !TASK_LIST_DATA_READY, pendingUnauthorizedToast: false };
   var pendingDeleteTaskId = null;
   var toastTimer = null;
   var pageTaskRole = 'user';
@@ -1123,6 +1125,11 @@
     }
 
     syncUrl();
+
+    if (state.pendingUnauthorizedToast) {
+      state.pendingUnauthorizedToast = false;
+      showToast(t('toastUnauthorizedAnnotator'), true);
+    }
   }
 
   /* ── Apply language ──────────────────────────────────────────── */
@@ -1343,6 +1350,13 @@
     if (status && validStatuses.indexOf(status) !== -1) state.status = status;
     if (!isNaN(limit) && [20, 50, 100].indexOf(limit) !== -1) state.limit = limit;
     if (!isNaN(offset) && offset >= 0) state.offset = offset;
+    /* issue #721: task-detail.html redirects annotators here with
+       ?unauthorized=annotator when they open a task's settings without
+       permission, but nothing ever read the param -- the user just saw an
+       unexplained bounce back to the list. Any other/invalid value is
+       ignored (safe default); syncUrl() below does not persist this param,
+       so it is naturally dropped from the URL once the toast has shown. */
+    if (q.get('unauthorized') === 'annotator') state.pendingUnauthorizedToast = true;
   }());
 
   if (window.LabelSuiteSharedSidebar) {
