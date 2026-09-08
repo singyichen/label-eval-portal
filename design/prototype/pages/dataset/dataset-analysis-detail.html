@@ -1130,6 +1130,10 @@ var QUALITY_PANEL_PATHS = {
 };
 /* FR-035/FR-036 registry-driven constants (spec 017 v2.0.0) */
 var IAA_GATE_EXCLUDED_TYPES = ['free_text'];
+/* FR-013/FR-024A: types with no calibrated threshold yet — excluded from
+ * x/y for a different reason than IAA_GATE_EXCLUDED_TYPES (no IAA gate at
+ * all), so kept as a separate list, never merged into it. */
+var IAA_UNCALIBRATED_TYPES = ['sequence_tagging'];
 var IAA_SMALL_SAMPLE_THRESHOLD = 5;
 var OUTPUT_TYPE_LABELS = {
   zh: {
@@ -1319,7 +1323,9 @@ var S_ROUTE = { taskId: DEFAULT_TASK_ID };
 function computeCompositeBadge(taskMeta) {
   var outputs = (taskMeta && taskMeta.outputs) || [];
   var iaaData = (taskMeta && taskMeta.iaaData) || {};
-  var counted = outputs.filter(function(type) { return IAA_GATE_EXCLUDED_TYPES.indexOf(type) === -1; });
+  var counted = outputs.filter(function(type) {
+    return IAA_GATE_EXCLUDED_TYPES.indexOf(type) === -1 && IAA_UNCALIBRATED_TYPES.indexOf(type) === -1;
+  });
   var excludedCount = outputs.length - counted.length;
   var y = counted.length;
   if (y === 0) return { state: 'not_applicable', x: 0, y: 0, excludedCount: excludedCount };
@@ -1879,7 +1885,9 @@ function applyQualityState() {
     }
     var taskMeta = TASK_META[S_ROUTE.taskId] || TASK_META[DEFAULT_TASK_ID];
     var outputs = (taskMeta && taskMeta.outputs) || [];
-    var counted = outputs.filter(function(type) { return IAA_GATE_EXCLUDED_TYPES.indexOf(type) === -1; });
+    var counted = outputs.filter(function(type) {
+      return IAA_GATE_EXCLUDED_TYPES.indexOf(type) === -1 && IAA_UNCALIBRATED_TYPES.indexOf(type) === -1;
+    });
     var pendingBadge = document.getElementById('qualityPendingBadge');
     if (pendingBadge) pendingBadge.textContent = fmt(t('iaaPendingBadgeFmt'), { y: counted.length });
   }
