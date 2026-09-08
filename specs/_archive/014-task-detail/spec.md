@@ -1,7 +1,7 @@
 ---
 功能分支: docs/issue-688-archive-014-review-model
 建立日期: 2026-04-20
-版本: 3.0.0
+版本: 3.0.1
 狀態: Draft
 ---
 
@@ -129,6 +129,12 @@ sequenceDiagram
 | 5 | `project_leader` | 開始正式標記 | 狀態轉為 `official_run_in_progress` |
 | 6 | `reviewer` | 查看任務詳情 | 僅可唯讀可見授權 tab，且 work-log 僅自己的資料 |
 | 7 | `annotator` | 嘗試進入 `/task-detail` | 阻擋存取並導回 `/task-list`，顯示無權限提示 |
+
+上表與上方 sequenceDiagram 只描述進入頁面與推進任務狀態的主線，成員管理與審核指派的分工邊界完全沒有展開——負責人能動什麼、系統自動做什麼、發布前哪一項會擋人，全散在 FR-005 系列與 FR-010s-1／FR-010t 的條文裡。這條 `project_leader` 視角的操作路徑另以一張 `diagram-design` skill 產出的示意圖（自包含 HTML + inline SVG，比照 `specs/annotation/015-annotation-workspace/diagrams/` 慣例，依 issue #528 Q4 決議不另出 PNG）呈現：
+
+- [成員與審核指派管理流程](./diagrams/member-review-assignment-flow.html)
+
+該圖對應 FR-005／FR-005a／FR-005c／FR-005d／FR-005e（新增成員的兩個入口、未輸入前不顯示名單、角色加入後唯讀）、FR-005i（成員清單「審核負荷」欄與 `assigned` 恆為推導值）、FR-005j／FR-005k（審核指派區塊與爭議池／最終例外池兩列恆為唯讀，指派一律由系統自動執行，對應 015 FR-093）、FR-005f／FR-005l（移除與停用的後果，`pending` 退回未指派池由系統重新分派、`done` 保留為歷史統計）、FR-010s-1（`reviewer_ids`／`arbiter_ids` 兩份勾選名冊與子集關係，值為 `TaskMembership.user_id`）與 FR-010t（發布前唯一的人數閘門，`arbiter_ids` 為空僅警示不阻擋）；最終例外池的逐筆處置不在本頁，圖上僅以旁註指向 FR-018 與 015 FR-095。
 
 ---
 
@@ -764,6 +770,7 @@ flowchart LR
 
 | 版本 | 日期 | 變更摘要 |
 |------|------|---------|
+| 3.0.1 | 2026-09-08 | **`## 流程圖` 補上成員與審核指派管理流程圖（patch，issue #679）**：原本該節只有一張 sequenceDiagram 與一張七列步驟表，兩者都只畫「進入頁面 → 推進任務狀態」的主線，第 2 列「管理成員」一句話帶過整個成員管理與審核指派的分工邊界——負責人能動什麼、系統自動做什麼、發布前哪一項會擋人，全散在 FR-005 系列與 FR-010s-1／FR-010t 的條文裡，`docs/product/ia/information-architecture.md` 旅程 A 亦僅一句話帶過。新增 `diagrams/member-review-assignment-flow.html`（`diagram-design` skill 產出的自包含 HTML + inline SVG，比照 `specs/annotation/015-annotation-workspace/diagrams/` 慣例，依 issue #528 Q4 決議不另出 PNG），以 `project_leader` 視角畫出四個步驟（新增成員並指派角色 → 成員清單「審核負荷」欄 → 恆為唯讀的審核指派區塊 → 總覽「審核設定」兩份勾選名冊）、唯一會擋人的發布前驗證閘門（FR-010t）與其不足時回成員清單補人的回頭路徑，以及移除／停用審核員時 `pending` 退回未指派池的支線；`審核指派區塊恆為唯讀` 與 `發布前驗證` 為圖上僅有的兩個焦點節點，以視覺方式固化 v3.0.0 的 BREAKING 決定——負責人決定的是「誰有資格審」而非「誰審哪一筆」。並在 `## 流程圖` 內嵌相對連結與 FR 對照。純文件補充，既有 sequenceDiagram 與步驟表未改動，無新增或移除 FR/AC，無 API 契約變更。 |
 | 3.0.0 | 2026-09-07 | **審核模型改為單人接力，對齊 015 v5.0.0（issue #688，OpenSpec change `align-014-review-model`，MAJOR/BREAKING）**：承接 issue #596 之三層單人接力審核模型，014 正典追上既有實作並解除與 015 的六處矛盾。**移除**：`REVIEW_ASSIGNMENT_MODES`、`MIN_REVIEWERS_RULE` 兩個規格常數；`TaskDetail` 的 `min_reviewers`／`review_assignment_mode`／`agreement_auto_finalize`／`arbitration_enabled` 四欄位；Overview「審核設定」同名四個檢視/編輯欄位；成員管理「審核指派」區塊的「自動補齊」「指派…」「分派給仲裁者」三組操作按鈕。**修訂**：`AR_REVIEW_STATUS` 由五態（`pending/approved/modified/disputed/finalized`）改為三態（`pending/disputed/finalized`），移除 `approved`／`modified` 兩個結構上不可達的中繼態，annotation-results 審核狀態 badge 與篩選同步三態化（FR-015a-1、FR-015d）；`ARBITER_CANDIDATE_RULE` 加上 `can_arbitrate = true`；`ReviewAssignment.source` 收斂為恆 `auto_rotation`；審核設定改為「審核員」`reviewer_ids`／「仲裁者」`arbiter_ids` 兩份勾選名冊（新增 `REVIEWER_ID_FORMAT`：元素為不透明 user id，取值來源 `TaskMembership.user_id`，形狀比照 015 `REVIEWER_ROSTER`，Email 降為顯示屬性不得作為比對鍵）；審核指派區塊與爭議池／最終例外池負荷列恆為唯讀（FR-005j、FR-005k）；FR-008b 結案前置條件第 (2)(3)(4) 項改為「審核單位皆已定稿或經例外池排除／無爭議中單位／最終例外池已清空」；FR-010t 審核員人數檢查改為「被勾選審核員 `>= 1`」，`arbiter_ids` 為空僅警示不阻擋。**新增**：**FR-018** 最終例外池——`annotation-progress` 頁籤新增區塊，供 `project_leader` 逐筆收尾仲裁「兩者皆非」之爭議項，僅本角色可見，資料由審核單位即時推導、不自建第二份種子（design.md D6）；新增規格常數 `EXCEPTION_POOL_ACTIONS`；新增 AC-3.13、SC-043。修訂 AC-1.6、AC-3.7、AC-3.8、AC-3.9、SC-033、SC-034、SC-035、SC-037、SC-038；`TaskDetail`、`ReviewAssignment` 兩個關鍵實體同步改版。**Source-Verify 期間額外修正的既有缺陷（非本次新增，隨帶修正）**：① `## Changelog` 表格上方誤植於「使用者流程與導頁」步驟表的 `2.11.3` 列（4 欄表格被寫入 3 欄變更摘要內容，破壞表格結構）已移除並補登為本表下方之正確 `2.11.3` 列；② `FR-015a-1`／`FR-015d`／使用者情境介面定義（Tab D 篩選列、標記結果表子列）原引用 `AR_REVIEW_STATUS` 五態語彙，隨常數三態化一併修訂，避免正典內部自相矛盾。完整逐條複驗依據見 issue #688（① ~ ⑦）與 `openspec/changes/archive/2026-09-07-align-014-review-model/`（proposal.md、design.md D1–D7、tasks.md）。 |
 | 2.11.3 | 2026-09-07 | **SDD lint 合規結構補齊（patch，issue #688）**：本規格自 `align-014-review-model` 起成為 active OpenSpec change 的正典，Project SDD lint 對 active change 之正典有三項硬性要求而本檔皆缺——補上 `## 功能目標` 標題；為三個使用者故事的 23 條驗收情境指派 AC 穩定 ID（`AC-1.1`–`AC-1.7`／`AC-2.1`–`AC-2.4`／`AC-3.1`–`AC-3.12`，依 PR #117 之 AC-N.N 標準，編號一經指派不重用）；`功能分支` frontmatter 對齊 `specs/STATUS.md` 該列。情境文字逐字未改，無條文、行為或 API 契約變更，不新增或移除任何 FR/SC。 |
 | 2.11.2 | 2026-09-04 | **SC-015 措辭同步 span 契約（patch，issue #581，Lightweight Path）**：`sequence_tagging` 自 013 v7.0.0 起不再有 `tagging_scheme`，SC-015 舉例的「標籤集/標記格式」改為「標籤集/選取吸附」以對齊新的 `entities`／`snap_unit` 設定欄位。Overview 標記設定摘要仍由共用 registry 引擎驅動，無條文、行為或 API 契約變更，亦不新增或移除任何 FR/SC。 |
