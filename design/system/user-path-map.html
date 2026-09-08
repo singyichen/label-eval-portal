@@ -1,0 +1,1010 @@
+<title>使用者到達路徑圖</title>
+<meta name="description" content="Label Suite prototype 的認知演練結果：四角色、13 個目標、15 畫面／36 視圖的到達路徑與摩擦點。">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   Palette — mirrors design/prototype/assets/tokens.css.
+   Light values from tokens.css :root; dark values from
+   tokens.css html[data-theme="dark"]. No new hues invented.
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --color-primary:        #6366F1;
+  --color-secondary:      #818CF8;
+  --color-cta:            #10B981;
+  --color-surface:        #F5F3FF;
+  --color-white:          #FFFFFF;
+  --color-ink:            #1E1B4B;
+  --color-primary-soft-bg:#EEF2FF;
+  --color-primary-border: #C7D2FE;
+  --color-border:         #E2E8F0;
+  --color-border-muted:   #F1F5F9;
+  --color-text-soft:      #64748B;
+  --color-ink-muted:      #94A3B8;
+  --color-slate-50:       #F8FAFC;
+
+  --color-error:          #B91C1C;
+  --color-error-bg:       #FEF2F2;
+  --color-error-border:   #FECACA;
+  --color-success:        #15803D;
+  --color-success-bg:     #F0FDF4;
+  --color-success-border: #BBF7D0;
+  --color-warning:        #A16207;
+  --color-warning-bg:     #FEFCE8;
+  --color-warning-border: #FEF08A;
+  --color-info:           #1D4ED8;
+  --color-info-bg:        #EFF6FF;
+  --color-info-border:    #BFDBFE;
+
+  --font-serif-display: 'Crimson Pro', 'Noto Serif TC', 'Source Han Serif TC', Georgia, serif;
+  --font-sans:          'Inter', 'Noto Sans TC', 'PingFang TC', -apple-system, sans-serif;
+  --font-mono:          'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --space-xs: 4px;  --space-sm: 8px;  --space-md: 16px;
+  --space-lg: 24px; --space-xl: 32px; --space-2xl: 48px; --space-3xl: 64px;
+  --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px; --radius-pill: 9999px;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 150ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-primary:        #818CF8;
+    --color-secondary:      #A5B4FC;
+    --color-cta:            #34D399;
+    --color-surface:        #0B0B12;
+    --color-white:          #16161F;
+    --color-ink:            #E2E8F0;
+    --color-primary-soft-bg:#1E1B4B;
+    --color-primary-border: #3730A3;
+    --color-border:         #2A2A35;
+    --color-border-muted:   #1F1F28;
+    --color-text-soft:      #A1A1AA;
+    --color-ink-muted:      #9CA3AF;
+    --color-slate-50:       #1F1F28;
+
+    --color-error:          #F87171;
+    --color-error-bg:       #2A1414;
+    --color-error-border:   #5B2222;
+    --color-success:        #4ADE80;
+    --color-success-bg:     #0F2A18;
+    --color-success-border: #1F5132;
+    --color-warning:        #FACC15;
+    --color-warning-bg:     #2A2210;
+    --color-warning-border: #5C4A1A;
+    --color-info:           #93C5FD;
+    --color-info-bg:        #111A2E;
+    --color-info-border:    #23386B;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-primary:        #818CF8;
+  --color-secondary:      #A5B4FC;
+  --color-cta:            #34D399;
+  --color-surface:        #0B0B12;
+  --color-white:          #16161F;
+  --color-ink:            #E2E8F0;
+  --color-primary-soft-bg:#1E1B4B;
+  --color-primary-border: #3730A3;
+  --color-border:         #2A2A35;
+  --color-border-muted:   #1F1F28;
+  --color-text-soft:      #A1A1AA;
+  --color-ink-muted:      #9CA3AF;
+  --color-slate-50:       #1F1F28;
+
+  --color-error:          #F87171;
+  --color-error-bg:       #2A1414;
+  --color-error-border:   #5B2222;
+  --color-success:        #4ADE80;
+  --color-success-bg:     #0F2A18;
+  --color-success-border: #1F5132;
+  --color-warning:        #FACC15;
+  --color-warning-bg:     #2A2210;
+  --color-warning-border: #5C4A1A;
+  --color-info:           #93C5FD;
+  --color-info-bg:        #111A2E;
+  --color-info-border:    #23386B;
+}
+
+/* ── Base ─────────────────────────────────────────────────────── */
+body {
+  margin: 0;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1160px; margin: 0 auto; padding: var(--space-2xl) var(--space-lg) var(--space-3xl); }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--color-primary); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; border-radius: var(--radius-sm); }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; font-variant-numeric: tabular-nums; }
+
+h1, h2 { font-family: var(--font-serif-display); text-wrap: balance; margin: 0; }
+h1 { font-size: 40px; line-height: 1.2; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 26px; line-height: 1.3; font-weight: 600; }
+h3 { font-family: var(--font-sans); font-size: 17px; font-weight: 600; margin: 0; line-height: 1.4; }
+
+.eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase;
+  color: var(--color-text-soft); margin: 0;
+}
+
+/* ── Masthead ─────────────────────────────────────────────────── */
+.masthead { display: flex; flex-direction: column; gap: var(--space-md); padding-bottom: var(--space-lg); border-bottom: 3px solid var(--color-ink); }
+.masthead .lede { font-size: 17px; color: var(--color-text-soft); }
+.provenance {
+  display: grid; grid-template-columns: max-content 1fr; gap: var(--space-xs) var(--space-md);
+  font-size: 13px; line-height: 1.6; margin-top: var(--space-sm);
+}
+.provenance dt { color: var(--color-text-soft); font-weight: 600; }
+.provenance dd { margin: 0; }
+.provenance dd .mono { color: var(--color-ink); }
+
+/* ── Section rhythm ───────────────────────────────────────────── */
+section { padding-top: var(--space-2xl); }
+.sec-head { display: flex; align-items: baseline; gap: var(--space-md); flex-wrap: wrap; border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-sm); margin-bottom: var(--space-lg); }
+.sec-head .idx { font-family: var(--font-mono); font-size: 13px; color: var(--color-primary); font-weight: 600; }
+.sec-head .note { font-size: 13px; color: var(--color-text-soft); margin-left: auto; }
+
+.stack { display: flex; flex-direction: column; gap: var(--space-lg); }
+.stack-sm { display: flex; flex-direction: column; gap: var(--space-sm); }
+
+/* ── TOC ──────────────────────────────────────────────────────── */
+.toc { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: var(--space-xs) var(--space-lg); margin-top: var(--space-lg); padding: var(--space-md) 0; border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
+.toc a { display: flex; gap: var(--space-sm); font-size: 13.5px; text-decoration: none; padding: 2px 0; }
+.toc a:hover { text-decoration: underline; }
+.toc a .n { font-family: var(--font-mono); color: var(--color-ink-muted); min-width: 1.6em; }
+.toc a .t { color: var(--color-ink); }
+
+/* ── Prose blocks ─────────────────────────────────────────────── */
+.panel { background: var(--color-white); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-lg); }
+.panel > * + * { margin-top: var(--space-md); }
+.rule { border: 0; border-top: 1px solid var(--color-border-muted); margin: 0; }
+
+.callout { border-left: 3px solid var(--color-primary); background: var(--color-primary-soft-bg); padding: var(--space-md) var(--space-lg); border-radius: 0 var(--radius-md) var(--radius-md) 0; font-size: 14px; }
+.callout p { max-width: 74ch; }
+.callout strong { color: var(--color-ink); }
+
+/* ── Definition grid (F1–F6, click rules) ─────────────────────── */
+.defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0; border-top: 1px solid var(--color-border); }
+.defs > div { padding: var(--space-md) var(--space-md) var(--space-md) 0; border-bottom: 1px solid var(--color-border); }
+.defs dt { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; color: var(--color-error); letter-spacing: 0.04em; }
+.defs dd { margin: var(--space-xs) 0 0; font-size: 14px; line-height: 1.65; color: var(--color-ink); max-width: 44ch; }
+
+/* ── Legend ───────────────────────────────────────────────────── */
+.legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: var(--space-md) var(--space-lg); }
+.legend .row { display: flex; align-items: center; gap: var(--space-sm); font-size: 13px; color: var(--color-text-soft); }
+
+/* ── Path nodes ───────────────────────────────────────────────── */
+.n {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px; font-size: 13.5px; line-height: 1.35;
+  white-space: nowrap; flex: none;
+  background: var(--color-white); border: 1px solid var(--color-border);
+  border-radius: var(--radius-md); color: var(--color-ink);
+}
+.n--entry   { background: var(--color-primary-soft-bg); border-color: var(--color-primary-border); color: var(--color-primary); font-weight: 600; }
+.n--screen  { border-color: var(--color-ink-muted); font-weight: 500; }
+.n--state   { border-style: dashed; border-color: var(--color-primary-border); background: transparent; color: var(--color-text-soft); }
+.n--dialog  { border-width: 2px; border-color: var(--color-warning-border); background: var(--color-warning-bg); color: var(--color-warning); font-weight: 600; }
+.n--bg      { border-style: dotted; border-color: var(--color-info-border); background: var(--color-info-bg); color: var(--color-info); font-family: var(--font-mono); font-size: 12px; }
+.n--toast   { border-radius: var(--radius-pill); background: var(--color-success-bg); border-color: var(--color-success-border); color: var(--color-success); font-size: 12.5px; }
+.n--end     { border-color: var(--color-ink); border-width: 2px; font-weight: 600; }
+.n--dead    { border-color: var(--color-error-border); border-width: 2px; background: var(--color-error-bg); color: var(--color-error); font-weight: 600; }
+
+.cond {
+  flex: none; font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+  color: var(--color-text-soft); text-transform: uppercase;
+  border-left: 2px solid var(--color-ink-muted); padding-left: 8px; white-space: nowrap;
+}
+
+/* ── Path lane ────────────────────────────────────────────────── */
+.lane {
+  display: flex; align-items: center; gap: var(--space-xs);
+  overflow-x: auto; padding: var(--space-sm) 0 var(--space-md);
+  scrollbar-width: thin;
+}
+.edge { flex: none; display: flex; flex-direction: column; align-items: center; padding: 0 2px; min-width: 46px; }
+.edge .lbl { font-size: 10.5px; line-height: 1.3; color: var(--color-text-soft); white-space: nowrap; }
+.edge .clicks { font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; color: var(--color-primary); font-variant-numeric: tabular-nums; }
+.edge .arrow { color: var(--color-ink-muted); font-size: 15px; line-height: 1; margin-top: 1px; }
+.edge--dashed .arrow { color: var(--color-primary-border); }
+.edge--dashed .arrow::before { content: '⇢'; }
+.edge--dashed .arrow { font-size: 16px; }
+
+.branch { padding-left: var(--space-xl); border-left: 1px solid var(--color-border); margin-left: 6px; }
+.branch > .lane { padding-top: 0; padding-bottom: var(--space-sm); }
+.branch .blabel { font-size: 12px; color: var(--color-text-soft); display: flex; gap: 6px; align-items: center; }
+.branch .blabel::before { content: '└'; color: var(--color-ink-muted); font-family: var(--font-mono); }
+
+/* ── Goal block ───────────────────────────────────────────────── */
+.goal { display: flex; flex-direction: column; gap: var(--space-sm); padding-bottom: var(--space-lg); border-bottom: 1px solid var(--color-border-muted); }
+.goal:last-child { border-bottom: 0; padding-bottom: 0; }
+.goal-head { display: flex; align-items: baseline; gap: var(--space-sm); flex-wrap: wrap; }
+.goal-head .gid { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--color-white); background: var(--color-ink); padding: 2px 7px; border-radius: var(--radius-sm); }
+.goal-head .role { font-size: 11.5px; color: var(--color-text-soft); border: 1px solid var(--color-border); border-radius: var(--radius-pill); padding: 1px 9px; }
+
+.metrics { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-md) var(--space-lg); font-size: 12.5px; }
+.metrics .m { display: flex; align-items: baseline; gap: 6px; }
+.metrics .m .k { color: var(--color-text-soft); }
+.metrics .m .v { font-family: var(--font-mono); font-weight: 600; font-variant-numeric: tabular-nums; color: var(--color-ink); }
+.metrics .m .v--end { font-weight: 400; font-size: 12px; }
+.verdicts { display: flex; gap: 5px; flex-wrap: wrap; margin-left: auto; }
+.vd { font-family: var(--font-mono); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: var(--radius-sm); border: 1px solid; letter-spacing: 0.03em; }
+.vd--pass { color: var(--color-success); border-color: var(--color-success-border); background: var(--color-success-bg); }
+.vd--hit  { color: var(--color-error);   border-color: var(--color-error-border);   background: var(--color-error-bg); }
+
+.cites { font-family: var(--font-mono); font-size: 11.5px; line-height: 1.7; color: var(--color-text-soft); word-break: break-all; }
+.cites b { color: var(--color-ink); font-weight: 600; }
+
+/* ── Tables ───────────────────────────────────────────────────── */
+.tablebox { overflow-x: auto; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-white); }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+thead th {
+  text-align: left; font-weight: 600; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--color-text-soft); padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--color-border); white-space: nowrap; background: var(--color-slate-50);
+}
+tbody td { padding: 9px var(--space-md); border-bottom: 1px solid var(--color-border-muted); vertical-align: top; line-height: 1.6; }
+tbody tr:last-child td { border-bottom: 0; }
+td.num, td.vid, th.num, th.vid { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.src { font-family: var(--font-mono); font-size: 11.5px; color: var(--color-text-soft); word-break: break-all; }
+
+.tag { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: var(--radius-sm); border: 1px solid; white-space: nowrap; }
+.tag--ok   { color: var(--color-success); border-color: var(--color-success-border); background: var(--color-success-bg); }
+.tag--gap  { color: var(--color-error);   border-color: var(--color-error-border);   background: var(--color-error-bg); }
+.tag--warn { color: var(--color-warning); border-color: var(--color-warning-border); background: var(--color-warning-bg); }
+.tag--info { color: var(--color-info);    border-color: var(--color-info-border);    background: var(--color-info-bg); }
+
+
+footer { margin-top: var(--space-3xl); padding-top: var(--space-lg); border-top: 1px solid var(--color-border); font-size: 12.5px; color: var(--color-text-soft); }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+@media (max-width: 640px) {
+  .wrap { padding: var(--space-lg) var(--space-md) var(--space-2xl); }
+  h1 { font-size: 30px; }
+  .verdicts { margin-left: 0; }
+}
+</style>
+
+<div class="wrap">
+
+<!-- ══════════════════════════ MASTHEAD ══════════════════════════ -->
+<header class="masthead">
+  <p class="eyebrow">Label Suite · Design System · 前端開發前 UX 閘門</p>
+  <h1>使用者到達路徑圖</h1>
+  <p class="lede">從入口出發，要點幾下、經過哪些畫面與阻斷點，才能完成一個目標。四個角色、13 個目標，全數以 Playwright 在 <code>design/prototype/</code> 實走取得。</p>
+
+  <dl class="provenance">
+    <dt>Prototype 來源 commit</dt>
+    <dd><span class="mono">c9cf83209257</span>（2026-09-07）——<span class="mono">design/prototype/pages</span> · <span class="mono">design/prototype/index.html</span> 的最後一次變更，與 <a href="screen-inventory.md">screen-inventory.md</a> 同源。</dd>
+    <dt>實走日期</dt>
+    <dd>2026-09-08，本機 <span class="mono">http://127.0.0.1:8765</span> 靜態伺服器（<span class="mono">file:</span> 協定被 Playwright 阻擋）。</dd>
+    <dt>重跑觸發條件</dt>
+    <dd>
+      ① <span class="mono">design/prototype/pages/**</span> 或 <span class="mono">index.html</span> 有變更，使上方來源 commit 前移。<br>
+      ② <a href="inventory-manifest.json">inventory-manifest.json</a> 的 <span class="mono">screens</span> / <span class="mono">screenViews</span> 有增減，使 15 畫面／36 視圖的基數改變。<br>
+      ③ 角色權限模型或三層接力審核模型改版（<span class="mono">specs/annotation/015</span>、<span class="mono">specs/admin/**</span>），使本圖的角色分歧前提失效。
+    </dd>
+    <dt>自動檢查</dt>
+    <dd><span class="mono">node scripts/check-user-path-map-freshness.mjs</span>（issue #665 階段一：在來源中繼資料契約定案前一律 fail closed，exit 2）。</dd>
+  </dl>
+
+  <nav class="toc" aria-label="章節跳轉">
+    <a href="#m1"><span class="n">1</span><span class="t">方法與涵蓋層級</span></a>
+    <a href="#m2"><span class="n">2</span><span class="t">讀圖規則</span></a>
+    <a href="#m3"><span class="n">3</span><span class="t">訪客與帳號路徑</span></a>
+    <a href="#m4"><span class="n">4</span><span class="t">Data Creator</span></a>
+    <a href="#m5"><span class="n">5</span><span class="t">Annotator</span></a>
+    <a href="#m6"><span class="n">6</span><span class="t">Reviewer</span></a>
+    <a href="#m7"><span class="n">7</span><span class="t">Arbiter</span></a>
+    <a href="#m8"><span class="n">8</span><span class="t">Super Admin</span></a>
+    <a href="#m9"><span class="n">9</span><span class="t">資料集分析</span></a>
+    <a href="#m10"><span class="n">10</span><span class="t">權限分歧與阻斷</span></a>
+    <a href="#m11"><span class="n">11</span><span class="t">畫面／視圖涵蓋對照</span></a>
+    <a href="#m12"><span class="n">12</span><span class="t">摩擦點總表</span></a>
+    <a href="#m13"><span class="n">13</span><span class="t">原型限制與 manifest 偏差</span></a>
+  </nav>
+</header>
+
+<!-- ══════════════════════════ 1. 方法 ══════════════════════════ -->
+<section id="m1">
+  <div class="sec-head"><span class="idx">01</span><h2>方法與涵蓋層級</h2></div>
+
+  <div class="stack">
+    <div class="callout">
+      <p><strong>方法：認知演練法（專家評估）。</strong>由評估者以四種角色身分逐一實走原型，在每個步驟自問「使用者知道下一步要點哪裡嗎？點下去的結果符合預期嗎？」並記錄實際點擊數與終點畫面。本圖不含任何真人參與者，因此<strong>不構成使用者測試</strong>，也<strong>不呈現使用資料</strong>；所有判斷均為專家推論，證據來自原型原始碼與實走軌跡。</p>
+    </div>
+
+    <div class="tablebox">
+      <table>
+        <thead><tr><th>UX 層級</th><th>本圖是否涵蓋</th><th>說明</th></tr></thead>
+        <tbody>
+          <tr><td>操作（Operation）</td><td><span class="tag tag--ok">涵蓋</span></td><td>單一控制項的可見性、可點擊性、點擊後的即時回饋。</td></tr>
+          <tr><td>行動（Action）</td><td><span class="tag tag--ok">涵蓋</span></td><td>一連串操作串成的目標達成路徑：點擊數、經過畫面、阻斷點、終點。</td></tr>
+          <tr><td>活動（Activity）</td><td><span class="tag tag--gap">未涵蓋</span></td><td>真實工作情境下的多目標交錯、中斷與回復、跨日跨裝置的任務接續。需現場觀察或日誌研究。</td></tr>
+          <tr><td>情感（Emotion）</td><td><span class="tag tag--gap">未涵蓋</span></td><td>挫折感、信任感、疲勞與成就感。需訪談、量表或聲音思考法。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="font-size:14px;color:var(--color-text-soft)">因此本圖能回答「這條路走不走得通、要走幾步」，但不能回答「使用者願不願意走、走完覺得如何」。後兩層留待前端實作後的正式使用者研究。</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 2. 讀圖規則 ══════════════════════════ -->
+<section id="m2">
+  <div class="sec-head"><span class="idx">02</span><h2>讀圖規則</h2><span class="note">節點圖例 · 點擊計數 · F1–F6 門檻</span></div>
+
+  <div class="stack">
+
+    <div class="panel">
+      <h3>七類節點</h3>
+      <div class="legend">
+        <div class="row"><span class="n n--entry">入口／Tab</span></div>
+        <div class="row"><span class="n n--screen">畫面（換 URL）</span></div>
+        <div class="row"><span class="n n--state">畫面內狀態</span></div>
+        <div class="row"><span class="n n--dialog">阻斷式 Dialog</span></div>
+        <div class="row"><span class="n n--bg">背景任務 800ms</span></div>
+        <div class="row"><span class="n n--toast">通知／Toast</span></div>
+        <div class="row"><span class="cond">分支條件</span></div>
+      </div>
+      <hr class="rule">
+      <p style="font-size:13px;color:var(--color-text-soft)">連接線上方標示該段所需點擊數；<span class="mono">⇢</span> 虛線箭頭表示「URL 不變的畫面內狀態切換」，<span class="mono">→</span> 實線箭頭表示換頁。終點畫面以粗框標示；<span class="n n--dead" style="font-size:11px;padding:2px 7px">死路</span> 標示動作後無定義終點。</p>
+    </div>
+
+    <div class="panel">
+      <h3>點擊計數規則（本圖的工作定義）</h3>
+      <p style="font-size:14px">一次「點擊」＝<strong>在互動控制項上完成一次指標按下，且該次按下推進或解鎖了路徑</strong>。據此：</p>
+      <ul style="font-size:14px;line-height:1.75;margin:var(--space-sm) 0 0;padding-left:1.3em;max-width:68ch">
+        <li>送出鈕、連結、Tab、列操作鈕、Dialog 按鈕、必填選項的選取——各計 1。</li>
+        <li>自由文字輸入（打字、貼上）<strong>不計</strong>；聚焦欄位的點擊也不計。</li>
+        <li><span class="mono">最短點擊數</span>＝同一入口到同一終點，只計畫面推進所需的點擊（CTA、下一步、送出、換頁）。</li>
+        <li><span class="mono">實際點擊數</span>＝實走中真正發生的全部點擊，含為滿足必填欄位而做的選擇。</li>
+      </ul>
+    </div>
+
+    <div>
+      <h3 style="margin-bottom:var(--space-sm)">F1–F6 摩擦點門檻</h3>
+      <dl class="defs">
+        <div><dt>F1 · 步數過長</dt><dd>實際點擊數 &gt; 4。</dd></div>
+        <div><dt>F2 · 冗餘負擔</dt><dd>實際點擊數 − 最短點擊數 ≥ 2。</dd></div>
+        <div><dt>F3 · 死路</dt><dd>動作完成後沒有定義好的終點，或停在原地而無下一步導引。</dd></div>
+        <div><dt>F4 · 回頭路</dt><dd>必須先返回上一頁，才能繼續完成目標。</dd></div>
+        <div><dt>F5 · 資訊來回</dt><dd>同一份資訊需跨兩個畫面來回比對才能決策。</dd></div>
+        <div><dt>F6 · 定位失據</dt><dd>使用者無法判斷自己在第幾步，或不知如何返回。</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 3. 訪客 ══════════════════════════ -->
+<section id="m3">
+  <div class="sec-head"><span class="idx">03</span><h2>訪客與帳號路徑</h2><span class="note">畫面 01–05 · 全角色共通</span></div>
+
+  <div class="stack">
+
+    <!-- G1 -->
+    <div class="goal">
+      <div class="goal-head"><span class="gid">G1</span><h3>登入系統</h3><span class="role">訪客</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">1</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">1</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">dashboard.html</span></div>
+        <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--entry">index.html</span>
+        <span class="edge"><span class="lbl">meta refresh</span><span class="clicks">0</span><span class="arrow">→</span></span>
+        <span class="n n--screen">登入頁</span>
+        <span class="edge"><span class="lbl">登入鈕</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--bg">模擬驗證 800ms</span>
+        <span class="edge"><span class="lbl">自動導向</span><span class="clicks">0</span><span class="arrow">→</span></span>
+        <span class="n n--screen n--end">儀表板</span>
+      </div>
+      <div class="branch">
+        <div class="blabel">分支：忘記密碼 → 見 G3；前往註冊 → 見 G2</div>
+      </div>
+      <p class="cites"><b>證據</b> login.html:736 <span style="opacity:.6">window.location.href = '../dashboard/dashboard.html'</span> · <span class="mono">data-testid="login-btn"</span> · <span class="mono">data-testid="forgot-password-link"</span> · <span class="mono">data-testid="register-link"</span> · index.html meta refresh（screen-inventory.md V00）</p>
+    </div>
+
+    <!-- G2 -->
+    <div class="goal">
+      <div class="goal-head"><span class="gid">G2</span><h3>註冊帳號</h3><span class="role">訪客</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">1</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">1</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">dashboard.html</span></div>
+        <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--entry">登入頁 · 前往註冊</span>
+        <span class="edge"><span class="lbl">連結</span><span class="clicks">0</span><span class="arrow">→</span></span>
+        <span class="n n--screen">註冊頁</span>
+        <span class="edge"><span class="lbl">建立帳號</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--bg">模擬送出</span>
+        <span class="edge"><span class="lbl">自動導向</span><span class="clicks">0</span><span class="arrow">→</span></span>
+        <span class="n n--screen n--end">儀表板</span>
+      </div>
+      <p class="cites"><b>證據</b> 實走 register.html：填妥四欄後點 <span class="mono">data-testid="submit-btn"</span>，URL 由 register.html 變為 dashboard.html · 欄位 <span class="mono">name-input / email-input / password-input / confirm-password-input</span>（四欄皆為打字，不計點擊）</p>
+    </div>
+
+    <!-- G3 -->
+    <div class="goal">
+      <div class="goal-head"><span class="gid">G3</span><h3>忘記密碼並重新登入</h3><span class="role">訪客</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">4</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">4</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">dashboard.html</span></div>
+        <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--screen">忘記密碼</span>
+        <span class="edge"><span class="lbl">寄送連結</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+        <span class="n n--state">已寄出提示</span>
+        <span class="edge"><span class="lbl">站外信箱</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--screen">重設密碼</span>
+        <span class="edge"><span class="lbl">更新密碼</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+        <span class="n n--state">重設成功</span>
+        <span class="edge"><span class="lbl">前往登入</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--screen n--end">登入頁 → G1</span>
+      </div>
+      <div class="branch">
+        <div class="blabel">token 分支（原型狀態切換器）</div>
+        <div class="lane">
+          <span class="cond">token 已過期／已使用</span>
+          <span class="edge"><span class="lbl">重新申請</span><span class="clicks">1</span><span class="arrow">→</span></span>
+          <span class="n n--screen">忘記密碼</span>
+        </div>
+      </div>
+      <p class="cites"><b>證據</b> 實走：forgot-password 點 <span class="mono">data-testid="send-reset-btn"</span> 後 URL 不變，畫面出現「若此 Email 已註冊，重設連結已寄出，請查收信箱。」 · reset-password 點 <span class="mono">data-testid="update-password-btn"</span> 後 URL 不變，出現「密碼重設成功，請重新登入。」＋「前往登入」 · <span class="mono">data-testid="reapply-link"</span> → ./forgot-password.html</p>
+      <p class="cites" style="color:var(--color-info)"><b>備註</b> 兩頁送出後皆停在原頁而未導向（偏離 UXC-06「Success → Navigate to target page」），但均提供明確的具名出口，且未登入狀態下無可導向的目標頁，判定為合理設計而非 F3。</p>
+    </div>
+
+    <!-- G4 -->
+    <div class="goal">
+      <div class="goal-head"><span class="gid">G4</span><h3>更新個人資料</h3><span class="role">全角色</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">1</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">1</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">profile.html（原頁 + toast）</span></div>
+        <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--entry">側欄 · 個人設定</span>
+        <span class="edge"><span class="lbl">導覽</span><span class="clicks">0</span><span class="arrow">→</span></span>
+        <span class="n n--screen">個人設定</span>
+        <span class="edge"><span class="lbl">儲存</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--bg">模擬 600ms</span>
+        <span class="edge"><span class="lbl">回饋</span><span class="clicks">0</span><span class="arrow">→</span></span>
+        <span class="n n--toast">已儲存</span>
+      </div>
+      <div class="branch">
+        <div class="blabel">分支：變更電子郵件（2 點擊，終點為原頁「待驗證」狀態）</div>
+        <div class="lane">
+          <span class="n n--screen">個人設定</span>
+          <span class="edge"><span class="lbl">變更</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+          <span class="n n--state">變更 Email 表單</span>
+          <span class="edge"><span class="lbl">下一步</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+          <span class="n n--state n--end">待驗證（可重寄／返回）</span>
+        </div>
+      </div>
+      <p class="cites"><b>證據</b> profile.html:792 <span class="mono">onclick="handleSaveProfile()"</span> · profile.html:1438 <span class="mono">setBtnLoading('saveProfileBtn', true)</span>（UXC-06 雙送出防護）· profile.html:1442 <span class="mono">showToast('success', t('toastSaveSuccess'), …)</span> · 實走：<span class="mono">#emailChangeBtn</span> → <span class="mono">#emailChangeSubmitBtn</span>，URL 全程維持 profile.html</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════ 4. Data Creator ══════════════════════════ -->
+<section id="m4">
+  <div class="sec-head"><span class="idx">04</span><h2>Data Creator ／ 專案負責人</h2><span class="note">畫面 06–09</span></div>
+
+  <div class="stack">
+
+    <!-- G5 -->
+    <div class="goal">
+      <div class="goal-head"><span class="gid">G5</span><h3>建立一個標記任務</h3><span class="role">Data Creator</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">5</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">11</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">task-detail.html?task_id=…</span></div>
+        <div class="verdicts"><span class="vd vd--hit">F1 命中</span><span class="vd vd--hit">F2 命中</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--entry">儀表板 CTA</span>
+        <span class="edge"><span class="lbl">開始建立任務</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--screen">Step 1 基本設定</span>
+        <span class="edge"><span class="lbl">型態·檔案·欄位</span><span class="clicks">7</span><span class="arrow">⇢</span></span>
+        <span class="n n--state">Step 2–4</span>
+        <span class="edge"><span class="lbl">下一步 ×2 + 建立</span><span class="clicks">3</span><span class="arrow">→</span></span>
+        <span class="n n--bg">模擬建立 900ms</span>
+        <span class="edge"><span class="lbl">toast + 導向</span><span class="clicks">0</span><span class="arrow">→</span></span>
+        <span class="n n--screen n--end">任務詳情</span>
+      </div>
+      <div class="branch">
+        <div class="blabel">阻斷分支：Step 1 未填完 → 下一步鈕維持 disabled，無法前進</div>
+        <div class="blabel">離開分支：有草稿時離開 → 未儲存確認（UXC-03）</div>
+        <div class="blabel">入口缺口：專案負責人視角的儀表板<strong>沒有</strong>建立任務 CTA（見第 10 節）</div>
+      </div>
+      <p class="cites"><b>證據</b> dashboard.html:151 <span class="mono">id="ctaLeaderBtn"</span> · dashboard.js:658 導向 task-new.html · task-new.html:960 <span class="mono">validateStep1()</span>（任務名稱、任務型態、資料檔案、輸入／證據欄位角色皆必填）· task-new.html:1122 逐步 <span class="mono">nextBtn.disabled</span> · task-new.html:1437 <span class="mono">submitTask()</span> → <span class="mono">clearWizardState()</span> → toast → task-new.html:1387 <span class="mono">redirectToTaskDetail()</span></p>
+      <p class="cites" style="color:var(--color-error)"><b>F1／F2 成因</b> 11 &gt; 4，且 11 − 5 = 6 ≥ 2。多出的 6 次全部落在 Step 1：任務型態選擇與每個資料欄位的角色指派都必須逐一點選，才會解鎖「下一步」。</p>
+    </div>
+
+    <!-- G6 -->
+    <div class="goal">
+      <div class="goal-head"><span class="gid">G6</span><h3>加入任務成員</h3><span class="role">Data Creator</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">4</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">4</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">?tab=member-management</span></div>
+        <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--screen">任務詳情</span>
+        <span class="edge"><span class="lbl">成員管理</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+        <span class="n n--state">成員管理分頁</span>
+        <span class="edge"><span class="lbl">搜尋 + 選取</span><span class="clicks">2</span><span class="arrow">⇢</span></span>
+        <span class="n n--state">待加入清單</span>
+        <span class="edge"><span class="lbl">加入</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--toast n--end">成員設定已更新</span>
+      </div>
+      <div class="branch">
+        <div class="blabel">阻斷分支：移除成員 → 確認 Dialog（UXC-10）</div>
+        <div class="lane">
+          <span class="n n--state">成員列 · 移除</span>
+          <span class="edge"><span class="lbl">開啟</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+          <span class="n n--dialog">確認成員操作</span>
+          <span class="edge"><span class="lbl">確認</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+          <span class="n n--state">清單已更新</span>
+        </div>
+      </div>
+      <p class="cites"><b>證據</b> task-detail.html:2259 <span class="mono">id="tabMemberManagement"</span> · task-detail.html:2331 <span class="mono">id="memberActionModalTitle"</span>「確認成員操作」· task-detail.html:2594「任務角色在加入時決定，既有成員不可中途改角色」· task-detail.html:2763 <span class="mono">toastMemberUpdated</span></p>
+    </div>
+
+    <!-- G7 -->
+    <div class="goal">
+      <div class="goal-head"><span class="gid">G7</span><h3>從儀表板檢視任務詳情</h3><span class="role">Data Creator</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">2</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">2</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">task-detail.html?task_id=T001</span></div>
+        <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--hit">F6 命中</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--entry">儀表板 · 查看全部</span>
+        <span class="edge"><span class="lbl">導向</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--screen">任務列表</span>
+        <span class="edge"><span class="lbl">點任務列</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--screen n--end">任務詳情 · 概覽</span>
+      </div>
+      <div class="branch">
+        <div class="blabel">分頁分支：5 個 tab 切換皆為畫面內狀態，<strong>不寫回 URL</strong>（F6 成因，見第 10 節）</div>
+        <div class="blabel">錯誤分支：任務列表載入失敗 → Alert Banner ＋ 重試（<span class="mono">?view=error</span>）</div>
+      </div>
+      <p class="cites"><b>證據</b> 實走：<span class="mono">#plViewAllBtn</span> → task-list.html?task_role=project_leader → 點第一列 → task-detail.html?task_id=T001 · dashboard.js:683 <span class="mono">plViewAllBtn</span> handler · task-list.html:784 <span class="mono">window.location.href = './task-detail.html?task_id=' + …</span> · task-detail.html:4729 <span class="mono">var tab = params.get('tab') || 'overview'</span></p>
+      <p class="cites" style="color:var(--color-error)"><b>F6 成因</b> <span class="mono">grep -c "replaceState" task-detail.html</span> = <b>0</b>，同儕頁 dataset-analysis-detail.html = <b>1</b>。分頁、篩選、分頁碼切換後 URL 恆為 <span class="mono">?task_id=T001</span>，F5 重載退回概覽、網址不可分享，違反 UXC-11。</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════ 5. Annotator ══════════════════════════ -->
+<section id="m5">
+  <div class="sec-head"><span class="idx">05</span><h2>Annotator ／ 標記員</h2><span class="note">畫面 10–11 · 視圖 V15–V23</span></div>
+
+  <div class="goal">
+    <div class="goal-head"><span class="gid">G8</span><h3>完成一筆標記並前往下一筆</h3><span class="role">Annotator</span></div>
+    <div class="metrics">
+      <div class="m"><span class="k">最短</span><span class="v">2</span></div>
+      <div class="m"><span class="k">實際</span><span class="v">2</span></div>
+      <div class="m"><span class="k">終點</span><span class="v v--end">工作區 · 下一筆未完成樣本</span></div>
+      <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+    </div>
+    <div class="lane">
+      <span class="n n--entry">儀表板 · 開始標記</span>
+      <span class="edge"><span class="lbl">導向</span><span class="clicks">1</span><span class="arrow">→</span></span>
+      <span class="n n--screen">標記任務列表</span>
+      <span class="edge"><span class="lbl">編輯</span><span class="clicks">1</span><span class="arrow">→</span></span>
+      <span class="n n--screen">標記工作區</span>
+      <span class="edge"><span class="lbl">送出</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+      <span class="n n--state n--end">自動跳下一筆</span>
+    </div>
+    <div class="branch">
+      <div class="blabel">收尾分支：無下一筆未完成 → 自動返回標記任務列表</div>
+      <div class="lane">
+        <span class="cond">findNextPendingUnit 為空</span>
+        <span class="edge"><span class="lbl">自動</span><span class="clicks">0</span><span class="arrow">→</span></span>
+        <span class="n n--screen n--end">標記任務列表</span>
+      </div>
+      <div class="blabel">型態分支：8 種輸出型態（V15–V22）＋ 組合輸出 ABSA（V23）共用同一條路徑，僅作答面板不同</div>
+    </div>
+    <p class="cites"><b>證據</b> annotation-workspace.config.js:2381 <span class="mono">handleSubmit()</span>，尾段 :2437–2441 <span class="mono">var nextUnit = findNextPendingUnit(buildUnits()); if (nextUnit) { selectSample(nextUnit.recordId); } else { window.location.href = buildListReturnUrl(); }</span> · :2369 <span class="mono">findNextPendingUnit</span> · :1376 <span class="mono">buildListReturnUrl</span> · annotation-list.html:1525 <span class="mono">openWorkspace()</span> · dashboard.js:665 <span class="mono">ctaAnnotatorBtn</span></p>
+    <p class="cites" style="color:var(--color-success)"><b>F3 通過</b> 這是全站唯一具備「送出即前推」的送出流程，其他兩個角色（G9／G10）皆缺此段——標記員路徑是對照組，不是特例。</p>
+    <p class="cites" style="color:var(--color-info)"><b>實走說明</b> 實際只點 2 次即完成，因示範資料的每筆樣本都預先帶有草稿答案，作答點擊可省略；名目最短為 3（列表 → 編輯 → 作答 → 送出）。</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 6. Reviewer ══════════════════════════ -->
+<section id="m6">
+  <div class="sec-head"><span class="idx">06</span><h2>Reviewer ／ 審核員</h2><span class="note">視圖 V14 · V24 · 三層單人接力（issue #596）</span></div>
+
+  <div class="goal">
+    <div class="goal-head"><span class="gid">G9</span><h3>審核一個審核單位</h3><span class="role">Reviewer</span></div>
+    <div class="metrics">
+      <div class="m"><span class="k">最短</span><span class="v">2</span></div>
+      <div class="m"><span class="k">實際</span><span class="v">2</span></div>
+      <div class="m"><span class="k">終點</span><span class="v v--end">停在同一審核單位</span></div>
+      <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--hit">F3 命中</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+    </div>
+    <div class="lane">
+      <span class="n n--entry">儀表板 · 開始審核</span>
+      <span class="edge"><span class="lbl">導向</span><span class="clicks">1</span><span class="arrow">→</span></span>
+      <span class="n n--screen">審核佇列</span>
+      <span class="edge"><span class="lbl">編輯</span><span class="clicks">1</span><span class="arrow">→</span></span>
+      <span class="n n--screen">工作區 · 審查模式</span>
+      <span class="edge"><span class="lbl">送出審核</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+      <span class="n n--dead">原地 · 無下一筆導引</span>
+    </div>
+    <div class="branch">
+      <div class="blabel">結果分支：通過／退回 皆走同一送出函式，終點相同</div>
+      <div class="blabel">唯一出路：手動點左側樣本清單另一列，或用麵包屑返回佇列（需自行判斷）</div>
+    </div>
+    <p class="cites"><b>證據</b> annotation-workspace.config.js:4689 <span class="mono">handleReviewSubmit()</span>，尾段 :4794–4802 依序呼叫 <span class="mono">renderSampleNav(); renderHistoryPanel(); … renderReviewerWorkspace(); showToast(t('wsReviewSubmitSuccess'));</span>——<strong>全部是重繪與提示，沒有任何導向或選取下一筆的呼叫</strong>。對照 :2437–2441 的標記員實作。</p>
+    <p class="cites" style="color:var(--color-error)"><b>F3 成因</b> 送出後 URL 不變、仍停在同一審核單位；系統知道下一筆是誰（<span class="mono">findNextActionableReviewUnit</span> 已存在於 annotation-workspace.data.js:2745），但送出流程未使用它。</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 7. Arbiter ══════════════════════════ -->
+<section id="m7">
+  <div class="sec-head"><span class="idx">07</span><h2>Arbiter ／ 仲裁員</h2><span class="note">爭議單位第三人仲裁 · <span class="mono">can_arbitrate</span></span></div>
+
+  <div class="goal">
+    <div class="goal-head"><span class="gid">G10</span><h3>仲裁一個爭議單位</h3><span class="role">Reviewer + can_arbitrate</span></div>
+    <div class="metrics">
+      <div class="m"><span class="k">最短</span><span class="v">3</span></div>
+      <div class="m"><span class="k">實際</span><span class="v">3</span></div>
+      <div class="m"><span class="k">終點</span><span class="v v--end">停在同一單位 · 面板消失</span></div>
+      <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--hit">F3 命中</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--hit">F6 命中</span></div>
+    </div>
+    <div class="lane">
+      <span class="n n--screen">審核佇列</span>
+      <span class="edge"><span class="lbl">仲裁</span><span class="clicks">1</span><span class="arrow">→</span></span>
+      <span class="n n--screen">工作區 · 仲裁模式</span>
+      <span class="edge"><span class="lbl">選裁決 + 送出</span><span class="clicks">2</span><span class="arrow">⇢</span></span>
+      <span class="n n--toast">仲裁已送出</span>
+      <span class="edge"><span class="lbl">重繪</span><span class="clicks">0</span><span class="arrow">⇢</span></span>
+      <span class="n n--dead">面板消失 · 無送出鈕</span>
+    </div>
+    <div class="branch">
+      <div class="blabel">入口條件：<span class="mono">status === DISPUTED</span> 且 <span class="mono">isArbiterCandidate(...)</span> 為真，列操作鈕才由「編輯」變為「仲裁」</div>
+      <div class="blabel">進度指標缺陷：頂端計數器對仲裁員恆為「我的審核提交 0 / N」</div>
+    </div>
+    <p class="cites"><b>證據</b> annotation-workspace.config.js:3903 <span class="mono">handleArbitrationSubmit()</span>，尾段 :3937–3940 <span class="mono">clearUnsaved(); showToast(t('wsArbitrationSubmitSuccess')); renderSampleList(); renderReviewerWorkspace();</span>——同樣沒有導向 · annotation-list.html:1630 <span class="mono">arbiterEntry: status === REVIEW_UNIT_STATUS.DISPUTED &amp;&amp; data.isArbiterCandidate(…)</span> · annotation-list.html:1549 <span class="mono">data-testid="list-arbitrate-entry"</span> · annotation-workspace.data.js:2128 <span class="mono">isArbiterCandidate</span> · :214 <span class="mono">{ id: 'reviewer_chen', name: '陳美玲', can_arbitrate: true }</span></p>
+    <p class="cites" style="color:var(--color-error)"><b>F6 成因</b> 進度文案為 <span class="mono">wsProgressTextReview</span>（config.js:33「我的審核提交 {done} / {total} 個審核單位」），其 <span class="mono">done</span> 由 config.js:1535 <span class="mono">countSubmittedUnits()</span> 計算，只統計 <span class="mono">isSampleSubmitted(…, 'reviewer', …)</span>；仲裁走的是 <span class="mono">submitArbitration</span>，永遠不會被計入。且 config.js:3903 的尾段未呼叫 config.js:1548 <span class="mono">renderSampleNav()</span>，該數字連重繪都沒有。仲裁員因此無法判斷自己完成到第幾筆。</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 8. Super Admin ══════════════════════════ -->
+<section id="m8">
+  <div class="sec-head"><span class="idx">08</span><h2>Super Admin ／ 系統管理員</h2><span class="note">畫面 12–13</span></div>
+
+  <div class="stack">
+
+    <!-- G11 -->
+    <div class="goal">
+      <div class="goal-head"><span class="gid">G11</span><h3>停用一個使用者</h3><span class="role">Super Admin</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">3</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">3</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">user-management.html + toast</span></div>
+        <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--entry">側欄 · 系統管理</span>
+        <span class="edge"><span class="lbl">導向</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--screen">使用者管理</span>
+        <span class="edge"><span class="lbl">停用</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+        <span class="n n--dialog">停用確認</span>
+        <span class="edge"><span class="lbl">確認停用</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+        <span class="n n--toast n--end">已停用 · 連線已撤銷</span>
+      </div>
+      <div class="branch">
+        <div class="blabel">還原分支：停用後同列出現「重新啟用」，1 點擊即可回復</div>
+      </div>
+      <p class="cites"><b>證據</b> shared/sidebar.js:391 <span class="mono">adminHref</span> · dashboard.html:29 <span class="mono">adminHref: '../admin/user-management.html'</span> · user-management.html:783 <span class="mono">id="disableConfirmBtn" class="btn-danger" onclick="confirmDisable()"</span>（UXC-10 具名動詞 + danger 樣式）· user-management.html:1477 <span class="mono">confirmDisable()</span> · :1485 <span class="mono">showToast('success', t.toastDisabled, t.toastSessionRevoked)</span> · :1495 <span class="mono">toastReEnabled</span></p>
+    </div>
+
+    <!-- G12 -->
+    <div class="goal">
+      <div class="goal-head"><span class="gid">G12</span><h3>調整角色權限</h3><span class="role">Super Admin</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">4</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">5</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">role-settings.html（原頁 + toast）</span></div>
+        <div class="verdicts"><span class="vd vd--hit">F1 命中</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--entry">側欄 · 系統管理</span>
+        <span class="edge"><span class="lbl">導向</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--screen">使用者管理</span>
+        <span class="edge"><span class="lbl">角色設定</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--screen">角色權限矩陣</span>
+        <span class="edge"><span class="lbl">編輯</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+        <span class="n n--state">可編輯矩陣</span>
+        <span class="edge"><span class="lbl">勾選 + 儲存</span><span class="clicks">2</span><span class="arrow">⇢</span></span>
+        <span class="n n--toast n--end">權限已更新</span>
+      </div>
+      <div class="branch">
+        <div class="blabel">離開分支：編輯中離開 → 未儲存變更 Dialog（UXC-03）</div>
+        <div class="blabel">稽核分支：操作紀錄抽屜（1 點擊開啟，不離開頁面）</div>
+        <div class="blabel">錯誤分支：矩陣載入失敗 → Alert Banner ＋ 重新載入</div>
+      </div>
+      <p class="cites"><b>證據</b> user-management.html:448 <span class="mono">&lt;a id="tabRoles" class="admin-tab" href="role-settings.html"&gt;角色設定&lt;/a&gt;</span> · role-settings.html:454 <span class="mono">id="editBtn" onclick="enterEditMode()"</span> · :472 <span class="mono">id="saveBtn" onclick="saveMatrix()"</span> · :887–890 未儲存 Dialog（<span class="mono">hideDirtyModal / confirmDiscardChanges</span>）· :461 <span class="mono">id="auditLogBtn" onclick="openAuditDrawer()"</span> · :424 <span class="mono">id="reloadBtn" onclick="reloadMatrix()"</span></p>
+      <p class="cites" style="color:var(--color-error)"><b>F1 成因</b> 5 &gt; 4。「角色設定」不是側欄的一級項目，必須先落地「使用者管理」再切分頁；矩陣預設唯讀，改一格前要先進編輯模式。兩者各多耗 1 次點擊。</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════ 9. 資料集分析 ══════════════════════════ -->
+<section id="m9">
+  <div class="sec-head"><span class="idx">09</span><h2>資料集分析</h2><span class="note">畫面 14–15 · 視圖 V25–V35</span></div>
+
+  <div class="goal">
+    <div class="goal-head"><span class="gid">G13</span><h3>檢視一個任務的標記品質</h3><span class="role">全角色</span></div>
+    <div class="metrics">
+      <div class="m"><span class="k">最短</span><span class="v">2</span></div>
+      <div class="m"><span class="k">實際</span><span class="v">2</span></div>
+      <div class="m"><span class="k">終點</span><span class="v v--end">?task_id=…&amp;tab=quality</span></div>
+      <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+    </div>
+    <div class="lane">
+      <span class="n n--entry">側欄 · 資料集分析</span>
+      <span class="edge"><span class="lbl">導向</span><span class="clicks">0</span><span class="arrow">→</span></span>
+      <span class="n n--screen">分析列表</span>
+      <span class="edge"><span class="lbl">點任務列</span><span class="clicks">1</span><span class="arrow">→</span></span>
+      <span class="n n--screen">分析詳情 · 統計</span>
+      <span class="edge"><span class="lbl">品質監控</span><span class="clicks">1</span><span class="arrow">→</span></span>
+      <span class="n n--screen n--end">品質監控（URL 同步）</span>
+    </div>
+    <div class="branch">
+      <div class="blabel">空狀態分支：尚無標記資料 → 「前往任務詳情」CTA（V35，UXC-09）</div>
+      <div class="blabel">型態分支：8 種輸出型態（V25–V32）＋ 組合輸出（V34）共用同一條路徑</div>
+    </div>
+    <p class="cites"><b>證據</b> shared/sidebar.js:354 <span class="mono">datasetHref</span> 預設 <span class="mono">'../dataset/dataset-analysis-list.html'</span> · dataset-analysis-list.view.js:110 <span class="mono">global.location.href = './dataset-analysis-detail.html?task_id=' + …</span> · <span class="mono">grep -c "replaceState" dataset-analysis-detail.html</span> = <b>1</b>（tab 切換寫回 URL，符合 UXC-11）· V35 需 <span class="mono">?task_id=T001&amp;tab=stats&amp;s_state=empty</span></p>
+    <p class="cites" style="color:var(--color-success)"><b>對照</b> 本頁是 UXC-11 的正例；同為「列表 → 詳情 → 分頁」結構的 task-detail.html 則完全不寫回 URL（見 G7）。兩頁不一致，前端實作前需先裁定採哪一套。</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 10. 權限分歧 ══════════════════════════ -->
+<section id="m10">
+  <div class="sec-head"><span class="idx">10</span><h2>權限分歧與阻斷</h2><span class="note">同一 URL、不同角色的結果差異</span></div>
+
+  <div class="stack">
+
+    <div class="goal">
+      <div class="goal-head"><span class="gid">P1</span><h3>標記員直接開啟任務詳情</h3><span class="role">Annotator</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">1</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">1</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">task-list.html（query 被清空）</span></div>
+        <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--hit">F6 命中</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--entry">task-detail?task_role=annotator</span>
+        <span class="edge"><span class="lbl">立即轉址</span><span class="clicks">0</span><span class="arrow">→</span></span>
+        <span class="n n--screen n--dead">任務列表 · 無任何提示</span>
+      </div>
+      <div class="branch">
+        <div class="blabel">對照：審核員開啟成員管理分頁 → <strong>有</strong> toast「reviewer 無權限檢視成員管理，已導回任務概覽。」</div>
+      </div>
+      <p class="cites"><b>證據</b> task-detail.html:4746–4756 標記員分支，:4753 <span class="mono">window.location.href = './task-list.html?unauthorized=annotator';</span> · <span class="mono">/usr/bin/grep -rn "unauthorized" design/prototype/pages/</span> 只有這 1 行——<span class="mono">unauthorized</span> 參數<strong>全樹只寫不讀</strong>，落地頁不會顯示任何訊息 · 對照組 task-detail.html:5105 與 :6821 <span class="mono">showToast(t('reviewerTabBlocked'), true)</span>，文案在 :2762</p>
+      <p class="cites" style="color:var(--color-error)"><b>F6 成因</b> 使用者點了一個連結，畫面換成任務列表，沒有任何說明。同一支檔案對審核員有提示、對標記員沒有，是實作不一致而非設計意圖。</p>
+    </div>
+
+    <div class="goal">
+      <div class="goal-head"><span class="gid">P2</span><h3>專案負責人視角缺少建立任務入口</h3><span class="role">Data Creator</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">1</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">—</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">無法從此視角到達</span></div>
+        <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--hit">F3 命中</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--entry">儀表板 <span class="mono">?scenario=project_leader</span></span>
+        <span class="edge"><span class="lbl">唯一按鈕</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--screen">任務列表</span>
+        <span class="edge"><span class="lbl">建立任務 CTA</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--screen n--end">建立任務精靈</span>
+      </div>
+      <div class="branch">
+        <div class="blabel">缺口：<span class="mono">#ctaLeaderBtn</span>「開始建立任務」位於 <span class="mono">#view-user</span>，切到 <span class="mono">#view-project_leader</span> 後不再可見</div>
+        <div class="blabel">缺口：該視角的 3 張任務卡不可點（0 個 anchor、<span class="mono">cursor: auto</span>、無 onclick）</div>
+      </div>
+      <p class="cites"><b>證據</b> dashboard.html:105 <span class="mono">&lt;section class="view is-active" id="view-user" …&gt;</span> 內含 :151 <span class="mono">id="ctaLeaderBtn"</span> · dashboard.html:340 <span class="mono">&lt;section class="view" id="view-project_leader" …&gt;</span> 僅含 :375 <span class="mono">id="plViewAllBtn"</span>「查看全部」· 實走：該視角主內容區任務卡查無 anchor 與 onclick</p>
+      <p class="cites" style="color:var(--color-error)"><b>F3 成因</b> 專案負責人的核心目標（建立任務）在自己的儀表板視角上沒有入口，必須先繞去任務列表。這使 G5 的實際起點比設計意圖多一跳。</p>
+    </div>
+
+    <div class="panel">
+      <h3>不構成分歧的兩個誤判（已驗證排除）</h3>
+      <p style="font-size:14px">① 任務列表的 <span class="mono">?task_role=annotator|reviewer</span> 並非真實視角：task-list.html:667–670 <span class="mono">normalizeTaskRole()</span> 僅認 <span class="mono">super_admin</span> 與 <span class="mono">project_leader</span>，其餘一律歸為 <span class="mono">'user'</span>。② 審核員在任務詳情看到的 5 個「編輯」鈕全部 <span class="mono">disabled: true</span>，且唯讀提示無條件渲染——不是「可點但無效」。</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════ 11. 涵蓋對照 ══════════════════════════ -->
+<section id="m11">
+  <div class="sec-head"><span class="idx">11</span><h2>畫面／視圖涵蓋對照</h2><span class="note">15 畫面 · 36 視圖 · 逐項對照 inventory-manifest.json</span></div>
+
+  <div class="stack">
+    <div class="tablebox">
+      <table>
+        <caption class="eyebrow" style="text-align:left;padding:var(--space-md) var(--space-md) 0">15 畫面</caption>
+        <thead><tr><th class="num">#</th><th>畫面</th><th>路徑</th><th>本圖涵蓋於</th></tr></thead>
+        <tbody>
+          <tr><td class="num">01</td><td>登入</td><td class="src">pages/account/login.html</td><td>G1</td></tr>
+          <tr><td class="num">02</td><td>註冊</td><td class="src">pages/account/register.html</td><td>G2</td></tr>
+          <tr><td class="num">03</td><td>忘記密碼</td><td class="src">pages/account/forgot-password.html</td><td>G3</td></tr>
+          <tr><td class="num">04</td><td>重設密碼</td><td class="src">pages/account/reset-password.html</td><td>G3</td></tr>
+          <tr><td class="num">05</td><td>個人資料</td><td class="src">pages/account/profile.html</td><td>G4</td></tr>
+          <tr><td class="num">06</td><td>儀表板</td><td class="src">pages/dashboard/dashboard.html</td><td>G5 · G7 · G8 · G9 · P2</td></tr>
+          <tr><td class="num">07</td><td>任務列表</td><td class="src">pages/task-management/task-list.html</td><td>G7 · P1 · P2</td></tr>
+          <tr><td class="num">08</td><td>建立任務</td><td class="src">pages/task-management/task-new.html</td><td>G5</td></tr>
+          <tr><td class="num">09</td><td>任務詳情</td><td class="src">pages/task-management/task-detail.html</td><td>G6 · G7 · P1</td></tr>
+          <tr><td class="num">10</td><td>標記任務列表</td><td class="src">pages/annotation/annotation-list.html</td><td>G8 · G9 · G10</td></tr>
+          <tr><td class="num">11</td><td>標記工作區</td><td class="src">pages/annotation/annotation-workspace.html</td><td>G8 · G9 · G10</td></tr>
+          <tr><td class="num">12</td><td>使用者管理</td><td class="src">pages/admin/user-management.html</td><td>G11 · G12</td></tr>
+          <tr><td class="num">13</td><td>角色設定</td><td class="src">pages/admin/role-settings.html</td><td>G12</td></tr>
+          <tr><td class="num">14</td><td>資料集分析列表</td><td class="src">pages/dataset/dataset-analysis-list.html</td><td>G13</td></tr>
+          <tr><td class="num">15</td><td>資料集分析詳情</td><td class="src">pages/dataset/dataset-analysis-detail.html</td><td>G13</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tablebox">
+      <table>
+        <caption class="eyebrow" style="text-align:left;padding:var(--space-md) var(--space-md) 0">36 視圖（V00 來自 screen-inventory.md；V01–V35 來自 manifest screenViews）</caption>
+        <thead><tr><th class="vid">視圖</th><th>說明</th><th>實走結果</th><th>對應目標</th></tr></thead>
+        <tbody>
+          <tr><td class="vid">V00</td><td>入口導向頁</td><td><span class="tag tag--ok">已到達</span> meta refresh → login.html</td><td>G1</td></tr>
+          <tr><td class="vid">V01</td><td>儀表板 · 系統管理員</td><td><span class="tag tag--ok">已到達</span></td><td>G11</td></tr>
+          <tr><td class="vid">V02</td><td>儀表板 · 專案負責人</td><td><span class="tag tag--ok">已到達</span></td><td>P2</td></tr>
+          <tr><td class="vid">V03</td><td>儀表板 · 標記員</td><td><span class="tag tag--ok">已到達</span></td><td>G8</td></tr>
+          <tr><td class="vid">V04</td><td>儀表板 · 審核員</td><td><span class="tag tag--ok">已到達</span></td><td>G9</td></tr>
+          <tr><td class="vid">V05</td><td>任務列表 · 專案負責人</td><td><span class="tag tag--ok">已到達</span></td><td>G7</td></tr>
+          <tr><td class="vid">V06</td><td>任務列表 · 標記員（唯讀）</td><td><span class="tag tag--gap">不存在</span> 參數被 normalizeTaskRole 歸為 user</td><td>—</td></tr>
+          <tr><td class="vid">V07</td><td>任務列表 · 審核員</td><td><span class="tag tag--gap">不存在</span> 同上</td><td>—</td></tr>
+          <tr><td class="vid">V08</td><td>任務列表 · 載入失敗</td><td><span class="tag tag--ok">已到達</span> Alert Banner + 重試</td><td>G7 分支</td></tr>
+          <tr><td class="vid">V09</td><td>任務詳情 · 標記進度</td><td><span class="tag tag--ok">已到達</span></td><td>G7</td></tr>
+          <tr><td class="vid">V10</td><td>任務詳情 · 標記結果</td><td><span class="tag tag--ok">已到達</span></td><td>G7</td></tr>
+          <tr><td class="vid">V11</td><td>任務詳情 · 成員管理</td><td><span class="tag tag--ok">已到達</span></td><td>G6</td></tr>
+          <tr><td class="vid">V12</td><td>任務詳情 · 工時紀錄</td><td><span class="tag tag--ok">已到達</span></td><td>G7</td></tr>
+          <tr><td class="vid">V13</td><td>任務詳情 · 審核員角色</td><td><span class="tag tag--ok">已到達</span> 成員管理 tab 隱藏</td><td>P1 對照</td></tr>
+          <tr><td class="vid">V14</td><td>標記清單 · 審核員佇列</td><td><span class="tag tag--ok">已到達</span></td><td>G9 · G10</td></tr>
+          <tr><td class="vid">V15–V22</td><td>工作區 · 8 種輸出型態</td><td><span class="tag tag--ok">已到達</span> 工作區自動補上 sample_id</td><td>G8</td></tr>
+          <tr><td class="vid">V23</td><td>工作區 · 組合輸出 ABSA</td><td><span class="tag tag--ok">已到達</span></td><td>G8</td></tr>
+          <tr><td class="vid">V24</td><td>工作區 · 審查模式</td><td><span class="tag tag--ok">已到達</span></td><td>G9</td></tr>
+          <tr><td class="vid">V25–V32</td><td>分析詳情 · 8 種型態統計</td><td><span class="tag tag--ok">已到達</span></td><td>G13</td></tr>
+          <tr><td class="vid">V33</td><td>分析詳情 · 品質監控</td><td><span class="tag tag--ok">已到達</span></td><td>G13</td></tr>
+          <tr><td class="vid">V34</td><td>分析詳情 · 組合輸出品質</td><td><span class="tag tag--ok">已到達</span></td><td>G13</td></tr>
+          <tr><td class="vid">V35</td><td>分析詳情 · 空狀態</td><td><span class="tag tag--ok">已到達</span> 需帶 <span class="mono">&amp;s_state=empty</span></td><td>G13 分支</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <p><strong>結論：36 視圖中 34 個實走可達，2 個（V06 / V07）在 <span class="mono">c9cf83209257</span> 上不存在。</strong>清單缺口不是路徑缺口——manifest 記載了兩個實作未提供的視角，屬盤點資料與實作的落差，詳見第 13 節。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 12. 摩擦點總表 ══════════════════════════ -->
+<section id="m12">
+  <div class="sec-head"><span class="idx">12</span><h2>摩擦點總表</h2><span class="note">8 項 · 每項一行成因 · 皆可 grep 複驗</span></div>
+
+  <div class="tablebox">
+    <table>
+      <thead><tr><th class="num">#</th><th>門檻</th><th>目標</th><th>一行成因</th><th>證據位置</th><th>追蹤</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="num">1</td><td><span class="tag tag--gap">F3</span></td><td>G9 審核員送出審核</td>
+          <td>送出函式尾段只重繪與提示，沒有任何導向或選取下一筆的呼叫。</td>
+          <td class="src">annotation-workspace.config.js:4689 · 尾段 :4794–4802</td>
+          <td><a href="https://github.com/singyichen/label-suite/issues/719">#719</a></td>
+        </tr>
+        <tr>
+          <td class="num">2</td><td><span class="tag tag--gap">F3</span></td><td>G10 仲裁員送出仲裁</td>
+          <td>同上；送出後仲裁面板消失、單位仍為爭議中，畫面上不再有任何送出鈕。</td>
+          <td class="src">annotation-workspace.config.js:3903 · 尾段 :3937–3940</td>
+          <td><a href="https://github.com/singyichen/label-suite/issues/720">#720</a></td>
+        </tr>
+        <tr>
+          <td class="num">3</td><td><span class="tag tag--gap">F6</span></td><td>P1 標記員開任務詳情</td>
+          <td><span class="mono">unauthorized</span> 參數全樹只寫不讀，落地頁不顯示任何說明。</td>
+          <td class="src">task-detail.html:4753 · <span class="mono">grep -rn unauthorized pages/</span> → 1 行</td>
+          <td><a href="https://github.com/singyichen/label-suite/issues/721">#721</a></td>
+        </tr>
+        <tr>
+          <td class="num">4</td><td><span class="tag tag--gap">F6</span></td><td>G10 仲裁員進度指標</td>
+          <td>計數器只統計 <span class="mono">'reviewer'</span> 提交，仲裁走另一條寫入路徑，故仲裁提交不計入（純仲裁者恆為 0）。</td>
+          <td class="src">config.js:33 · :1535 <span class="mono">countSubmittedUnits</span> · :1548 未被 :3903 呼叫</td>
+          <td><a href="https://github.com/singyichen/label-suite/issues/722">#722</a></td>
+        </tr>
+        <tr>
+          <td class="num">5</td><td><span class="tag tag--gap">F3</span></td><td>P2 專案負責人建立任務</td>
+          <td>建立任務 CTA 只存在於 <span class="mono">#view-user</span>，專案負責人視角看不到。</td>
+          <td class="src">dashboard.html:151（在 :105 內）vs :340</td>
+          <td><a href="https://github.com/singyichen/label-suite/issues/723">#723</a></td>
+        </tr>
+        <tr>
+          <td class="num">6</td><td><span class="tag tag--gap">F1 + F2</span></td><td>G5 建立任務</td>
+          <td>Step 1 的型態選擇與逐欄位角色指派全為必點，11 次點擊中有 7 次集中於此。</td>
+          <td class="src">task-new.html:311–326（型態三群組）· task-config.engine.js:5365 <span class="mono">inline-preview-role-select</span>（逐欄位）</td>
+          <td><a href="https://github.com/singyichen/label-suite/issues/724">#724</a></td>
+        </tr>
+        <tr>
+          <td class="num">7</td><td><span class="tag tag--gap">F1</span></td><td>G12 調整角色權限</td>
+          <td>角色設定非側欄一級項目，且矩陣預設唯讀，兩處各多耗 1 次點擊。</td>
+          <td class="src">user-management.html:448 · role-settings.html:454</td>
+          <td><a href="https://github.com/singyichen/label-suite/issues/725">#725</a></td>
+        </tr>
+        <tr>
+          <td class="num">8</td><td><span class="tag tag--warn">UXC-11</span></td><td>G7 任務詳情全頁</td>
+          <td>分頁／篩選／分頁碼皆不寫回 URL，同儕頁 dataset-analysis-detail 則有寫。</td>
+          <td class="src"><span class="mono">grep -c replaceState</span>：task-detail.html = 0 · dataset-analysis-detail.html = 1</td>
+          <td><a href="https://github.com/singyichen/label-suite/issues/726">#726</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="margin-top:var(--space-md);font-size:13.5px;color:var(--color-text-soft)">摩擦點集中在<strong>審核與仲裁的送出收尾</strong>（#1 #2 #4）與<strong>入口可及性</strong>（#3 #5 #7）兩處。標記員路徑（G8）與資料集分析路徑（G13）已具備正確的收尾與 URL 同步實作，可直接作為修補時的參照實作。</p>
+</section>
+
+<!-- ══════════════════════════ 13. 限制與偏差 ══════════════════════════ -->
+<section id="m13">
+  <div class="sec-head"><span class="idx">13</span><h2>原型限制與 manifest 偏差</h2><span class="note">不列為摩擦點的已知落差</span></div>
+
+  <div class="stack">
+    <div class="tablebox">
+      <table>
+        <caption class="eyebrow" style="text-align:left;padding:var(--space-md) var(--space-md) 0">原型限制（原始碼已註記，非設計缺陷）</caption>
+        <thead><tr><th>項目</th><th>行為</th><th>證據</th></tr></thead>
+        <tbody>
+          <tr><td>Google SSO 按鈕</td><td>點擊只有視覺回饋，不導向</td><td class="src">login.html:740–745 <span class="mono">// Prototype: no-op with visual press feedback</span></td></tr>
+          <tr><td>儀表板角色切換器</td><td>以 <span class="mono">?scenario=</span> 模擬四角色，正式版由登入身分決定</td><td class="src">screen-inventory.md「⚠ 切換器 prototype-only」</td></tr>
+          <tr><td>重設密碼 token 狀態鈕</td><td>「有效／已過期／已使用」為原型狀態切換器</td><td class="src">reset-password.html <span class="mono">#btnValid / #btnExpired / #btnUsed</span></td></tr>
+          <tr><td>各頁送出延遲</td><td>600–900ms <span class="mono">setTimeout</span> 模擬後端</td><td class="src">login.html:736 · task-new.html:1437 · profile.html:1439</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tablebox">
+      <table>
+        <caption class="eyebrow" style="text-align:left;padding:var(--space-md) var(--space-md) 0">manifest 與實作的四項落差</caption>
+        <thead><tr><th>視圖</th><th>manifest 記載</th><th>實走事實</th></tr></thead>
+        <tbody>
+          <tr><td class="vid">V06 / V07</td><td><span class="mono">?task_role=annotator|reviewer</span> 為獨立視角</td><td>參數被 <span class="mono">normalizeTaskRole()</span> 歸為 <span class="mono">'user'</span>，畫面與預設視角相同（task-list.html:667–670）</td></tr>
+          <tr><td class="vid">V15–V22</td><td>URL 帶 <span class="mono">&amp;task_type=…</span></td><td>工作區全程未讀取該參數，型態由 <span class="mono">task_id</span> 決定</td></tr>
+          <tr><td class="vid">V01</td><td>「使用者管理捷徑」</td><td>系統管理員儀表板主內容區查無此捷徑，入口只在側欄「系統管理」</td></tr>
+          <tr><td class="vid">V02</td><td>「空狀態 CTA『建立第一個任務』」</td><td>專案負責人視角實際顯示 3 張任務卡，無此 CTA（見 P2）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <p><strong>這四項是盤點資料的偏差，不是使用者路徑的摩擦點。</strong>修正方向是更新 <span class="mono">inventory-manifest.json</span> 後重跑 <span class="mono">node scripts/gen-screen-inventory.mjs</span>，而不是改動原型；本圖的 36 視圖基數維持不變，以便與 <a href="screen-inventory.md">screen-inventory.md</a> 對齊。</p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>Label Suite · <span class="mono">design/system/user-path-map.html</span> · 認知演練法（專家評估）· 來源 commit <span class="mono">c9cf83209257</span> · 實走 2026-09-08<br>
+  相關文件：<a href="screen-inventory.md">screen-inventory.md</a> · <a href="ux-conventions.md">ux-conventions.md</a>（UXC-01–11）· <a href="anti-pattern-checklist.md">anti-pattern-checklist.md</a> · <a href="MASTER.md">MASTER.md</a></p>
+</footer>
+
+</div>
