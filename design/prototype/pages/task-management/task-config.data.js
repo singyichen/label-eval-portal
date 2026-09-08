@@ -411,7 +411,7 @@ var OUTPUT_TYPE_IAA_REGISTRY = {
   multi_dim: { zh: 'ICC(2,1)', en: 'ICC(2,1)', defaultThreshold: 0.80 },
   entity_recognition: { zh: 'Span F1（嚴格）', en: 'Span F1 (strict)', defaultThreshold: 0.80 },
   relation_identification: { zh: 'Triple F1', en: 'Triple F1', defaultThreshold: 0.75 },
-  /* FR-012L (dataset-017 v... seq-tagging-span-export-metrics): span-unit
+  /* FR-012L (dataset-017, change seq-tagging-span-export-metrics): span-unit
      Krippendorff u-α replaces the retired token-level nominal alpha metric.
      sequence_tagging is IAA_UNCALIBRATED_TYPES so defaultThreshold stays
      null — no threshold, default, or fallback number may be smuggled in
