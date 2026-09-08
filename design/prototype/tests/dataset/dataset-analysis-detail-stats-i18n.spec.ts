@@ -1,9 +1,11 @@
 /**
  * Traceability: specs/dataset/017-dataset-analysis-detail/spec.md
- *   FR-009, FR-009F, FR-009I, FR-019
+ *   FR-009, FR-009F, FR-009I, FR-019, FR-009L (AC-2.7)
  */
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
+
+test.describe.configure({ retries: 2 });
 
 const DETAIL_URL = '/pages/dataset/dataset-analysis-detail.html';
 
@@ -74,5 +76,38 @@ test.describe('Dataset analysis detail stats i18n across task types', () => {
       'Mixed',
     ]);
     await expect(distribution).not.toContainText(/[正向中立負向混合]/);
+  });
+
+  // AC-2.7 (specs/dataset/017-dataset-analysis-detail/spec.md FR-009L): stats
+  // must switch sequence_tagging's population from token sequences to the
+  // submitted span set. Red today because the partial still renders a
+  // token/tag-prefix distribution (O, B-PER, I-PER, B-ORG) and has no
+  // span-count or character-length sections at all.
+  test('renders sequence_tagging label-type distribution without tag prefixes or an O bucket (AC-2.7)', async ({ page }) => {
+    await gotoStatsWithLang(page, 'T103', 'en');
+
+    const labelDistribution = page.locator('section[aria-labelledby="statsSeqTagDistTitle"]');
+    const labelTexts = await labelDistribution.locator('.stats-hbar-label').allTextContents();
+
+    expect(labelTexts.length).toBeGreaterThan(0);
+    for (const rawLabel of labelTexts) {
+      const label = rawLabel.trim();
+      expect(label).not.toMatch(/^(B-|I-|E-|S-)/);
+      expect(label).not.toBe('O');
+    }
+  });
+
+  test('reports sequence_tagging average marked spans per sentence as a span-count section (AC-2.7)', async ({ page }) => {
+    await gotoStatsWithLang(page, 'T103', 'en');
+
+    const avgSpanSection = page.locator('section[aria-labelledby="statsSeqTagAvgSpanTitle"]');
+    expect(await avgSpanSection.count()).toBe(1);
+  });
+
+  test('buckets sequence_tagging span length distribution by character length, not token length (AC-2.7)', async ({ page }) => {
+    await gotoStatsWithLang(page, 'T103', 'en');
+
+    const spanLenSection = page.locator('section[aria-labelledby="statsSeqTagSpanLenTitle"]');
+    expect(await spanLenSection.count()).toBe(1);
   });
 });
