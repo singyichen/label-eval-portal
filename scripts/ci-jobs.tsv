@@ -18,5 +18,6 @@ prototype-playwright	pnpm playwright test	-
 prototype-typecheck	pnpm typecheck	-
 sdd-lint	scripts/check-sdd.sh	check-sdd.sh
 speckit-tests	scripts/speckit-tests.sh	speckit-tests.sh
+speckit-tests	scripts/speckit-tests.sh	check-user-path-map-freshness.mjs
 validate	bash scripts/verify-bootstrap.sh	verify-bootstrap.sh
 validate	scripts/check-spec-artifacts.sh	check-spec-artifacts.sh
