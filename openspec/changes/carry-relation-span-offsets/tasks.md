@@ -80,7 +80,7 @@
 > **相依**：群組 3 完成後檢查點四項全數通過。
 > **附帶清理（issue #581 D5(a) 裁定）**：本組的正典回寫一併刪除 015 第 31 行的孤兒常數宣告，見 4.5。此為同一份正典檔在同一次版本提升中的殘留宣告清除，不引入第二個目的。
 
-- [ ] 4.1 執行 Source-Verify：逐條 grep 本 change 之 proposal 與 delta 內所有 FR／AC／SC ID、檔案路徑與 issue 編號，確認每一項皆可於正典或其指名來源定位。 [@main]
+- [x] 4.1 執行 Source-Verify：逐條 grep 本 change 之 proposal 與 delta 內所有 FR／AC／SC ID、檔案路徑與 issue 編號，確認每一項皆可於正典或其指名來源定位。證據：抽出的引用共 19 項，逐項定位結果如下。既存於正典 015 者七項皆有命中（FR-014L 8 次、FR-024A 7 次、FR-052 26 次、FR-087 7 次、FR-090 6 次、AC-2.17 2 次、AC-2.18 2 次）；本 change 新增者四項於正典為 0、於 delta 有定義（FR-098 4 次、AC-2.22 2 次、AC-2.23 2 次、SC-004X 2 次），符合尚未回寫的預期。五個檔案路徑經 `test -f` 逐一確認存在；行號引用 annotation-history.js 第 162 行實際內容為 `var SPAN_EXTRACTORS = {`，與其被引用的語境相符。跨模組同號誤引之風險已排除：FR-024A 與 FR-090 雖在 dataset 側亦有同號條文，本 change 引用的是 015 自身的兩條——FR-024A-3 定位於正典第 923 行（sequence_tagging 之 `spans[]` 半開區間 payload 契約，與本 change 宣稱共用同一座標系的說法一致），FR-090 定位於正典第 1129 行區段的歷程分層遮蔽條文（合憲性表格所稱「跨標記員遮蔽不受影響」即指此條）。issue 引用兩項：#590 為本 change 的追蹤單；#738 為承接 FR-098 第 7 點落差的後續單，於本群組內開立後已由 `c07ddaca` 寫入該點取代原本指回 #590 的自我引用。 [@main]
 - [ ] 4.2 執行 `/opsx:archive carry-relation-span-offsets`，產生 derived view 並將 FR-098、AC-2.22、AC-2.23、SC-004X 與 FR-087 修訂回寫至正典，版本自 6.0.1 提升為 6.1.0 並補上 Changelog 條目。 [@main]
 - [ ] 4.3 修改 `specs/STATUS.md`，將 `annotation-015` 之 change-open 狀態與摘要更新為本次回寫後的結果。 [@main]
 - [ ] 4.4 執行最終四閘驗證：OpenSpec schema validation、`scripts/check-sdd.sh`、`scripts/check-spec-artifacts.sh` 與 `scripts/pre-commit-tests.sh` 皆 exit 0，並分開記錄四道閘的證據。 [@main]
