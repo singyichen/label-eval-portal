@@ -18,7 +18,7 @@
 - 新增 FR-098：定義 `relation_identification` 答案結構的位置資訊契約——`previewTriples` 每筆三元組於既有顯示字串之外攜帶 `subjStart`／`subjEnd`／`objStart`／`objEnd` 四個整數或 `null` 欄位，座標系沿用 `sequence_tagging` 的半開區間 `[start, end)`（FR-024A-3）。
 - FR-098 明文界定來源範圍：僅**本身已攜帶位置資訊**的兩種形狀補齊——工作區關係建構器的互動標記（實體槽位已有 `start`／`end`）、資料集匯入的物件形狀三元組（`entity1`／`entity2` 已有 `start`／`end`）。
 - FR-098 明文禁止推測：來源未帶位置資訊時四個欄位必須為 `null`，不得以答案字串回原始文本做字串比對推得 offset。
-- FR-098 定義 CompactAnswer 往返對稱：`relation_identification` 之 CompactAnswer 自 `{ subj, rel, obj }` 擴充為七鍵，序列化與回填兩端必須同時保留，舊有三鍵資料缺鍵視同 `null`。
+- FR-098 定義 CompactAnswer 往返對稱：`relation_identification` 之 CompactAnswer 自 `{ subj, rel, obj }` 擴充為八鍵（四個起訖欄位，外加既有的 `relType`），序列化與回填兩端必須同時保留，舊有三鍵資料缺鍵視同 `null`。`relType` 納入往返是 §5「`relationKey` 優先取 `relType`」得以生效的前提——CompactAnswer 不攜帶它，回填後該欄位恆為 `null`，該優先分支永遠走不到。
 - FR-098 定義逐實體差異的索引鍵：抽取只產出主體與客體兩個實體（關係型別／觸發詞不是文本 span），label 為 `role + '@' + relationKey`；並**誠實聲明殘留碰撞**——同一實體在同一關係型別下參與多筆三元組時仍會互相覆寫，連同其使用者可見表現一併寫入條文；同時明文禁止改以三元組序號為鍵。
 - FR-098 定義逐快照對回退規則：僅當前後兩份快照皆至少產出一筆帶起訖的三元組時才走逐實體差異，否則回退為純值比對——`buildHistoryDiff` 一旦判定某型別為具位置資訊之類型即不再有純值遞補路徑，缺少此規則會使不帶位置資訊的來源形狀從「今日可用的純值差異」退化為「空差異」而被讀成未變更，比現況更差。
 - FR-098 記載**維持不變**的已知落差：gold 純字串形狀與內建示範資料的字串串接形狀（其 `subj`／`obj` 並非原始文本的連續子字串）本無對應 span，本版不補齊，並留下追蹤出口。

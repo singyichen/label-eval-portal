@@ -177,6 +177,36 @@
         return { start: span.start, end: span.end, label: span.label };
       });
     },
+    /* FR-098 §5 (issue #590): exactly two entities per triple -- subject and
+       object -- never a third one for `rel`, which is a display field (the
+       relation type or trigger word), not an alignable span. `relationKey`
+       is embedded into each entity's label (not just the bare `role`) so
+       that two different relation types sharing the same subject/object
+       start do not collide into a single indexSpans() key; `relType` wins
+       over the `rel` display string when non-empty. `text` is denormalized
+       straight from the triple, matching entity_recognition's own pattern.
+       `subjStart`/`subjEnd`/`objStart`/`objEnd` are `null` for source shapes
+       that never carried position data (FR-098 §7's known gap) -- read with
+       `!= null`, never `||`, since 0 is a legitimate offset. */
+    relation_identification: function (snapshot) {
+      var triples = Array.isArray(snapshot.previewTriples) ? snapshot.previewTriples : [];
+      return triples.reduce(function (spans, triple) {
+        var relationKey = triple.relType ? triple.relType : triple.rel;
+        spans.push({
+          start: triple.subjStart != null ? triple.subjStart : null,
+          end: triple.subjEnd != null ? triple.subjEnd : null,
+          label: 'subj@' + relationKey,
+          text: triple.subj,
+        });
+        spans.push({
+          start: triple.objStart != null ? triple.objStart : null,
+          end: triple.objEnd != null ? triple.objEnd : null,
+          label: 'obj@' + relationKey,
+          text: triple.obj,
+        });
+        return spans;
+      }, []);
+    },
   };
 
   function isPositionalOutput(outKey) {
@@ -188,6 +218,26 @@
       byKey[span.start + '\u0000' + span.label] = span;
       return byKey;
     }, {});
+  }
+
+  /* FR-098 §6 (issue #590): source shapes such as gold plain-string triples
+     never carry offsets, so their extracted spans all have a null start/end.
+     Comparing two such snapshots positionally would read as an empty diff
+     (every span shares the same "null" key) rather than the plain-value
+     diff they used to get -- worse than doing nothing, per this section's own
+     rationale. This predicate lets a caller (the per-snapshot-pair dispatch
+     that decides positional-vs-plain-value) check BOTH snapshots produced
+     at least one span with a real position before trusting diffPositional's
+     result; wiring that dispatch into the caller is out of this module's
+     scope. */
+  function hasComparablePositions(outKey, before, after) {
+    if (!isPositionalOutput(outKey)) return false;
+    function hasPositionalSpan(snapshot) {
+      return SPAN_EXTRACTORS[outKey](snapshot || {}).some(function (span) {
+        return span.start != null && span.end != null;
+      });
+    }
+    return hasPositionalSpan(before) && hasPositionalSpan(after);
   }
 
   /* Returns per-entity changes for a position-bearing output type, or null
@@ -277,6 +327,7 @@
     actionLabelFor: actionLabelFor,
     collapseHistory: collapseHistory,
     isPositionalOutput: isPositionalOutput,
+    hasComparablePositions: hasComparablePositions,
     diffPositional: diffPositional,
     totalLeadTime: totalLeadTime,
     formatLeadTime: formatLeadTime,

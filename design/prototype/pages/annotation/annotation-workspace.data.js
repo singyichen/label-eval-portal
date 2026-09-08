@@ -660,7 +660,7 @@
    *   multi_dim                -> { [dimName]: number }
    *   sequence_tagging          -> Array<{text, label, start, end}> (one per span)
    *   entity_recognition        -> Array<{text, type}>
-   *   relation_identification   -> Array<{subj, rel, obj}>
+   *   relation_identification   -> Array<{subj, rel, obj, relType, subjStart, subjEnd, objStart, objEnd}>
    *   free_text                 -> string
    * Values are derived from each TaskProfile's gold answer (task-detail.
    * data.js) with at least one disagreeing annotator per task, and one
@@ -1662,7 +1662,24 @@
       case 'entity_recognition':
         return (submission.previewEntities || []).map(function (e) { return { text: e.text, type: e.type }; });
       case 'relation_identification':
-        return (submission.previewTriples || []).map(function (tr) { return { subj: tr.subj, rel: tr.rel, obj: tr.obj }; });
+        /* FR-098 §4: serialize the four offset fields plus relType
+         * alongside the existing display strings, symmetric with the
+         * rehydration side (tasks.md 2.3). `!= null` (not `||`) because
+         * `start`/`end` legitimately land on 0, and a missing source key
+         * (relType is absent, not null, on sources that never set it)
+         * MUST still come out as an explicit `null`, not `undefined`. */
+        return (submission.previewTriples || []).map(function (tr) {
+          return {
+            subj: tr.subj,
+            rel: tr.rel,
+            obj: tr.obj,
+            relType: tr.relType != null ? tr.relType : null,
+            subjStart: tr.subjStart != null ? tr.subjStart : null,
+            subjEnd: tr.subjEnd != null ? tr.subjEnd : null,
+            objStart: tr.objStart != null ? tr.objStart : null,
+            objEnd: tr.objEnd != null ? tr.objEnd : null,
+          };
+        });
       case 'free_text':
         return ps.text || '';
       default:
@@ -2448,6 +2465,25 @@
     }
   }
 
+  /* issue #722: an arbiter's workspace progress counter must count
+   * arbitration submissions too -- submitArbitration() is a write path
+   * isSampleSubmitted() (keyed off markSampleSubmitted's own status field)
+   * never sees. A unit counts as arbitrated once every one of its CURRENT
+   * dispute items carries a vote from this identity, mirroring
+   * isSampleSubmitted()'s per-unit completeness check. Deliberately checks
+   * for a vote, not `finalized_by`: a `reject` vote (D2's sentinel) is a
+   * real, complete submission that still leaves finalized_by unset. */
+  function isArbitrationSubmitted(taskId, runType, sampleId, identity, outKeys) {
+    var items = getDisputeItems(taskId, runType, sampleId, identity, outKeys);
+    if (!items.length) return false;
+    var arbState = getArbitrationState(taskId, runType, sampleId, identity);
+    var arbiterId = (identity && identity.reviewerId) || DEFAULT_REVIEWER_ID;
+    return items.every(function (item) {
+      var stored = arbState[item.outKey + '::' + item.key];
+      return !!stored && (stored.votes || []).some(function (vote) { return vote.arbiter_id === arbiterId; });
+    });
+  }
+
   /* Per-item majority convergence (issue #147 ⑥③): decides whether one
    * dispute item resolves WITHOUT arbitration. Among `reviewerCount` (N)
    * reviewers of the unit, the reviewers present in `item.reviewerValues`
@@ -3147,6 +3183,7 @@
     resolveExceptionPoolItem: resolveExceptionPoolItem,
     DEFAULT_PROJECT_LEADER_ID: DEFAULT_PROJECT_LEADER_ID,
     submitArbitration: submitArbitration,
+    isArbitrationSubmitted: isArbitrationSubmitted,
     resolveDisputeConvergence: resolveDisputeConvergence,
     describeDisputeVotes: describeDisputeVotes,
     PURE_REJECT_VALUE: PURE_REJECT_VALUE,

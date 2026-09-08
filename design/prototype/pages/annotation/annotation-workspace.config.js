@@ -1538,7 +1538,15 @@
       return data.getSubmittedSampleCount(currentProfile.id, currentRole, currentRunType, currentIdentity);
     }
     return units.filter(function (unit) {
-      return data.isSampleSubmitted(currentProfile.id, 'reviewer', currentRunType, unit.recordId, unitIdentity(unit));
+      var identity = unitIdentity(unit);
+      /* issue #722: a disputed unit is reviewed by arbitration instead of
+         the normal review submit, so an arbiter's progress must also count
+         via isArbitrationSubmitted() -- isSampleSubmitted() alone is blind
+         to that write path and left arbiter-only participants stuck at 0. */
+      return (
+        data.isSampleSubmitted(currentProfile.id, 'reviewer', currentRunType, unit.recordId, identity) ||
+        data.isArbitrationSubmitted(currentProfile.id, currentRunType, unit.recordId, identity, state.selectedOutputTypes)
+      );
     }).length;
   }
 
@@ -1753,12 +1761,23 @@
   function buildHistoryDiff(before, after) {
     var items = [];
     historyOutputKeys(before, after).forEach(function (outKey) {
-      if (window.LabelSuiteAnnotationHistory.isPositionalOutput(outKey)) {
+      var from = describeOutputAnswer(outKey, before);
+      var to = describeOutputAnswer(outKey, after);
+      /* FR-098 §6 (issue #590): per-snapshot-pair, not per-type -- a type
+         registered as position-bearing still falls back to the plain-value
+         diff below when both snapshots in THIS pair already carry an answer
+         but hasComparablePositions() finds at least one without a
+         comparable position (e.g. gold-shaped plain-string triples). A side
+         with no prior answer at all (`from`/`to` empty) is the pre-existing
+         "brand new answer" case, not the missing-offset case §6 targets --
+         diffPositional() already renders it correctly as pure added/removed
+         entries, so it stays exempt from the stricter both-sides check. */
+      var canDiffPositionally = window.LabelSuiteAnnotationHistory.isPositionalOutput(outKey) &&
+        (!from || !to || window.LabelSuiteAnnotationHistory.hasComparablePositions(outKey, before, after));
+      if (canDiffPositionally) {
         items = items.concat(positionalDiffItems(outKey, before, after));
         return;
       }
-      var from = describeOutputAnswer(outKey, before);
-      var to = describeOutputAnswer(outKey, after);
       if (from === to) return;
       items.push(diffItem(null, outKey + ': ' + (from || t('reviewNoAnswer')) + ' → ' + (to || t('reviewNoAnswer'))));
     });
@@ -2719,7 +2738,24 @@
         state.previewInited = true;
         break;
       case 'relation_identification':
-        state.previewTriples = (mergedValue || []).map(function (tr) { return { subj: tr.subj, rel: tr.rel, obj: tr.obj }; });
+        /* FR-098 §4: rehydrate the four offset fields plus relType
+         * alongside the existing display strings, symmetric with the
+         * serialization side (annotation-workspace.data.js:1671-1680,
+         * tasks.md 2.2). `!= null` (not `||`) because `subjStart`/`objStart`
+         * legitimately land on 0, and a missing source key MUST still come
+         * out as an explicit `null`, not `undefined`. */
+        state.previewTriples = (mergedValue || []).map(function (tr) {
+          return {
+            subj: tr.subj,
+            rel: tr.rel,
+            obj: tr.obj,
+            relType: tr.relType != null ? tr.relType : null,
+            subjStart: tr.subjStart != null ? tr.subjStart : null,
+            subjEnd: tr.subjEnd != null ? tr.subjEnd : null,
+            objStart: tr.objStart != null ? tr.objStart : null,
+            objEnd: tr.objEnd != null ? tr.objEnd : null,
+          };
+        });
         state.previewInited = true;
         break;
       /* FR-052: offsets are authoritative, so each span is restored to the
@@ -3938,6 +3974,11 @@
     showToast(t('wsArbitrationSubmitSuccess'));
     renderSampleList();
     renderReviewerWorkspace();
+    /* issue #722: every other submit path (annotator/reviewer) repaints the
+       nav's progress counter; arbitration's own submit was the one path
+       that skipped it, so an arbiter's count never advanced until some
+       unrelated action (e.g. prev/next) happened to re-render it. */
+    renderSampleNav();
   }
 
   /* FR-095 final exception pool disposition screen (issue #596, task 6.3).

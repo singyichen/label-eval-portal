@@ -1,7 +1,7 @@
 ---
 功能分支: feat/task-detail-config-sync
 建立日期: 2026-04-20
-版本: 2.1.1
+版本: 2.1.2
 狀態: In Progress
 ---
 
@@ -246,7 +246,7 @@ sequenceDiagram
 - **FR-004e**：URL query 中的無效 `limit`、`offset` 或 enum 值必須被正規化為預設值或無篩選狀態，且 URL 必須更新為正規化後的 query。
 - **FR-004f**：任何搜尋或篩選條件改變，以及 `limit` 改變時，必須將 `offset` 重設為 `0`。
 - **FR-005**：列表每列必須包含 `task_id` 導航資訊，供導向 `/task-detail`。
-- **FR-005a**：當點擊任務列但無 `/task-detail` 存取權時，系統必須停留 `/task-list` 並顯示無權限提示。
+- **FR-005a**：當使用者無 `/task-detail` 存取權時，系統必須顯示無權限提示——無論該次嘗試是在 `/task-list` 內點擊任務列被攔截（停留原頁），或是自 `/task-detail` 因角色檢查被導回 `/task-list`（issue #721：後者過去僅寫入 `?unauthorized=` 導頁參數卻無人讀取，使用者只看到一次沒有說明的畫面跳轉）。
 - **FR-006**：頁面必須提供 `新增任務` CTA 並導向 `/task-new`。
 - **FR-007**：L0 active 狀態必須在 `task-list`、`task-new`、`task-detail` 都維持「任務管理」。
 - **FR-008**：任務列表在無資料與空結果時，必須保留表頭並以 `tbody` empty row 呈現狀態內容。
@@ -420,6 +420,7 @@ flowchart LR
 
 | 版本 | 日期 | 變更摘要 |
 |------|------|---------|
+| 2.1.2 | 2026-09-08 | Issue #721：釐清 FR-005a 涵蓋範圍——無權限提示的觸發時機不限於 `/task-list` 內點擊任務列的攔截，亦涵蓋 `/task-detail` 因角色檢查導回 `/task-list` 的情境（原本 `?unauthorized=` 導頁參數從未被讀取，使用者無從得知返回原因）；未新增或移除 FR/AC，僅釐清既有 FR-005a 的適用範圍。 |
 | 2.1.1 | 2026-08-24 | Issue #261：新增 Prototype Traceability，明確對應 task-list 原型頁面、prototype 資料層與設計層參考的責任邊界；規格條文未變。 |
 | 2.1.0 | 2026-08-21 | **示例基線擴充至 17 筆（審核流程示範 seed）**：新增 `review-flow-dry-run.json`、`review-flow-official-single.json`、`review-flow-official-multi.json`、`review-flow-official-tie.json` 四筆 `single_label` 示範任務（T014–T017），命中數基線 `single_label` 由 2 調整為 6，其餘輸出類型命中數不變；T014 以 `dry_run_in_progress`、T015–T017 以 `official_run_in_progress` 起始以示範進行中審核流程，原 13 筆 seed 的 draft 起始約定不變；016 Dataset Analysis List 與 dashboard 的 13 筆基線刻意不隨本次擴充 |
 | 2.0.2 | 2026-07-31 | **示例基線狀態統一為 draft**：13 筆 prototype seed 全數以 `status = draft` 起始，支援 014 任務詳情 draft 編輯情境；非 `draft` 行為（刪除拒絕等）改由測試注入合成任務驗收；命中數基線不變 |
