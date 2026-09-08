@@ -1858,18 +1858,25 @@ function initPreviewState() {
     state.previewTriples = trips.map(function(trip) {
       var e1 = trip.entity1 || {}, rel = trip.relation || {}, e2 = trip.entity2 || {};
       function fmt(o) { var s = o.text || '?'; if (o.start != null && o.end != null) s += ' (' + o.start + ',' + o.end + ')'; return s; }
-      return { subj: fmt(e1), rel: fmt(rel), obj: fmt(e2), relType: trip.relation_type || null };
+      return {
+        subj: fmt(e1), rel: fmt(rel), obj: fmt(e2), relType: trip.relation_type || null,
+        subjStart: e1.start != null ? e1.start : null, subjEnd: e1.end != null ? e1.end : null,
+        objStart: e2.start != null ? e2.start : null, objEnd: e2.end != null ? e2.end : null
+      };
     });
   } else if (tripShape === 'gold') {
     state.previewTriples = trips.map(function(trip) {
-      return { subj: trip.subj || '?', rel: trip.rel || '?', obj: trip.obj || '?', relType: trip.relation_type || null };
+      return {
+        subj: trip.subj || '?', rel: trip.rel || '?', obj: trip.obj || '?', relType: trip.relation_type || null,
+        subjStart: null, subjEnd: null, objStart: null, objEnd: null
+      };
     });
   } else if (tripShape === 'absa') {
     state.previewTriples = [];
     trips.forEach(function(trip) {
       var tgt = trip.target_text || '?', asp = trip.aspect_text || '', opn = trip.opinion_text || '';
-      if (asp) state.previewTriples.push({ subj: tgt + '/' + nameTarget, rel: sampleRel1, obj: asp + '/' + nameAspect });
-      if (opn) state.previewTriples.push({ subj: tgt + '/' + nameTarget, rel: sampleRel2, obj: opn + '/' + nameOpinion });
+      if (asp) state.previewTriples.push({ subj: tgt + '/' + nameTarget, rel: sampleRel1, obj: asp + '/' + nameAspect, subjStart: null, subjEnd: null, objStart: null, objEnd: null });
+      if (opn) state.previewTriples.push({ subj: tgt + '/' + nameTarget, rel: sampleRel2, obj: opn + '/' + nameOpinion, subjStart: null, subjEnd: null, objStart: null, objEnd: null });
     });
   } else {
     state.previewTriples = [];
@@ -1987,7 +1994,11 @@ function buildRelationStateMachine(container, relationTypes, refresh, allowEntit
     state.relMsg = ''; refresh();
   }));
   rbRow.appendChild(stepBtn(state.lang === 'zh' ? '新增' : 'Add', !!(d.e1 && d.rel && d.e2), function() {
-    state.previewTriples.push({ subj: fmtRelSpan(d.e1), rel: fmtRelSpan(d.rel), obj: fmtRelSpan(d.e2), relType: null });
+    state.previewTriples.push({
+      subj: fmtRelSpan(d.e1), rel: fmtRelSpan(d.rel), obj: fmtRelSpan(d.e2), relType: null,
+      subjStart: d.e1.start != null ? d.e1.start : null, subjEnd: d.e1.end != null ? d.e1.end : null,
+      objStart: d.e2.start != null ? d.e2.start : null, objEnd: d.e2.end != null ? d.e2.end : null
+    });
     state.relDraft = { e1: null, rel: null, e2: null };
     state.relSel = null; state.relMsg = ''; refresh();
   }));
