@@ -78,11 +78,13 @@
 > **產品檔案（0）**：本組只動 `specs/**` 與 `openspec/**`。
 > **最終群組**：是。本組執行 `/opsx:archive` 與正典回寫。
 > **相依**：群組 3 完成後檢查點四項全數通過。
+> **附帶清理（issue #581 D5(a) 裁定）**：本組的正典回寫一併刪除 015 第 31 行的孤兒常數宣告，見 4.5。此為同一份正典檔在同一次版本提升中的殘留宣告清除，不引入第二個目的。
 
 - [ ] 4.1 執行 Source-Verify：逐條 grep 本 change 之 proposal 與 delta 內所有 FR／AC／SC ID、檔案路徑與 issue 編號，確認每一項皆可於正典或其指名來源定位。 [@main]
 - [ ] 4.2 執行 `/opsx:archive carry-relation-span-offsets`，產生 derived view 並將 FR-098、AC-2.22、AC-2.23、SC-004X 與 FR-087 修訂回寫至正典，版本自 6.0.1 提升為 6.1.0 並補上 Changelog 條目。 [@main]
 - [ ] 4.3 修改 `specs/STATUS.md`，將 `annotation-015` 之 change-open 狀態與摘要更新為本次回寫後的結果。 [@main]
 - [ ] 4.4 執行最終四閘驗證：OpenSpec schema validation、`scripts/check-sdd.sh`、`scripts/check-spec-artifacts.sh` 與 `scripts/pre-commit-tests.sh` 皆 exit 0，並分開記錄四道閘的證據。 [@main]
+- [ ] 4.5 於正典回寫的同一次編輯中，刪除 `specs/annotation/015-annotation-workspace/spec.md` 第 31 行的孤兒常數宣告 `SEQUENCE_TAGGING_SCHEMES = BIO | BIOES | IOB2 | SINGLE`——該行為 issue #581 change ② 於 v6.0.0 自 payload 移除 `scheme` 時漏清，全檔無任何條文引用；維護者於 2026-09-08 裁定（issue #581 之 D5）由下一個以 015 為正典的 change 一併清除，本 change 即是。本任務只刪這一行宣告，不動任何 FR／AC／SC 條文，亦不觸及產品程式。驗證：`/usr/bin/grep -c SEQUENCE_TAGGING_SCHEMES specs/annotation/015-annotation-workspace/spec.md` 為 0，且 `scripts/check-sdd.sh` 與 `scripts/check-spec-artifacts.sh` 皆 exit 0 [@main]
 
 ## Pre-merge finalization（在 /opsx:apply 外，NON-CHECKBOX）
 
