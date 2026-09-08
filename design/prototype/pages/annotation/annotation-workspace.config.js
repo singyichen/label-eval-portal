@@ -2719,7 +2719,24 @@
         state.previewInited = true;
         break;
       case 'relation_identification':
-        state.previewTriples = (mergedValue || []).map(function (tr) { return { subj: tr.subj, rel: tr.rel, obj: tr.obj }; });
+        /* FR-098 §4: rehydrate the four offset fields plus relType
+         * alongside the existing display strings, symmetric with the
+         * serialization side (annotation-workspace.data.js:1671-1680,
+         * tasks.md 2.2). `!= null` (not `||`) because `subjStart`/`objStart`
+         * legitimately land on 0, and a missing source key MUST still come
+         * out as an explicit `null`, not `undefined`. */
+        state.previewTriples = (mergedValue || []).map(function (tr) {
+          return {
+            subj: tr.subj,
+            rel: tr.rel,
+            obj: tr.obj,
+            relType: tr.relType != null ? tr.relType : null,
+            subjStart: tr.subjStart != null ? tr.subjStart : null,
+            subjEnd: tr.subjEnd != null ? tr.subjEnd : null,
+            objStart: tr.objStart != null ? tr.objStart : null,
+            objEnd: tr.objEnd != null ? tr.objEnd : null,
+          };
+        });
         state.previewInited = true;
         break;
       /* FR-052: offsets are authoritative, so each span is restored to the

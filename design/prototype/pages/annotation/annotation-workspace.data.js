@@ -660,7 +660,7 @@
    *   multi_dim                -> { [dimName]: number }
    *   sequence_tagging          -> Array<{text, label, start, end}> (one per span)
    *   entity_recognition        -> Array<{text, type}>
-   *   relation_identification   -> Array<{subj, rel, obj}>
+   *   relation_identification   -> Array<{subj, rel, obj, relType, subjStart, subjEnd, objStart, objEnd}>
    *   free_text                 -> string
    * Values are derived from each TaskProfile's gold answer (task-detail.
    * data.js) with at least one disagreeing annotator per task, and one
@@ -1662,7 +1662,24 @@
       case 'entity_recognition':
         return (submission.previewEntities || []).map(function (e) { return { text: e.text, type: e.type }; });
       case 'relation_identification':
-        return (submission.previewTriples || []).map(function (tr) { return { subj: tr.subj, rel: tr.rel, obj: tr.obj }; });
+        /* FR-098 §4: serialize the four offset fields plus relType
+         * alongside the existing display strings, symmetric with the
+         * rehydration side (tasks.md 2.3). `!= null` (not `||`) because
+         * `start`/`end` legitimately land on 0, and a missing source key
+         * (relType is absent, not null, on sources that never set it)
+         * MUST still come out as an explicit `null`, not `undefined`. */
+        return (submission.previewTriples || []).map(function (tr) {
+          return {
+            subj: tr.subj,
+            rel: tr.rel,
+            obj: tr.obj,
+            relType: tr.relType != null ? tr.relType : null,
+            subjStart: tr.subjStart != null ? tr.subjStart : null,
+            subjEnd: tr.subjEnd != null ? tr.subjEnd : null,
+            objStart: tr.objStart != null ? tr.objStart : null,
+            objEnd: tr.objEnd != null ? tr.objEnd : null,
+          };
+        });
       case 'free_text':
         return ps.text || '';
       default:
