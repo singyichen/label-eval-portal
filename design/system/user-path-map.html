@@ -259,7 +259,6 @@ td.src { font-family: var(--font-mono); font-size: 11.5px; color: var(--color-te
 .tag--warn { color: var(--color-warning); border-color: var(--color-warning-border); background: var(--color-warning-bg); }
 .tag--info { color: var(--color-info);    border-color: var(--color-info-border);    background: var(--color-info-bg); }
 
-.todo { font-family: var(--font-mono); font-size: 11px; color: var(--color-warning); white-space: nowrap; }
 
 footer { margin-top: var(--space-3xl); padding-top: var(--space-lg); border-top: 1px solid var(--color-border); font-size: 12.5px; color: var(--color-text-soft); }
 
@@ -915,49 +914,49 @@ footer { margin-top: var(--space-3xl); padding-top: var(--space-lg); border-top:
           <td class="num">1</td><td><span class="tag tag--gap">F3</span></td><td>G9 審核員送出審核</td>
           <td>送出函式尾段只重繪與提示，沒有任何導向或選取下一筆的呼叫。</td>
           <td class="src">annotation-workspace.config.js:4689 · 尾段 :4794–4802</td>
-          <td class="todo">（待開單）</td>
+          <td><a href="https://github.com/singyichen/label-suite/issues/719">#719</a></td>
         </tr>
         <tr>
           <td class="num">2</td><td><span class="tag tag--gap">F3</span></td><td>G10 仲裁員送出仲裁</td>
           <td>同上；送出後仲裁面板消失、單位仍為爭議中，畫面上不再有任何送出鈕。</td>
           <td class="src">annotation-workspace.config.js:3903 · 尾段 :3937–3940</td>
-          <td class="todo">（待開單）</td>
+          <td><a href="https://github.com/singyichen/label-suite/issues/720">#720</a></td>
         </tr>
         <tr>
           <td class="num">3</td><td><span class="tag tag--gap">F6</span></td><td>P1 標記員開任務詳情</td>
           <td><span class="mono">unauthorized</span> 參數全樹只寫不讀，落地頁不顯示任何說明。</td>
           <td class="src">task-detail.html:4753 · <span class="mono">grep -rn unauthorized pages/</span> → 1 行</td>
-          <td class="todo">（待開單）</td>
+          <td><a href="https://github.com/singyichen/label-suite/issues/721">#721</a></td>
         </tr>
         <tr>
           <td class="num">4</td><td><span class="tag tag--gap">F6</span></td><td>G10 仲裁員進度指標</td>
-          <td>計數器只統計 <span class="mono">'reviewer'</span> 提交，仲裁走另一條寫入路徑，故恆為 0 / N。</td>
+          <td>計數器只統計 <span class="mono">'reviewer'</span> 提交，仲裁走另一條寫入路徑，故仲裁提交不計入（純仲裁者恆為 0）。</td>
           <td class="src">config.js:33 · :1535 <span class="mono">countSubmittedUnits</span> · :1548 未被 :3903 呼叫</td>
-          <td class="todo">（待開單）</td>
+          <td><a href="https://github.com/singyichen/label-suite/issues/722">#722</a></td>
         </tr>
         <tr>
           <td class="num">5</td><td><span class="tag tag--gap">F3</span></td><td>P2 專案負責人建立任務</td>
           <td>建立任務 CTA 只存在於 <span class="mono">#view-user</span>，專案負責人視角看不到。</td>
           <td class="src">dashboard.html:151（在 :105 內）vs :340</td>
-          <td class="todo">（待開單）</td>
+          <td><a href="https://github.com/singyichen/label-suite/issues/723">#723</a></td>
         </tr>
         <tr>
           <td class="num">6</td><td><span class="tag tag--gap">F1 + F2</span></td><td>G5 建立任務</td>
           <td>Step 1 的型態選擇與逐欄位角色指派全為必點，11 次點擊中有 7 次集中於此。</td>
-          <td class="src">task-new.html:960 <span class="mono">validateStep1</span> · :1122 <span class="mono">nextBtn.disabled</span></td>
-          <td class="todo">（待開單）</td>
+          <td class="src">task-new.html:311–326（型態三群組）· task-config.engine.js:5365 <span class="mono">inline-preview-role-select</span>（逐欄位）</td>
+          <td><a href="https://github.com/singyichen/label-suite/issues/724">#724</a></td>
         </tr>
         <tr>
           <td class="num">7</td><td><span class="tag tag--gap">F1</span></td><td>G12 調整角色權限</td>
           <td>角色設定非側欄一級項目，且矩陣預設唯讀，兩處各多耗 1 次點擊。</td>
           <td class="src">user-management.html:448 · role-settings.html:454</td>
-          <td class="todo">（待開單）</td>
+          <td><a href="https://github.com/singyichen/label-suite/issues/725">#725</a></td>
         </tr>
         <tr>
           <td class="num">8</td><td><span class="tag tag--warn">UXC-11</span></td><td>G7 任務詳情全頁</td>
           <td>分頁／篩選／分頁碼皆不寫回 URL，同儕頁 dataset-analysis-detail 則有寫。</td>
           <td class="src"><span class="mono">grep -c replaceState</span>：task-detail.html = 0 · dataset-analysis-detail.html = 1</td>
-          <td class="todo">（待開單）</td>
+          <td><a href="https://github.com/singyichen/label-suite/issues/726">#726</a></td>
         </tr>
       </tbody>
     </table>
