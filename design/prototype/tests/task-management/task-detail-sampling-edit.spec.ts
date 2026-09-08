@@ -139,4 +139,53 @@ test.describe('Task detail sampling edit state', () => {
     await page.locator('#samplingEditBtn').click();
     await expect(page.locator('#samplingIaaEditRows .sampling-iaa-type-row').first()).toContainText('Not applicable');
   });
+
+  // openspec/changes/seq-tagging-span-export-metrics/specs/dataset/017-dataset-analysis-detail/spec.md
+  //   FR-012L (line 111): sequence_tagging MUST register its primary metric as
+  //   span-unit u-α in OUTPUT_TYPE_IAA_REGISTRY, with an empty threshold field;
+  //   the legacy Token-level Alpha / IAA_THRESHOLD_TOKEN = 0.75 pairing is
+  //   retired (BREAKING) and MUST NOT be reintroduced under any name.
+  //   FR-043 §2 (line 70): the registry / UI MUST NOT smuggle in any default,
+  //   fallback, or suggested threshold number for an IAA_UNCALIBRATED_TYPES
+  //   member such as sequence_tagging.
+  // T006 (design/prototype/pages/task-management/task-detail.data.js:333) is a
+  // single-output sequence_tagging task, so its sampling summary/edit rows are
+  // driven by exactly one OUTPUT_TYPE_IAA_REGISTRY entry.
+  test('registers sequence_tagging as span-unit u-alpha with no leaked threshold in the sampling summary (FR-012L, FR-043 §2)', async ({ page }) => {
+    await page.goto(`${TASK_DETAIL_URL}?task_id=T006`);
+
+    const summaryRows = page.locator('#samplingIaaSummaryList .kv-dl-row');
+    await expect(summaryRows).toHaveCount(1);
+
+    const summaryValue = summaryRows.nth(0).locator('.kv-dl-value');
+    // The legacy Token-level Alpha entry renders "...（目標 IAA 0.75）"; a
+    // span-unit u-α entry with an empty threshold field must not render any
+    // target-agreement number at all, so this string must never appear.
+    await expect(summaryValue).not.toContainText('0.75');
+    // Positive literal check: the registered primary metric name must be
+    // Krippendorff's unitizing alpha (u-α) ...
+    await expect(summaryValue).toContainText(/u-α/i);
+    // ... explicitly computed at the span level, not the retired token level.
+    await expect(summaryValue).toContainText(/span/i);
+  });
+
+  test('leaves the target-agreement override input empty for sequence_tagging in the sampling edit form (FR-012L, FR-043 §2)', async ({ page }) => {
+    await page.goto(`${TASK_DETAIL_URL}?task_id=T006`);
+    await page.locator('#samplingEditBtn').click();
+
+    const iaaRows = page.locator('#samplingIaaEditRows .sampling-iaa-type-row');
+    await expect(iaaRows).toHaveCount(1);
+
+    const row = iaaRows.nth(0);
+    // FR-012L: "該型別的門檻欄位 MUST 為空" — sequence_tagging has no
+    // threshold to override, so no `.iaa-override-input` may be rendered at
+    // all (mirrors the free_text notApplicable row's no-input treatment,
+    // without reusing free_text's "not applicable" wording per FR-043 §3).
+    await expect(row.locator('.iaa-override-input')).toHaveCount(0);
+    // Even with the input removed, the row's own text (metric name / hint)
+    // must not leak the retired 0.75 default threshold value anywhere.
+    await expect(row).not.toContainText('0.75');
+    // The row must still name the new primary metric literally as u-α.
+    await expect(row).toContainText(/u-α/i);
+  });
 });
