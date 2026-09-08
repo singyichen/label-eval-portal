@@ -110,4 +110,88 @@ test.describe('Dataset analysis detail stats i18n across task types', () => {
     const spanLenSection = page.locator('section[aria-labelledby="statsSeqTagSpanLenTitle"]');
     expect(await spanLenSection.count()).toBe(1);
   });
+
+  // --- Round 2 (strengthened contracts, AC-2.7's remaining AND-clauses) ---
+  //
+  // `stats-sequence_tagging.html` is a single static partial shared by every
+  // task whose `outputs[]` includes `sequence_tagging` (see
+  // dataset-analysis-detail.html:1106) — there is no per-task computed
+  // surface to assert against. Equivalent verifiable contract used below:
+  // T103 is defined, for the purposes of this spec's sole canonical
+  // sequence_tagging demo, to literally instantiate AC-2.7's own GIVEN
+  // example (one 3-char `ORG` span + one 2-char `TITLE` span). Green MUST
+  // hand-write those literal numbers into the partial. This directly blocks
+  // a "write character length as the count" bug (e.g. ORG rendered as `3`
+  // instead of `1`) because the expected values (1, 1, total 2) are exactly
+  // the AC's own numbers, not a derived invariant that a consistently wrong
+  // implementation could still satisfy.
+
+  test('locks sequence_tagging label-type distribution to span-count semantics per AC-2.7 GIVEN: ORG 1, TITLE 1, not char-inflated (AC-2.7)', async ({ page }) => {
+    await gotoStatsWithLang(page, 'T103', 'en');
+
+    const labelDistribution = page.locator('section[aria-labelledby="statsSeqTagDistTitle"]');
+    const rows = labelDistribution.locator('.stats-hbar-row');
+    const orgRow = rows.filter({ has: page.locator('.stats-hbar-label', { hasText: /^ORG$/ }) });
+    const titleRow = rows.filter({ has: page.locator('.stats-hbar-label', { hasText: /^TITLE$/ }) });
+
+    expect(await orgRow.count()).toBe(1);
+    expect(await titleRow.count()).toBe(1);
+
+    const extractCount = (text: string) => {
+      const match = text.trim().match(/([\d,]+)\s*$/);
+      return match ? match[1].replace(/,/g, '') : null;
+    };
+    const orgValue = await orgRow.locator('.stats-hbar-value').innerText();
+    const titleValue = await titleRow.locator('.stats-hbar-value').innerText();
+
+    // AC-2.7: "標籤類型分佈顯示 ORG 1 筆、TITLE 1 筆" — a 3-char ORG span and a
+    // 2-char TITLE span must each count as 1 instance, not 3 / 2.
+    expect(extractCount(orgValue)).toBe('1');
+    expect(extractCount(titleValue)).toBe('1');
+  });
+
+  test('reports sequence_tagging total marked spans for the AC-2.7 GIVEN sample as 2, not 5 from char-inflation (AC-2.7)', async ({ page }) => {
+    await gotoStatsWithLang(page, 'T103', 'en');
+
+    const avgSpanSection = page.locator('section[aria-labelledby="statsSeqTagAvgSpanTitle"]');
+    const sectionText = await avgSpanSection.innerText();
+
+    // AC-2.7: "該樣本的標記片段數為 2，未因字元數被放大為 5" — one 3-char ORG span
+    // plus one 2-char TITLE span is 2 span instances, not 3+2=5 characters.
+    expect(sectionText).toMatch(/(^|\D)2(\D|$)/);
+    expect(sectionText).not.toMatch(/(^|\D)5(\D|$)/);
+  });
+
+  test('purges token-population vocabulary ("token", "O tag") from every sequence_tagging stats section (AC-2.7 / FR-009L)', async ({ page }) => {
+    await gotoStatsWithLang(page, 'T103', 'en');
+
+    const labelDistribution = page.locator('section[aria-labelledby="statsSeqTagDistTitle"]');
+    const avgSpanSection = page.locator('section[aria-labelledby="statsSeqTagAvgSpanTitle"]');
+    const spanLenSection = page.locator('section[aria-labelledby="statsSeqTagSpanLenTitle"]');
+
+    // FR-009L (delta :91, :95, :99): the token population and the `O` tag
+    // are removed, BREAKING changes — including the pre-existing
+    // statsSeqTagDistDesc/statsSeqTagDistNote copy (current partial :6, :31)
+    // that today reads "token 數量" / "O tag 佔全體 token 71%". This also
+    // guards against copying stats-entity_recognition.html's span-length
+    // section verbatim (":67", ":93": "以 token 數計算" / "Span 長度（token 數）"),
+    // which is the sibling pattern Green is most likely to reuse.
+    for (const section of [labelDistribution, avgSpanSection, spanLenSection]) {
+      await expect(section).not.toContainText(/token/i);
+      await expect(section).not.toContainText(/O\s*tag/i);
+    }
+  });
+
+  test('uses character-length vocabulary (not token) for the sequence_tagging span-length distribution wording (AC-2.7)', async ({ page }) => {
+    await gotoStatsWithLang(page, 'T103', 'en');
+
+    const spanLenSection = page.locator('section[aria-labelledby="statsSeqTagSpanLenTitle"]');
+
+    // AC-2.7's last AND-clause: "標記片段長度分佈以字元長度分桶，畫面未出現任何以
+    // token 為單位的長度說明". FR-009L bullet 3 (delta :97) requires bucketing
+    // by character length (`end - start`). The English-mode copy must name
+    // the population as "character".
+    await expect(spanLenSection).toContainText(/character/i);
+    await expect(spanLenSection).not.toContainText(/token/i);
+  });
 });
