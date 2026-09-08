@@ -141,9 +141,28 @@ test.describe('Dataset detail — composite badge denominator excludes uncalibra
     await expect(primaryNote).toContainText('待實證校準');
     await expect(secondaryNote).toHaveText('不適用—由審核員評估');
 
+    // AC-3.8 §2: the sequence_tagging block MUST still show its primary
+    // metric's point estimate (u-alpha), not just the neutral note — a
+    // wrong implementation that blanked the score card while keeping the
+    // calibration text would otherwise still pass the assertion above.
+    const primaryValue = page
+      .locator('section[aria-labelledby="iaaTitle"] .iaa-score-card .iaa-card-value')
+      .first();
+    await expect(primaryValue).toBeVisible();
+    expect((await primaryValue.innerText()).trim()).toMatch(/^\d+(\.\d+)?$/);
+
     const primaryText = await primaryNote.innerText();
     const secondaryText = await secondaryNote.innerText();
     expect(primaryText).not.toBe(secondaryText);
+
+    // AC-3.8 §4: the sequence_tagging block MUST NOT reuse the free_text
+    // wording. `!==` above is only a necessary condition (e.g. renaming
+    // free_text's copy, or appending this string alongside the calibration
+    // note, would still satisfy inequality) — assert the retired string is
+    // literally absent from the primary section.
+    await expect(page.locator('section[aria-labelledby="iaaTitle"]')).not.toContainText(
+      '不適用—由審核員評估'
+    );
 
     await expect(
       page.locator('section[aria-labelledby="iaaTitle"] .pass, section[aria-labelledby="iaaTitle"] .fail')
