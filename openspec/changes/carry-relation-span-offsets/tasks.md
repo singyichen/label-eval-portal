@@ -39,10 +39,10 @@
 > **相依**：群組 1。2.1 的 committed Red 必須先於 2.2；2.3 的 committed Red 必須先於 2.4。
 > **為何兩端都要改**：序列化端與回填端任一遺漏，即使群組 1 已產生起訖，位置維度仍到不了群組 3 的比對層——這是兩個獨立可觀察行為，故各配一組 Red／Green。
 
-- [ ] 2.1 新增 `design/prototype/tests/annotation/issue-590-relation-compact-answer.spec.ts` 之 Red 契約——提交一筆帶起訖的關係答案後，其 CompactAnswer 為七鍵形狀並保留四個起訖值。驗證：`PW_PORT=8953 corepack pnpm playwright test tests/annotation/issue-590-relation-compact-answer.spec.ts` 全數失敗，失敗原因為序列化端只保留三鍵 [@senior-qa]
-- [ ] 2.2 （Green）修改 `design/prototype/pages/annotation/annotation-workspace.data.js`：關係識別之提交答案轉換分支改為一併保留四個起訖欄位，缺值時輸出 null。驗證：`PW_PORT=8953 corepack pnpm playwright test tests/annotation/issue-590-relation-compact-answer.spec.ts` 全綠 [@senior-frontend]
-- [ ] 2.3 修改 `design/prototype/tests/annotation/issue-590-relation-compact-answer.spec.ts`，補上回填端 Red 契約——七鍵 CompactAnswer 套回工作區後引擎快照重新帶有四個起訖值；僅含三鍵的既有 CompactAnswer 套回後四欄位為 null 且渲染不中斷。驗證：`PW_PORT=8953 corepack pnpm playwright test tests/annotation/issue-590-relation-compact-answer.spec.ts` 出現失敗，失敗原因為回填端只寫回三鍵 [@senior-qa]
-- [ ] 2.4 （Green）修改 `design/prototype/pages/annotation/annotation-workspace.config.js`：關係識別之 CompactAnswer 套用分支改為一併回填四個起訖欄位，缺鍵視同 null。驗證：`PW_PORT=8953 corepack pnpm playwright test tests/annotation/issue-590-relation-compact-answer.spec.ts` 全綠 [@senior-frontend]
+- [ ] 2.1 新增 `design/prototype/tests/annotation/issue-590-relation-compact-answer.spec.ts` 之 Red 契約——提交一筆帶起訖的關係答案後，其 CompactAnswer 為八鍵形狀並保留 `relType` 與四個起訖值。驗證：`PW_PORT=8953 corepack pnpm playwright test tests/annotation/issue-590-relation-compact-answer.spec.ts` 全數失敗，失敗原因為序列化端只保留三鍵 [@senior-qa]
+- [ ] 2.2 （Green）修改 `design/prototype/pages/annotation/annotation-workspace.data.js`：關係識別之提交答案轉換分支改為一併保留 `relType` 與四個起訖欄位，缺值時輸出 null。驗證：`PW_PORT=8953 corepack pnpm playwright test tests/annotation/issue-590-relation-compact-answer.spec.ts` 全綠 [@senior-frontend]
+- [ ] 2.3 修改 `design/prototype/tests/annotation/issue-590-relation-compact-answer.spec.ts`，補上回填端 Red 契約——八鍵 CompactAnswer 套回工作區後引擎快照重新帶有 `relType` 與四個起訖值；僅含三鍵的既有 CompactAnswer 套回後四欄位為 null 且渲染不中斷。驗證：`PW_PORT=8953 corepack pnpm playwright test tests/annotation/issue-590-relation-compact-answer.spec.ts` 出現失敗，失敗原因為回填端只寫回三鍵 [@senior-qa]
+- [ ] 2.4 （Green）修改 `design/prototype/pages/annotation/annotation-workspace.config.js`：關係識別之 CompactAnswer 套用分支改為一併回填 `relType` 與四個起訖欄位，缺鍵視同 null。驗證：`PW_PORT=8953 corepack pnpm playwright test tests/annotation/issue-590-relation-compact-answer.spec.ts` 全綠 [@senior-frontend]
 - [ ] 2.5 執行群組 2 回歸並保存證據。驗證：`cd design/prototype && corepack pnpm typecheck` 與 `PW_PORT=8954 corepack pnpm playwright test tests/annotation` 皆 exit 0 [@main]
 
 ## 3. PR-590-C — 逐實體差異與逐快照對回退（FR-098 第 5、6 點；FR-087 修訂）
