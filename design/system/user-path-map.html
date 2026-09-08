@@ -1,0 +1,390 @@
+<title>使用者到達路徑圖</title>
+<meta name="description" content="Label Suite prototype 的認知演練結果：四角色、13 個目標、15 畫面／36 視圖的到達路徑與摩擦點。">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   Palette — mirrors design/prototype/assets/tokens.css.
+   Light values from tokens.css :root; dark values from
+   tokens.css html[data-theme="dark"]. No new hues invented.
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --color-primary:        #6366F1;
+  --color-secondary:      #818CF8;
+  --color-cta:            #10B981;
+  --color-surface:        #F5F3FF;
+  --color-white:          #FFFFFF;
+  --color-ink:            #1E1B4B;
+  --color-primary-soft-bg:#EEF2FF;
+  --color-primary-border: #C7D2FE;
+  --color-border:         #E2E8F0;
+  --color-border-muted:   #F1F5F9;
+  --color-text-soft:      #64748B;
+  --color-ink-muted:      #94A3B8;
+  --color-slate-50:       #F8FAFC;
+
+  --color-error:          #B91C1C;
+  --color-error-bg:       #FEF2F2;
+  --color-error-border:   #FECACA;
+  --color-success:        #15803D;
+  --color-success-bg:     #F0FDF4;
+  --color-success-border: #BBF7D0;
+  --color-warning:        #A16207;
+  --color-warning-bg:     #FEFCE8;
+  --color-warning-border: #FEF08A;
+  --color-info:           #1D4ED8;
+  --color-info-bg:        #EFF6FF;
+  --color-info-border:    #BFDBFE;
+
+  --font-serif-display: 'Crimson Pro', 'Noto Serif TC', 'Source Han Serif TC', Georgia, serif;
+  --font-sans:          'Inter', 'Noto Sans TC', 'PingFang TC', -apple-system, sans-serif;
+  --font-mono:          'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --space-xs: 4px;  --space-sm: 8px;  --space-md: 16px;
+  --space-lg: 24px; --space-xl: 32px; --space-2xl: 48px; --space-3xl: 64px;
+  --radius-sm: 4px; --radius-md: 8px; --radius-lg: 12px; --radius-pill: 9999px;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 150ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-primary:        #818CF8;
+    --color-secondary:      #A5B4FC;
+    --color-cta:            #34D399;
+    --color-surface:        #0B0B12;
+    --color-white:          #16161F;
+    --color-ink:            #E2E8F0;
+    --color-primary-soft-bg:#1E1B4B;
+    --color-primary-border: #3730A3;
+    --color-border:         #2A2A35;
+    --color-border-muted:   #1F1F28;
+    --color-text-soft:      #A1A1AA;
+    --color-ink-muted:      #9CA3AF;
+    --color-slate-50:       #1F1F28;
+
+    --color-error:          #F87171;
+    --color-error-bg:       #2A1414;
+    --color-error-border:   #5B2222;
+    --color-success:        #4ADE80;
+    --color-success-bg:     #0F2A18;
+    --color-success-border: #1F5132;
+    --color-warning:        #FACC15;
+    --color-warning-bg:     #2A2210;
+    --color-warning-border: #5C4A1A;
+    --color-info:           #93C5FD;
+    --color-info-bg:        #111A2E;
+    --color-info-border:    #23386B;
+  }
+}
+
+:root[data-theme="dark"] {
+  --color-primary:        #818CF8;
+  --color-secondary:      #A5B4FC;
+  --color-cta:            #34D399;
+  --color-surface:        #0B0B12;
+  --color-white:          #16161F;
+  --color-ink:            #E2E8F0;
+  --color-primary-soft-bg:#1E1B4B;
+  --color-primary-border: #3730A3;
+  --color-border:         #2A2A35;
+  --color-border-muted:   #1F1F28;
+  --color-text-soft:      #A1A1AA;
+  --color-ink-muted:      #9CA3AF;
+  --color-slate-50:       #1F1F28;
+
+  --color-error:          #F87171;
+  --color-error-bg:       #2A1414;
+  --color-error-border:   #5B2222;
+  --color-success:        #4ADE80;
+  --color-success-bg:     #0F2A18;
+  --color-success-border: #1F5132;
+  --color-warning:        #FACC15;
+  --color-warning-bg:     #2A2210;
+  --color-warning-border: #5C4A1A;
+  --color-info:           #93C5FD;
+  --color-info-bg:        #111A2E;
+  --color-info-border:    #23386B;
+}
+
+/* ── Base ─────────────────────────────────────────────────────── */
+body {
+  margin: 0;
+  background: var(--color-surface);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.8;
+  -webkit-font-smoothing: antialiased;
+}
+.wrap { max-width: 1160px; margin: 0 auto; padding: var(--space-2xl) var(--space-lg) var(--space-3xl); }
+p { margin: 0; max-width: 68ch; }
+a { color: var(--color-primary); }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; border-radius: var(--radius-sm); }
+code, .mono { font-family: var(--font-mono); font-size: 0.86em; font-variant-numeric: tabular-nums; }
+
+h1, h2 { font-family: var(--font-serif-display); text-wrap: balance; margin: 0; }
+h1 { font-size: 40px; line-height: 1.2; font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: 26px; line-height: 1.3; font-weight: 600; }
+h3 { font-family: var(--font-sans); font-size: 17px; font-weight: 600; margin: 0; line-height: 1.4; }
+
+.eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase;
+  color: var(--color-text-soft); margin: 0;
+}
+
+/* ── Masthead ─────────────────────────────────────────────────── */
+.masthead { display: flex; flex-direction: column; gap: var(--space-md); padding-bottom: var(--space-lg); border-bottom: 3px solid var(--color-ink); }
+.masthead .lede { font-size: 17px; color: var(--color-text-soft); }
+.provenance {
+  display: grid; grid-template-columns: max-content 1fr; gap: var(--space-xs) var(--space-md);
+  font-size: 13px; line-height: 1.6; margin-top: var(--space-sm);
+}
+.provenance dt { color: var(--color-text-soft); font-weight: 600; }
+.provenance dd { margin: 0; }
+.provenance dd .mono { color: var(--color-ink); }
+
+/* ── Section rhythm ───────────────────────────────────────────── */
+section { padding-top: var(--space-2xl); }
+.sec-head { display: flex; align-items: baseline; gap: var(--space-md); flex-wrap: wrap; border-bottom: 1px solid var(--color-border); padding-bottom: var(--space-sm); margin-bottom: var(--space-lg); }
+.sec-head .idx { font-family: var(--font-mono); font-size: 13px; color: var(--color-primary); font-weight: 600; }
+.sec-head .note { font-size: 13px; color: var(--color-text-soft); margin-left: auto; }
+
+.stack { display: flex; flex-direction: column; gap: var(--space-lg); }
+.stack-sm { display: flex; flex-direction: column; gap: var(--space-sm); }
+
+/* ── TOC ──────────────────────────────────────────────────────── */
+.toc { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: var(--space-xs) var(--space-lg); margin-top: var(--space-lg); padding: var(--space-md) 0; border-top: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); }
+.toc a { display: flex; gap: var(--space-sm); font-size: 13.5px; text-decoration: none; padding: 2px 0; }
+.toc a:hover { text-decoration: underline; }
+.toc a .n { font-family: var(--font-mono); color: var(--color-ink-muted); min-width: 1.6em; }
+.toc a .t { color: var(--color-ink); }
+
+/* ── Prose blocks ─────────────────────────────────────────────── */
+.panel { background: var(--color-white); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: var(--space-lg); }
+.panel > * + * { margin-top: var(--space-md); }
+.rule { border: 0; border-top: 1px solid var(--color-border-muted); margin: 0; }
+
+.callout { border-left: 3px solid var(--color-primary); background: var(--color-primary-soft-bg); padding: var(--space-md) var(--space-lg); border-radius: 0 var(--radius-md) var(--radius-md) 0; font-size: 14px; }
+.callout p { max-width: 74ch; }
+.callout strong { color: var(--color-ink); }
+
+/* ── Definition grid (F1–F6, click rules) ─────────────────────── */
+.defs { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 0; border-top: 1px solid var(--color-border); }
+.defs > div { padding: var(--space-md) var(--space-md) var(--space-md) 0; border-bottom: 1px solid var(--color-border); }
+.defs dt { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; color: var(--color-error); letter-spacing: 0.04em; }
+.defs dd { margin: var(--space-xs) 0 0; font-size: 14px; line-height: 1.65; color: var(--color-ink); max-width: 44ch; }
+
+/* ── Legend ───────────────────────────────────────────────────── */
+.legend { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: var(--space-md) var(--space-lg); }
+.legend .row { display: flex; align-items: center; gap: var(--space-sm); font-size: 13px; color: var(--color-text-soft); }
+
+/* ── Path nodes ───────────────────────────────────────────────── */
+.n {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 12px; font-size: 13.5px; line-height: 1.35;
+  white-space: nowrap; flex: none;
+  background: var(--color-white); border: 1px solid var(--color-border);
+  border-radius: var(--radius-md); color: var(--color-ink);
+}
+.n--entry   { background: var(--color-primary-soft-bg); border-color: var(--color-primary-border); color: var(--color-primary); font-weight: 600; }
+.n--screen  { border-color: var(--color-ink-muted); font-weight: 500; }
+.n--state   { border-style: dashed; border-color: var(--color-primary-border); background: transparent; color: var(--color-text-soft); }
+.n--dialog  { border-width: 2px; border-color: var(--color-warning-border); background: var(--color-warning-bg); color: var(--color-warning); font-weight: 600; }
+.n--bg      { border-style: dotted; border-color: var(--color-info-border); background: var(--color-info-bg); color: var(--color-info); font-family: var(--font-mono); font-size: 12px; }
+.n--toast   { border-radius: var(--radius-pill); background: var(--color-success-bg); border-color: var(--color-success-border); color: var(--color-success); font-size: 12.5px; }
+.n--end     { border-color: var(--color-ink); border-width: 2px; font-weight: 600; }
+.n--dead    { border-color: var(--color-error-border); border-width: 2px; background: var(--color-error-bg); color: var(--color-error); font-weight: 600; }
+
+.cond {
+  flex: none; font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+  color: var(--color-text-soft); text-transform: uppercase;
+  border-left: 2px solid var(--color-ink-muted); padding-left: 8px; white-space: nowrap;
+}
+
+/* ── Path lane ────────────────────────────────────────────────── */
+.lane {
+  display: flex; align-items: center; gap: var(--space-xs);
+  overflow-x: auto; padding: var(--space-sm) 0 var(--space-md);
+  scrollbar-width: thin;
+}
+.edge { flex: none; display: flex; flex-direction: column; align-items: center; padding: 0 2px; min-width: 46px; }
+.edge .lbl { font-size: 10.5px; line-height: 1.3; color: var(--color-text-soft); white-space: nowrap; }
+.edge .clicks { font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; color: var(--color-primary); font-variant-numeric: tabular-nums; }
+.edge .arrow { color: var(--color-ink-muted); font-size: 15px; line-height: 1; margin-top: 1px; }
+.edge--dashed .arrow { color: var(--color-primary-border); }
+.edge--dashed .arrow::before { content: '⇢'; }
+.edge--dashed .arrow { font-size: 16px; }
+
+.branch { padding-left: var(--space-xl); border-left: 1px solid var(--color-border); margin-left: 6px; }
+.branch > .lane { padding-top: 0; padding-bottom: var(--space-sm); }
+.branch .blabel { font-size: 12px; color: var(--color-text-soft); display: flex; gap: 6px; align-items: center; }
+.branch .blabel::before { content: '└'; color: var(--color-ink-muted); font-family: var(--font-mono); }
+
+/* ── Goal block ───────────────────────────────────────────────── */
+.goal { display: flex; flex-direction: column; gap: var(--space-sm); padding-bottom: var(--space-lg); border-bottom: 1px solid var(--color-border-muted); }
+.goal:last-child { border-bottom: 0; padding-bottom: 0; }
+.goal-head { display: flex; align-items: baseline; gap: var(--space-sm); flex-wrap: wrap; }
+.goal-head .gid { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--color-white); background: var(--color-ink); padding: 2px 7px; border-radius: var(--radius-sm); }
+.goal-head .role { font-size: 11.5px; color: var(--color-text-soft); border: 1px solid var(--color-border); border-radius: var(--radius-pill); padding: 1px 9px; }
+
+.metrics { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-md) var(--space-lg); font-size: 12.5px; }
+.metrics .m { display: flex; align-items: baseline; gap: 6px; }
+.metrics .m .k { color: var(--color-text-soft); }
+.metrics .m .v { font-family: var(--font-mono); font-weight: 600; font-variant-numeric: tabular-nums; color: var(--color-ink); }
+.metrics .m .v--end { font-weight: 400; font-size: 12px; }
+.verdicts { display: flex; gap: 5px; flex-wrap: wrap; margin-left: auto; }
+.vd { font-family: var(--font-mono); font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: var(--radius-sm); border: 1px solid; letter-spacing: 0.03em; }
+.vd--pass { color: var(--color-success); border-color: var(--color-success-border); background: var(--color-success-bg); }
+.vd--hit  { color: var(--color-error);   border-color: var(--color-error-border);   background: var(--color-error-bg); }
+
+.cites { font-family: var(--font-mono); font-size: 11.5px; line-height: 1.7; color: var(--color-text-soft); word-break: break-all; }
+.cites b { color: var(--color-ink); font-weight: 600; }
+
+/* ── Tables ───────────────────────────────────────────────────── */
+.tablebox { overflow-x: auto; border: 1px solid var(--color-border); border-radius: var(--radius-lg); background: var(--color-white); }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+thead th {
+  text-align: left; font-weight: 600; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--color-text-soft); padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--color-border); white-space: nowrap; background: var(--color-slate-50);
+}
+tbody td { padding: 9px var(--space-md); border-bottom: 1px solid var(--color-border-muted); vertical-align: top; line-height: 1.6; }
+tbody tr:last-child td { border-bottom: 0; }
+td.num, td.vid, th.num, th.vid { font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.src { font-family: var(--font-mono); font-size: 11.5px; color: var(--color-text-soft); word-break: break-all; }
+
+.tag { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: var(--radius-sm); border: 1px solid; white-space: nowrap; }
+.tag--ok   { color: var(--color-success); border-color: var(--color-success-border); background: var(--color-success-bg); }
+.tag--gap  { color: var(--color-error);   border-color: var(--color-error-border);   background: var(--color-error-bg); }
+.tag--warn { color: var(--color-warning); border-color: var(--color-warning-border); background: var(--color-warning-bg); }
+.tag--info { color: var(--color-info);    border-color: var(--color-info-border);    background: var(--color-info-bg); }
+
+.todo { font-family: var(--font-mono); font-size: 11px; color: var(--color-warning); white-space: nowrap; }
+
+footer { margin-top: var(--space-3xl); padding-top: var(--space-lg); border-top: 1px solid var(--color-border); font-size: 12.5px; color: var(--color-text-soft); }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+@media (max-width: 640px) {
+  .wrap { padding: var(--space-lg) var(--space-md) var(--space-2xl); }
+  h1 { font-size: 30px; }
+  .verdicts { margin-left: 0; }
+}
+</style>
+
+<div class="wrap">
+
+<!-- ══════════════════════════ MASTHEAD ══════════════════════════ -->
+<header class="masthead">
+  <p class="eyebrow">Label Suite · Design System · 前端開發前 UX 閘門</p>
+  <h1>使用者到達路徑圖</h1>
+  <p class="lede">從入口出發，要點幾下、經過哪些畫面與阻斷點，才能完成一個目標。四個角色、13 個目標，全數以 Playwright 在 <code>design/prototype/</code> 實走取得。</p>
+
+  <dl class="provenance">
+    <dt>Prototype 來源 commit</dt>
+    <dd><span class="mono">c9cf83209257</span>（2026-09-07）——<span class="mono">design/prototype/pages</span> · <span class="mono">design/prototype/index.html</span> 的最後一次變更，與 <a href="screen-inventory.md">screen-inventory.md</a> 同源。</dd>
+    <dt>實走日期</dt>
+    <dd>2026-09-08，本機 <span class="mono">http://127.0.0.1:8765</span> 靜態伺服器（<span class="mono">file:</span> 協定被 Playwright 阻擋）。</dd>
+    <dt>重跑觸發條件</dt>
+    <dd>
+      ① <span class="mono">design/prototype/pages/**</span> 或 <span class="mono">index.html</span> 有變更，使上方來源 commit 前移。<br>
+      ② <a href="inventory-manifest.json">inventory-manifest.json</a> 的 <span class="mono">screens</span> / <span class="mono">screenViews</span> 有增減，使 15 畫面／36 視圖的基數改變。<br>
+      ③ 角色權限模型或三層接力審核模型改版（<span class="mono">specs/annotation/015</span>、<span class="mono">specs/admin/**</span>），使本圖的角色分歧前提失效。
+    </dd>
+    <dt>自動檢查</dt>
+    <dd><span class="mono">node scripts/check-user-path-map-freshness.mjs</span>（issue #665 階段一：在來源中繼資料契約定案前一律 fail closed，exit 2）。</dd>
+  </dl>
+
+  <nav class="toc" aria-label="章節跳轉">
+    <a href="#m1"><span class="n">1</span><span class="t">方法與涵蓋層級</span></a>
+    <a href="#m2"><span class="n">2</span><span class="t">讀圖規則</span></a>
+    <a href="#m3"><span class="n">3</span><span class="t">訪客與帳號路徑</span></a>
+    <a href="#m4"><span class="n">4</span><span class="t">Data Creator</span></a>
+    <a href="#m5"><span class="n">5</span><span class="t">Annotator</span></a>
+    <a href="#m6"><span class="n">6</span><span class="t">Reviewer</span></a>
+    <a href="#m7"><span class="n">7</span><span class="t">Arbiter</span></a>
+    <a href="#m8"><span class="n">8</span><span class="t">Super Admin</span></a>
+    <a href="#m9"><span class="n">9</span><span class="t">資料集分析</span></a>
+    <a href="#m10"><span class="n">10</span><span class="t">權限分歧與阻斷</span></a>
+    <a href="#m11"><span class="n">11</span><span class="t">畫面／視圖涵蓋對照</span></a>
+    <a href="#m12"><span class="n">12</span><span class="t">摩擦點總表</span></a>
+    <a href="#m13"><span class="n">13</span><span class="t">原型限制與 manifest 偏差</span></a>
+  </nav>
+</header>
+
+<!-- ══════════════════════════ 1. 方法 ══════════════════════════ -->
+<section id="m1">
+  <div class="sec-head"><span class="idx">01</span><h2>方法與涵蓋層級</h2></div>
+
+  <div class="stack">
+    <div class="callout">
+      <p><strong>方法：認知演練法（專家評估）。</strong>由評估者以四種角色身分逐一實走原型，在每個步驟自問「使用者知道下一步要點哪裡嗎？點下去的結果符合預期嗎？」並記錄實際點擊數與終點畫面。本圖不含任何真人參與者，因此<strong>不構成使用者測試</strong>，也<strong>不呈現使用資料</strong>；所有判斷均為專家推論，證據來自原型原始碼與實走軌跡。</p>
+    </div>
+
+    <div class="tablebox">
+      <table>
+        <thead><tr><th>UX 層級</th><th>本圖是否涵蓋</th><th>說明</th></tr></thead>
+        <tbody>
+          <tr><td>操作（Operation）</td><td><span class="tag tag--ok">涵蓋</span></td><td>單一控制項的可見性、可點擊性、點擊後的即時回饋。</td></tr>
+          <tr><td>行動（Action）</td><td><span class="tag tag--ok">涵蓋</span></td><td>一連串操作串成的目標達成路徑：點擊數、經過畫面、阻斷點、終點。</td></tr>
+          <tr><td>活動（Activity）</td><td><span class="tag tag--gap">未涵蓋</span></td><td>真實工作情境下的多目標交錯、中斷與回復、跨日跨裝置的任務接續。需現場觀察或日誌研究。</td></tr>
+          <tr><td>情感（Emotion）</td><td><span class="tag tag--gap">未涵蓋</span></td><td>挫折感、信任感、疲勞與成就感。需訪談、量表或聲音思考法。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="font-size:14px;color:var(--color-text-soft)">因此本圖能回答「這條路走不走得通、要走幾步」，但不能回答「使用者願不願意走、走完覺得如何」。後兩層留待前端實作後的正式使用者研究。</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 2. 讀圖規則 ══════════════════════════ -->
+<section id="m2">
+  <div class="sec-head"><span class="idx">02</span><h2>讀圖規則</h2><span class="note">節點圖例 · 點擊計數 · F1–F6 門檻</span></div>
+
+  <div class="stack">
+
+    <div class="panel">
+      <h3>七類節點</h3>
+      <div class="legend">
+        <div class="row"><span class="n n--entry">入口／Tab</span></div>
+        <div class="row"><span class="n n--screen">畫面（換 URL）</span></div>
+        <div class="row"><span class="n n--state">畫面內狀態</span></div>
+        <div class="row"><span class="n n--dialog">阻斷式 Dialog</span></div>
+        <div class="row"><span class="n n--bg">背景任務 800ms</span></div>
+        <div class="row"><span class="n n--toast">通知／Toast</span></div>
+        <div class="row"><span class="cond">分支條件</span></div>
+      </div>
+      <hr class="rule">
+      <p style="font-size:13px;color:var(--color-text-soft)">連接線上方標示該段所需點擊數；<span class="mono">⇢</span> 虛線箭頭表示「URL 不變的畫面內狀態切換」，<span class="mono">→</span> 實線箭頭表示換頁。終點畫面以粗框標示；<span class="n n--dead" style="font-size:11px;padding:2px 7px">死路</span> 標示動作後無定義終點。</p>
+    </div>
+
+    <div class="panel">
+      <h3>點擊計數規則（本圖的工作定義）</h3>
+      <p style="font-size:14px">一次「點擊」＝<strong>在互動控制項上完成一次指標按下，且該次按下推進或解鎖了路徑</strong>。據此：</p>
+      <ul style="font-size:14px;line-height:1.75;margin:var(--space-sm) 0 0;padding-left:1.3em;max-width:68ch">
+        <li>送出鈕、連結、Tab、列操作鈕、Dialog 按鈕、必填選項的選取——各計 1。</li>
+        <li>自由文字輸入（打字、貼上）<strong>不計</strong>；聚焦欄位的點擊也不計。</li>
+        <li><span class="mono">最短點擊數</span>＝同一入口到同一終點，只計畫面推進所需的點擊（CTA、下一步、送出、換頁）。</li>
+        <li><span class="mono">實際點擊數</span>＝實走中真正發生的全部點擊，含為滿足必填欄位而做的選擇。</li>
+      </ul>
+    </div>
+
+    <div>
+      <h3 style="margin-bottom:var(--space-sm)">F1–F6 摩擦點門檻</h3>
+      <dl class="defs">
+        <div><dt>F1 · 步數過長</dt><dd>實際點擊數 &gt; 4。</dd></div>
+        <div><dt>F2 · 冗餘負擔</dt><dd>實際點擊數 − 最短點擊數 ≥ 2。</dd></div>
+        <div><dt>F3 · 死路</dt><dd>動作完成後沒有定義好的終點，或停在原地而無下一步導引。</dd></div>
+        <div><dt>F4 · 回頭路</dt><dd>必須先返回上一頁，才能繼續完成目標。</dd></div>
+        <div><dt>F5 · 資訊來回</dt><dd>同一份資訊需跨兩個畫面來回比對才能決策。</dd></div>
+        <div><dt>F6 · 定位失據</dt><dd>使用者無法判斷自己在第幾步，或不知如何返回。</dd></div>
+      </dl>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <p>Label Suite · <span class="mono">design/system/user-path-map.html</span> · 認知演練法（專家評估）· 來源 commit <span class="mono">c9cf83209257</span> · 實走 2026-09-08<br>
+  相關文件：<a href="screen-inventory.md">screen-inventory.md</a> · <a href="ux-conventions.md">ux-conventions.md</a>（UXC-01–11）· <a href="anti-pattern-checklist.md">anti-pattern-checklist.md</a> · <a href="MASTER.md">MASTER.md</a></p>
+</footer>
+
+</div>
