@@ -2465,6 +2465,25 @@
     }
   }
 
+  /* issue #722: an arbiter's workspace progress counter must count
+   * arbitration submissions too -- submitArbitration() is a write path
+   * isSampleSubmitted() (keyed off markSampleSubmitted's own status field)
+   * never sees. A unit counts as arbitrated once every one of its CURRENT
+   * dispute items carries a vote from this identity, mirroring
+   * isSampleSubmitted()'s per-unit completeness check. Deliberately checks
+   * for a vote, not `finalized_by`: a `reject` vote (D2's sentinel) is a
+   * real, complete submission that still leaves finalized_by unset. */
+  function isArbitrationSubmitted(taskId, runType, sampleId, identity, outKeys) {
+    var items = getDisputeItems(taskId, runType, sampleId, identity, outKeys);
+    if (!items.length) return false;
+    var arbState = getArbitrationState(taskId, runType, sampleId, identity);
+    var arbiterId = (identity && identity.reviewerId) || DEFAULT_REVIEWER_ID;
+    return items.every(function (item) {
+      var stored = arbState[item.outKey + '::' + item.key];
+      return !!stored && (stored.votes || []).some(function (vote) { return vote.arbiter_id === arbiterId; });
+    });
+  }
+
   /* Per-item majority convergence (issue #147 ⑥③): decides whether one
    * dispute item resolves WITHOUT arbitration. Among `reviewerCount` (N)
    * reviewers of the unit, the reviewers present in `item.reviewerValues`
@@ -3164,6 +3183,7 @@
     resolveExceptionPoolItem: resolveExceptionPoolItem,
     DEFAULT_PROJECT_LEADER_ID: DEFAULT_PROJECT_LEADER_ID,
     submitArbitration: submitArbitration,
+    isArbitrationSubmitted: isArbitrationSubmitted,
     resolveDisputeConvergence: resolveDisputeConvergence,
     describeDisputeVotes: describeDisputeVotes,
     PURE_REJECT_VALUE: PURE_REJECT_VALUE,
