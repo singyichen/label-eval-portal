@@ -18,8 +18,8 @@ test.describe('Dataset analysis detail sequence_tagging i18n', () => {
     await expect(page.locator('#bcCurrent')).toHaveText('產品評論序列標記');
     await expect(page.locator('#pageTitle')).toHaveText('任務詳情');
     await expect(page.locator('#pageSubtitle')).toHaveText('檢視統計總覽與品質監控');
-    await expect(page.locator('#statsSeqTagDistTitle')).toHaveText('標記類型分佈');
-    await expect(page.locator('#statsSeqTagDistDesc')).toHaveText('各 tag 類型在提交標記中的 token 數量與比例（含 O tag）');
+    await expect(page.locator('#statsSeqTagDistTitle')).toHaveText('標籤類型分佈');
+    await expect(page.locator('#statsSeqTagDistDesc')).toHaveText('各標籤類型在已提交標記片段中的筆數與比例');
   });
 
   test('renders sequence_tagging stats panel in en without mixed Chinese labels', async ({ page }) => {
@@ -30,7 +30,7 @@ test.describe('Dataset analysis detail sequence_tagging i18n', () => {
     await expect(page.locator('#bcCurrent')).toHaveText('Product Review Sequence Tagging');
     await expect(page.locator('#pageTitle')).toHaveText('Task detail');
     await expect(page.locator('#pageSubtitle')).toHaveText('Review statistics and quality monitoring');
-    await expect(page.locator('#statsSeqTagDistTitle')).toHaveText('Tag Type Distribution');
+    await expect(page.locator('#statsSeqTagDistTitle')).toHaveText('Label Type Distribution');
     await expect(tagDistribution).not.toContainText(/[標記類型分佈全體]/);
   });
 
