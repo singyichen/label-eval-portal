@@ -1,5 +1,5 @@
 ---
-功能分支: feat/review-data-layer-596
+功能分支: docs/issue-590-relation-offsets-propose
 建立日期: 2026-04-23
 版本: 6.0.1
 狀態: Draft
