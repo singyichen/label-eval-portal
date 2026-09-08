@@ -14,8 +14,8 @@
 
 > **相依與平行性**：0.1 與 0.2 必須同批提交，兩者分開則 `scripts/check-sdd.sh` 的 `ACTIVE_CHANGE_STAGE` 會因分支欄與正典 frontmatter 不一致而報錯。本群組不動任何產品程式。
 
-- [ ] 0.1 修改 `specs/STATUS.md`，將 `annotation-015` 之狀態由 in-progress 更新為 change-open、分支欄改為本 change 的分支並填入 change 名稱。驗證：Project SDD lint 不再回報 `ACTIVE_CHANGE_STAGE`（propose 期已隨本 change 一併提交，待主 session 核實後勾選） [@main]
-- [ ] 0.2 修改 `specs/annotation/015-annotation-workspace/spec.md` 之 frontmatter 功能分支欄，使其與 `specs/STATUS.md` 分支欄一致；本任務只改 frontmatter，不動任何 FR／AC／SC 條文。驗證：Project SDD lint 之 `ACTIVE_CHANGE_STAGE` 為 0 筆（propose 期已隨本 change 一併提交，待主 session 核實後勾選） [@main]
+- [x] 0.1 修改 `specs/STATUS.md`，將 `annotation-015` 之狀態由 in-progress 更新為 change-open、分支欄改為本 change 的分支並填入 change 名稱。驗證：Project SDD lint 不再回報 `ACTIVE_CHANGE_STAGE`（propose 期已隨本 change 一併提交，待主 session 核實後勾選） [@main]
+- [x] 0.2 修改 `specs/annotation/015-annotation-workspace/spec.md` 之 frontmatter 功能分支欄，使其與 `specs/STATUS.md` 分支欄一致；本任務只改 frontmatter，不動任何 FR／AC／SC 條文。驗證：Project SDD lint 之 `ACTIVE_CHANGE_STAGE` 為 0 筆（propose 期已隨本 change 一併提交，待主 session 核實後勾選） [@main]
 
 ## 1. PR-590-A — 起訖產生於引擎快照（FR-098 第 1、2、3 點）
 
@@ -26,9 +26,9 @@
 > **相依**：群組 0。1.1 的 committed Red 必須先於 1.2。
 > **範圍界線**：只補欄位，顯示字串（`fmtRelSpan()` 之輸出與物件形狀分支的串接結果）一字不動；FR-014L 之 `relation-triple-row` 呈現不得因本組改變。
 
-- [ ] 1.1 新增 `design/prototype/tests/annotation/issue-590-relation-offsets-engine.spec.ts` 之 Red 契約——工作區關係建構器完成一筆三元組後，該筆同時帶有主體與客體的整數起訖四欄位且與所選實體位置一致；物件形狀資料集匯入的三元組同樣帶四欄位；gold 純字串與內建示範串接兩種來源的三元組四欄位皆為 null 且不等於任何以字串比對推得的位置。驗證：`PW_PORT=8951 corepack pnpm playwright test tests/annotation/issue-590-relation-offsets-engine.spec.ts` 全數失敗，失敗原因為引擎快照尚無這四個欄位 [@senior-qa]
-- [ ] 1.2 （Green）修改 `design/prototype/pages/task-management/task-config.engine.js`：於互動標記與物件形狀匯入兩個三元組產生點，除既有顯示字串外一併寫入四個整數起訖欄位，來源槽位缺位置資訊時寫入 null；不得以答案字串回原始文本做比對推得位置。驗證：`PW_PORT=8951 corepack pnpm playwright test tests/annotation/issue-590-relation-offsets-engine.spec.ts` 全綠 [@senior-frontend]
-- [ ] 1.3 執行群組 1 回歸並保存證據。驗證：`cd design/prototype && corepack pnpm typecheck` 與 `PW_PORT=8952 corepack pnpm playwright test tests/annotation` 皆 exit 0 [@main]
+- [x] 1.1 新增 `design/prototype/tests/annotation/issue-590-relation-offsets-engine.spec.ts` 之 Red 契約——工作區關係建構器完成一筆三元組後，該筆同時帶有主體與客體的整數起訖四欄位且與所選實體位置一致；物件形狀資料集匯入的三元組同樣帶四欄位；gold 純字串與內建示範串接兩種來源的三元組四欄位皆為 null 且不等於任何以字串比對推得的位置。驗證：`PW_PORT=8951 corepack pnpm playwright test tests/annotation/issue-590-relation-offsets-engine.spec.ts` 全數失敗，失敗原因為引擎快照尚無這四個欄位 [@senior-qa]
+- [x] 1.2 （Green）修改 `design/prototype/pages/task-management/task-config.engine.js`：於互動標記與物件形狀匯入兩個三元組產生點，除既有顯示字串外一併寫入四個整數起訖欄位，來源槽位缺位置資訊時寫入 null；不得以答案字串回原始文本做比對推得位置。驗證：`PW_PORT=8951 corepack pnpm playwright test tests/annotation/issue-590-relation-offsets-engine.spec.ts` 全綠。證據：commit `104767d7`（1 產品檔 `task-config.engine.js`，+16/−5，diff hunk `@@ -1858,18 +1858,25 @@` 與 `@@ -1987,7 +1994,11 @@`）。四個建立點（ner 物件形狀、gold 純字串、absa 串接、互動建構器 push）皆**顯式寫出**四個欄位——gold 與 absa 硬寫 `null` 而非省略鍵，因 Red 的 `expectAllOffsetsNull()` 先 `toHaveProperty` 再 `toBeNull`，省略鍵一樣紅。起訖一律取自已帶位置的來源槽位（`e1.start`／`e1.end`、`d.e1.start`／`d.e1.end`），且採 `x != null ? x : null` 而非 `x || null`，使 `start === 0` 不被 falsy 吞成 `null`。顯示字串 `fmt()`／`fmtRelSpan()`／ABSA 串接一字未動，FR-014L 之 `relation-triple-row` 呈現不受影響。主 session 獨立複跑 `PW_PORT=8961 corepack pnpm playwright test tests/annotation/issue-590-relation-offsets-engine.spec.ts` → **4 passed (7.4s)、exit 0**；`git diff 11f6c9d3 HEAD -- design/prototype/tests/` 為空，確認 Green 未改寫 Red 契約；`/usr/bin/grep -n 'indexOf\|\.search('` 之 40 筆既有匹配無一落在上述兩個 hunk 內，符合 FR-098 §3 之禁止字串比對推位置 [@senior-frontend]
+- [x] 1.3 執行群組 1 回歸並保存證據。驗證：`cd design/prototype && corepack pnpm typecheck` 與 `PW_PORT=8952 corepack pnpm playwright test tests/annotation` 皆 exit 0。證據：`cd design/prototype && corepack pnpm typecheck`（`tsc --noEmit`）→ **exit 0**；`PW_PORT=8962 corepack pnpm playwright test tests/annotation` → **751 passed (7.8m)、exit 0**，零 failed 零 skipped。實跑埠改為 8961／8962 而非任務書所列 8951／8952，原因是後兩者已被實作端的 agent 佔用；`playwright.config.ts` 之 `reuseExistingServer: !CI` 會接管既有 server，換埠是為確保載到本樹檔案（更嚴格的隔離，非放寬驗證） [@main]
 
 ## 2. PR-590-B — CompactAnswer 往返對稱（FR-098 第 4 點）
 
