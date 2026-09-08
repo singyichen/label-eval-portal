@@ -8,10 +8,10 @@
 
 **故事目標**：SC-001、SC-002、SC-006 — 在不猜測 #645 metadata 的前提下，以 fail-closed CLI、既有 CI regression harness 與零 parity gap 建立安全 foundation。
 
-- [ ] 1.1 修改 `scripts/speckit-tests.sh`，新增 Stage 1 QA Red fixtures，涵蓋 help、無效參數／root、缺少 path map artifact、authority 尚未 activation 與 no-write，對應 AC-1.1～AC-1.4；先提交此單檔 Red，再執行 harness，expected failure 必須只因 checker entry point 不存在，並保存 command、exit 與失敗訊息。 [@senior-qa]
-- [ ] 1.2 Green：建立唯讀 `scripts/check-user-path-map-freshness.mjs`，只實作 FR-001～FR-003 的 help／usage／root／missing-or-unsettled-authority preflight；不得解析任何假想 metadata、修改 QA contract 或回報 production fresh。 [@senior-devops]
-- [ ] 1.3 修改 `scripts/ci-jobs.tsv`，將 checker 宣告由既有 `speckit-tests` job／local regression command 覆蓋；不得新增豁免或 production freshness mapping。 [@senior-devops]
-- [ ] 1.4 執行 command-only Stage 1 verification：`node --check scripts/check-user-path-map-freshness.mjs`、`bash scripts/speckit-tests.sh`、`scripts/check-sdd.sh`、`scripts/check-spec-artifacts.sh`、`rg -n 'check-user-path-map-freshness' .github/workflows/ci.yml CLAUDE.md`、`git diff --check`；前四與最後一個 command 預期 exit `0`，`rg` 預期 exit `1` 且無輸出，以證明 regression 受既有 job 覆蓋、`CI_JOB_PARITY` 為零，並且 workflow／`CLAUDE.md` 尚無 direct production invocation。 [@main]
+- [x] 1.1 修改 `scripts/speckit-tests.sh`，新增 Stage 1 QA Red fixtures，涵蓋 help、無效參數／root、缺少 path map artifact、authority 尚未 activation 與 no-write，對應 AC-1.1～AC-1.4；先提交此單檔 Red，再執行 harness，expected failure 必須只因 checker entry point 不存在，並保存 command、exit 與失敗訊息。 [@senior-qa]
+- [x] 1.2 Green：建立唯讀 `scripts/check-user-path-map-freshness.mjs`，只實作 FR-001～FR-003 的 help／usage／root／missing-or-unsettled-authority preflight；不得解析任何假想 metadata、修改 QA contract 或回報 production fresh。 [@senior-devops]
+- [x] 1.3 修改 `scripts/ci-jobs.tsv`，將 checker 宣告由既有 `speckit-tests` job／local regression command 覆蓋；不得新增豁免或 production freshness mapping。 [@senior-devops]
+- [x] 1.4 執行 command-only Stage 1 verification：`node --check scripts/check-user-path-map-freshness.mjs`、`bash scripts/speckit-tests.sh`、`scripts/check-sdd.sh`、`scripts/check-spec-artifacts.sh`、`rg -n 'check-user-path-map-freshness' .github/workflows/ci.yml CLAUDE.md`、`git diff --check`；前四與最後一個 command 預期 exit `0`，`rg` 預期 exit `1` 且無輸出，以證明 regression 受既有 job 覆蓋、`CI_JOB_PARITY` 為零，並且 workflow／`CLAUDE.md` 尚無 direct production invocation。 [@main]
 
 ## #645 hard checkpoint（NON-CHECKBOX）
 
