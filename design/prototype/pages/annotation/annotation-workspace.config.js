@@ -1538,7 +1538,15 @@
       return data.getSubmittedSampleCount(currentProfile.id, currentRole, currentRunType, currentIdentity);
     }
     return units.filter(function (unit) {
-      return data.isSampleSubmitted(currentProfile.id, 'reviewer', currentRunType, unit.recordId, unitIdentity(unit));
+      var identity = unitIdentity(unit);
+      /* issue #722: a disputed unit is reviewed by arbitration instead of
+         the normal review submit, so an arbiter's progress must also count
+         via isArbitrationSubmitted() -- isSampleSubmitted() alone is blind
+         to that write path and left arbiter-only participants stuck at 0. */
+      return (
+        data.isSampleSubmitted(currentProfile.id, 'reviewer', currentRunType, unit.recordId, identity) ||
+        data.isArbitrationSubmitted(currentProfile.id, currentRunType, unit.recordId, identity, state.selectedOutputTypes)
+      );
     }).length;
   }
 
@@ -3955,6 +3963,11 @@
     showToast(t('wsArbitrationSubmitSuccess'));
     renderSampleList();
     renderReviewerWorkspace();
+    /* issue #722: every other submit path (annotator/reviewer) repaints the
+       nav's progress counter; arbitration's own submit was the one path
+       that skipped it, so an arbiter's count never advanced until some
+       unrelated action (e.g. prev/next) happened to re-render it. */
+    renderSampleNav();
   }
 
   /* FR-095 final exception pool disposition screen (issue #596, task 6.3).
