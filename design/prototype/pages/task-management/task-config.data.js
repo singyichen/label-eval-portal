@@ -411,7 +411,13 @@ var OUTPUT_TYPE_IAA_REGISTRY = {
   multi_dim: { zh: 'ICC(2,1)', en: 'ICC(2,1)', defaultThreshold: 0.80 },
   entity_recognition: { zh: 'Span F1（嚴格）', en: 'Span F1 (strict)', defaultThreshold: 0.80 },
   relation_identification: { zh: 'Triple F1', en: 'Triple F1', defaultThreshold: 0.75 },
-  sequence_tagging: { zh: 'Token-level Alpha（O-tag 遮罩）', en: 'Token-level alpha (O-tag masked)', defaultThreshold: 0.75 },
+  /* FR-012L (dataset-017 v... seq-tagging-span-export-metrics): span-unit
+     Krippendorff u-α replaces the retired token-level nominal alpha metric.
+     sequence_tagging is IAA_UNCALIBRATED_TYPES so defaultThreshold stays
+     null — no threshold, default, or fallback number may be smuggled in
+     here (FR-043 §2). computeNote records the u-α computation prerequisite
+     (continuum-length weighting of unlabeled regions) for traceability. */
+  sequence_tagging: { zh: 'Krippendorff 單位化 α（u-α，以 span 為計算單位）', en: "Krippendorff's unitizing alpha (u-α, span-level unit)", defaultThreshold: null, computeUnit: 'span', computeNote: 'u-α 以連續體長度加權處理未標記區段' },
   free_text: { zh: null, en: null, defaultThreshold: null, notApplicable: true },
 };
 
