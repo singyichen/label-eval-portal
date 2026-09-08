@@ -10,7 +10,7 @@
 
 **故事目標**：SC-004 — 讓 `sequence_tagging` 的 stats 區塊在 `tokenization` 與 `tagging_scheme` 兩個設定欄位消失後仍可正確渲染，母體由 token 序列改為已提交的 span 集合。
 
-- [ ] 1.1 修改 `design/prototype/tests/dataset/dataset-analysis-detail-stats-i18n.spec.ts`，新增對應 AC-2.7 的 Red 斷言：標籤類型分佈只出現不帶前綴的 label、一段 n 字標記計為 1 筆、片段長度分佈以字元分桶；先提交此單檔再執行，expected failure 必須來自現行 partial 仍以 token 與 tag 前綴渲染，並保存 command、exit 與失敗訊息。 [@senior-qa]
+- [x] 1.1 修改 `design/prototype/tests/dataset/dataset-analysis-detail-stats-i18n.spec.ts`，新增對應 AC-2.7 的 Red 斷言：標籤類型分佈只出現不帶前綴的 label、一段 n 字標記計為 1 筆、片段長度分佈以字元分桶；先提交此單檔再執行，expected failure 必須來自現行 partial 仍以 token 與 tag 前綴渲染，並保存 command、exit 與失敗訊息。證據：commit `18e26f7b`（前置 `ceffeaf2`／`2332a73e`／`03032d0d`），單檔 `design/prototype/tests/dataset/dataset-analysis-detail-stats-i18n.spec.ts`；`PW_PORT=8971 corepack pnpm playwright test tests/dataset/dataset-analysis-detail-stats-i18n.spec.ts` 得 8 failed / 3 passed，失敗集合為 `:86` `:100` `:107` `:129` `:153` `:185` `:205` `:242` 八條 AC-2.7 斷言，通過的 `:21` `:45` `:65` 為其他 task type 對照組，證明失敗來自 partial 仍以 token 與 tag 前綴渲染而非測試檔本身損壞；`git diff --stat origin/main HEAD -- design/prototype/pages openspec` 無輸出，確認本分支尚未動任何產品檔。 [@senior-qa]
 - [ ] 1.2 Green：改寫 `design/prototype/pages/dataset/dataset-analysis-detail.partials/stats-sequence_tagging.html`，依 FR-009L 將三項指標改為標籤類型分佈、每句平均標記片段數與字元長度分佈；QA 已提交的斷言為契約，實作端只實作、維持原樣。 [@senior-frontend]
 - [ ] 1.3 執行 command-only 群組驗證：`pnpm typecheck`、`pnpm playwright test tests/dataset/dataset-analysis-detail-stats-i18n.spec.ts`、`scripts/check-sdd.sh`、`scripts/check-spec-artifacts.sh`、`git diff --check`；全部預期 exit `0`，並保存 1.1 的失敗提交雜湊與 1.2 的 exit-0 evidence。 [@main]
 
