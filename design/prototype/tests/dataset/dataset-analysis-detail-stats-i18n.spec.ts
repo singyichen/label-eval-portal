@@ -154,6 +154,12 @@ test.describe('Dataset analysis detail stats i18n across task types', () => {
     await gotoStatsWithLang(page, 'T103', 'en');
 
     const avgSpanSection = page.locator('section[aria-labelledby="statsSeqTagAvgSpanTitle"]');
+    // Guard with a non-retrying count() first (matches the established
+    // convention in this file for asserting on locators known to be absent
+    // today) so this test fails fast instead of hitting the default 30s
+    // auto-retry timeout on innerText() against a nonexistent section.
+    expect(await avgSpanSection.count()).toBe(1);
+
     const sectionText = await avgSpanSection.innerText();
 
     // AC-2.7: "該樣本的標記片段數為 2，未因字元數被放大為 5" — one 3-char ORG span
