@@ -1753,12 +1753,23 @@
   function buildHistoryDiff(before, after) {
     var items = [];
     historyOutputKeys(before, after).forEach(function (outKey) {
-      if (window.LabelSuiteAnnotationHistory.isPositionalOutput(outKey)) {
+      var from = describeOutputAnswer(outKey, before);
+      var to = describeOutputAnswer(outKey, after);
+      /* FR-098 §6 (issue #590): per-snapshot-pair, not per-type -- a type
+         registered as position-bearing still falls back to the plain-value
+         diff below when both snapshots in THIS pair already carry an answer
+         but hasComparablePositions() finds at least one without a
+         comparable position (e.g. gold-shaped plain-string triples). A side
+         with no prior answer at all (`from`/`to` empty) is the pre-existing
+         "brand new answer" case, not the missing-offset case §6 targets --
+         diffPositional() already renders it correctly as pure added/removed
+         entries, so it stays exempt from the stricter both-sides check. */
+      var canDiffPositionally = window.LabelSuiteAnnotationHistory.isPositionalOutput(outKey) &&
+        (!from || !to || window.LabelSuiteAnnotationHistory.hasComparablePositions(outKey, before, after));
+      if (canDiffPositionally) {
         items = items.concat(positionalDiffItems(outKey, before, after));
         return;
       }
-      var from = describeOutputAnswer(outKey, before);
-      var to = describeOutputAnswer(outKey, after);
       if (from === to) return;
       items.push(diffItem(null, outKey + ': ' + (from || t('reviewNoAnswer')) + ' → ' + (to || t('reviewNoAnswer'))));
     });
