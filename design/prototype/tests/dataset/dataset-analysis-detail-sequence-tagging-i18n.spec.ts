@@ -1,5 +1,11 @@
+/**
+ * Traceability: specs/dataset/017-dataset-analysis-detail/spec.md
+ *   FR-012L, FR-035, FR-036, FR-043 (AC-3.7, AC-3.18, AC-3.13, AC-3.14)
+ */
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
+
+test.describe.configure({ retries: 2 });
 
 const DETAIL_URL = '/pages/dataset/dataset-analysis-detail.html?task_id=T103';
 
@@ -34,14 +40,85 @@ test.describe('Dataset analysis detail sequence_tagging i18n', () => {
     await expect(tagDistribution).not.toContainText(/[標記類型分佈全體]/);
   });
 
+  test('renders sequence_tagging quality panel in zh: u-alpha primary metric, no threshold, pairwise F1 divergence, f1_to_merged_reference ranking', async ({ page }) => {
+    await gotoWithLang(page, 'zh', 'quality');
+
+    await expect(page.locator('#bcCurrent')).toHaveText('產品評論序列標記');
+
+    const qualityContainer = page.locator('#qualityReady');
+    const iaaPanel = page.locator('section[aria-labelledby="iaaTitle"]');
+    const lowConsistencySection = page.locator('section[aria-labelledby="lowConsistencyTitle"]');
+    const rankingSection = page.locator('section[aria-labelledby="rankingTitle"]');
+
+    // FR-012L / AC-3.7: primary metric is Krippendorff u-α, computation unit is span.
+    await expect(page.locator('#iaaMethodName')).toContainText(/u-α/i);
+    await expect(page.locator('.iaa-method-row')).toContainText(/span/i);
+
+    // AC-3.7: `Token-level Alpha` wording, `IAA_THRESHOLD_TOKEN`, and any threshold value must be gone.
+    await expect(qualityContainer).not.toContainText('Token-level Alpha');
+    await expect(qualityContainer).not.toContainText('IAA_THRESHOLD_TOKEN');
+    await expect(iaaPanel.locator('.iaa-threshold-row')).toHaveCount(0);
+    await expect(iaaPanel).not.toContainText(/門檻\s*0?\.\d+/);
+    await expect(iaaPanel).not.toContainText(/通過|未達/);
+    await expect(iaaPanel.locator('[class*="pass"], [class*="fail"]')).toHaveCount(0);
+
+    // AC-3.7: the "O-tag masking" rule (or any equivalent wording) no longer applies to span-based u-α.
+    await expect(page.locator('#seqTagMaskingNote')).toHaveCount(0);
+    await expect(iaaPanel).not.toContainText(/遮罩/);
+
+    // FR-043 / AC-3.18: neutral "pending empirical calibration" note, textually distinct from free_text's
+    // "不適用—由審核員評估" (IAA_GATE_EXCLUDED_TYPES semantics must not be reused for IAA_UNCALIBRATED_TYPES).
+    const calibrationNote = page.locator('#seqTagCalibrationNote');
+    await expect(calibrationNote).toContainText('待實證校準');
+    await expect(calibrationNote).not.toContainText('不適用');
+
+    // AC-3.18: ranking still renders for the uncalibrated type (only the threshold judgment is withheld).
+    await expect(page.locator('#rankingTitle')).toHaveText('標記員品質排名');
+
+    // FR-035 / AC-3.13: divergence metric is pairwise_f1; no token-unit disagreement wording remains.
+    await expect(lowConsistencySection).not.toContainText('non_o_token_disagreement_rate');
+    await expect(lowConsistencySection).not.toContainText(/\d+\s*個?\s*token/i);
+    await expect(lowConsistencySection).toContainText(/pairwise/i);
+    await expect(lowConsistencySection).toContainText(/F1/);
+
+    // FR-036 / AC-3.14: ranking metric is f1_to_merged_reference (same wording as entity_recognition).
+    const rankMetricCells = rankingSection.locator('td[data-i18n="sequenceTaggingListRank.rankMetricName"]');
+    await expect(rankMetricCells.first()).toHaveText('與合併聚合參考值 F1');
+    await expect(rankingSection).not.toContainText('token_majority_agreement_rate');
+    await expect(rankingSection).not.toContainText('與多數決 token 標記一致率');
+
+    // AC-3.7 (task 2.1b supplement): task 2.1 removed the old exact-text assertions on
+    // #sequenceTaggingGroupAvg and #consistencyNote without replacing them, and neither
+    // element is inside iaaPanel/lowConsistencySection/rankingSection, so this gap was
+    // otherwise unguarded. The group-average line must report the new span-level u-alpha
+    // metric, not the retired token-level one.
+    const groupAvg = page.locator('#sequenceTaggingGroupAvg');
+    await expect(groupAvg).toContainText(/u-α/i);
+    await expect(groupAvg).not.toContainText('Token Alpha');
+
+    // AC-3.7 (task 2.1b supplement): the consistency-deviation note's comparison-pool
+    // description must be span-based, not the retired O-tag-masking wording.
+    const consistencyNote = page.locator('#consistencyNote');
+    await expect(consistencyNote).toContainText(/span/i);
+    await expect(consistencyNote).not.toContainText('遮罩');
+
+    // AC-3.7 (task 2.1b supplement): page-level guardrail — no hyphen-less "Token Alpha"
+    // or masking wording may survive anywhere in the quality tab.
+    await expect(qualityContainer).not.toContainText('Token Alpha');
+    await expect(qualityContainer).not.toContainText('遮罩');
+
+    // AC-3.7 (task 2.1c supplement): the consistency-deviation table's unit column header
+    // must agree with #consistencyNote's span-level comparison pool, not the retired
+    // token-level wording.
+    const consistencyUnitCol = page.locator('#consistencyUnitCol');
+    await expect(consistencyUnitCol).toContainText(/span/i);
+    await expect(consistencyUnitCol).not.toContainText('可比較 token 數');
+  });
+
   test('renders sequence_tagging quality panel in en, including type-scoped low-consistency / ranking / boundary sections', async ({ page }) => {
     await gotoWithLang(page, 'en', 'quality');
 
     await expect(page.locator('#bcCurrent')).toHaveText('Product Review Sequence Tagging');
-    await expect(page.locator('#iaaMethodName')).toHaveText("Token-level Krippendorff's Alpha");
-    await expect(page.locator('#seqTagMaskingNote')).toHaveText(
-      'O-tag masking rule: tokens marked O by every annotator are excluded from the comparison unit, preventing background tokens from diluting the disagreement signal (mandatory, cannot be disabled).'
-    );
 
     // FR-035/FR-036/FR-037: sequence_tagging is in-scope for all three type-scoped panels.
     await expect(page.locator('#lowConsistencyTitle')).toHaveText('Low-consistency Sample List');
@@ -55,9 +132,71 @@ test.describe('Dataset analysis detail sequence_tagging i18n', () => {
     expect(titles.indexOf('Boundary Disagreement Analysis')).toBeGreaterThan(titles.indexOf('Annotator Quality Ranking'));
     expect(titles.indexOf('Anomaly Detection')).toBeGreaterThan(titles.indexOf('Boundary Disagreement Analysis'));
 
-    await expect(page.locator('#sequenceTaggingGroupAvg')).toHaveText('Group avg — Token Alpha: 0.78 / Avg speed: 44.0s/sent');
-    await expect(page.locator('#consistencyNote')).toHaveText(
-      'For sequence tagging, O-tag-masked tokens form the comparison pool. Boundary-level high_divergence samples remain separate flags.'
-    );
+    const qualityContainer = page.locator('#qualityReady');
+    const iaaPanel = page.locator('section[aria-labelledby="iaaTitle"]');
+    const lowConsistencySection = page.locator('section[aria-labelledby="lowConsistencyTitle"]');
+    const rankingSection = page.locator('section[aria-labelledby="rankingTitle"]');
+
+    // FR-012L / AC-3.7: primary metric is Krippendorff u-α, computation unit is span.
+    await expect(page.locator('#iaaMethodName')).toContainText(/u-α/i);
+    await expect(page.locator('.iaa-method-row')).toContainText(/span/i);
+
+    // AC-3.7: `Token-level Alpha` wording, `IAA_THRESHOLD_TOKEN`, and any threshold value must be gone.
+    await expect(qualityContainer).not.toContainText('Token-level Alpha');
+    await expect(qualityContainer).not.toContainText('IAA_THRESHOLD_TOKEN');
+    await expect(iaaPanel.locator('.iaa-threshold-row')).toHaveCount(0);
+    await expect(iaaPanel).not.toContainText(/Threshold\s*0?\.\d+/i);
+    await expect(iaaPanel).not.toContainText(/\bPass\b|\bFail\b/);
+    await expect(iaaPanel.locator('[class*="pass"], [class*="fail"]')).toHaveCount(0);
+
+    // AC-3.7: the "O-tag masking" rule (or any equivalent wording) no longer applies to span-based u-α.
+    await expect(page.locator('#seqTagMaskingNote')).toHaveCount(0);
+    await expect(iaaPanel).not.toContainText(/masking/i);
+
+    // FR-043 / AC-3.18: neutral "pending empirical calibration" note, textually distinct from free_text's
+    // "Not applicable — assessed by reviewer" (IAA_GATE_EXCLUDED_TYPES semantics must not be reused for
+    // IAA_UNCALIBRATED_TYPES).
+    const calibrationNote = page.locator('#seqTagCalibrationNote');
+    await expect(calibrationNote).toContainText(/calibrat/i);
+    await expect(calibrationNote).not.toContainText(/not applicable/i);
+
+    // FR-035 / AC-3.13: divergence metric is pairwise_f1; no token-unit disagreement wording remains.
+    await expect(lowConsistencySection).not.toContainText('non_o_token_disagreement_rate');
+    await expect(lowConsistencySection).not.toContainText(/\d+\s*tokens?\b/i);
+    await expect(lowConsistencySection).toContainText(/pairwise/i);
+    await expect(lowConsistencySection).toContainText(/F1/);
+
+    // FR-036 / AC-3.14: ranking metric is f1_to_merged_reference (same wording as entity_recognition).
+    const rankMetricCells = rankingSection.locator('td[data-i18n="sequenceTaggingListRank.rankMetricName"]');
+    await expect(rankMetricCells.first()).toHaveText('F1 vs. merged aggregate reference');
+    await expect(rankingSection).not.toContainText('token_majority_agreement_rate');
+    await expect(rankingSection).not.toContainText('Token majority agreement rate');
+
+    // AC-3.7 (task 2.1b supplement): task 2.1 removed the old exact-text assertions on
+    // #sequenceTaggingGroupAvg and #consistencyNote without replacing them, and neither
+    // element is inside iaaPanel/lowConsistencySection/rankingSection, so this gap was
+    // otherwise unguarded. The group-average line must report the new span-level u-alpha
+    // metric, not the retired token-level one.
+    const groupAvg = page.locator('#sequenceTaggingGroupAvg');
+    await expect(groupAvg).toContainText(/u-α/i);
+    await expect(groupAvg).not.toContainText('Token Alpha');
+
+    // AC-3.7 (task 2.1b supplement): the consistency-deviation note's comparison-pool
+    // description must be span-based, not the retired O-tag-masking wording.
+    const consistencyNote = page.locator('#consistencyNote');
+    await expect(consistencyNote).toContainText(/span/i);
+    await expect(consistencyNote).not.toContainText(/mask/i);
+
+    // AC-3.7 (task 2.1b supplement): page-level guardrail — no hyphen-less "Token Alpha"
+    // or masking wording may survive anywhere in the quality tab.
+    await expect(qualityContainer).not.toContainText('Token Alpha');
+    await expect(qualityContainer).not.toContainText(/mask/i);
+
+    // AC-3.7 (task 2.1c supplement): the consistency-deviation table's unit column header
+    // must agree with #consistencyNote's span-level comparison pool, not the retired
+    // token-level wording.
+    const consistencyUnitCol = page.locator('#consistencyUnitCol');
+    await expect(consistencyUnitCol).toContainText(/span/i);
+    await expect(consistencyUnitCol).not.toContainText('Comparable Tokens');
   });
 });

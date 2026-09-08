@@ -4,24 +4,18 @@
   </div>
   <div class="iaa-method-row">
     <span class="iaa-primary-star" aria-label="主要指標"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
-    <span class="iaa-method-name" id="iaaMethodName" data-i18n="sequenceTaggingQuality.methodName">Token-level Krippendorff's Alpha</span>
-    <span id="iaaMethodSuffix" data-i18n="sequenceTaggingQuality.methodSuffix">— 主要指標</span>
+    <span class="iaa-method-name" id="iaaMethodName" data-i18n="sequenceTaggingQuality.methodName">Krippendorff 單位化 u-α</span>
+    <span id="iaaMethodSuffix" data-i18n="sequenceTaggingQuality.methodSuffix">— 主要指標（span 為計算單位）</span>
   </div>
   <div class="iaa-score-grid iaa-score-grid-1">
-    <div class="iaa-score-card card-pass">
-      <div class="iaa-card-label" id="lblSeqTagMetric" data-i18n="sequenceTaggingQuality.metricLabel">Token-level Alpha</div>
-      <div class="iaa-card-value pass">0.78</div>
-      <div class="iaa-card-calc" id="lblSeqTagCalc" data-i18n="sequenceTaggingQuality.calcDesc">以 token 為比較單位；O tag 已依規則遮罩</div>
-      <div class="iaa-bar-wrap"><div class="iaa-bar-fill pass" style="width:78%"></div></div>
-      <div class="iaa-threshold-row">
-        <span class="iaa-threshold-item">
-          <span class="t-dot t-dot-pass"></span>
-          <span id="lblSeqTagThr" data-i18n="sequenceTaggingQuality.threshold">門檻 0.75 — <strong class="t-pass">通過</strong></span>
-        </span>
-      </div>
+    <div class="iaa-score-card">
+      <div class="iaa-card-label" id="lblSeqTagMetric" data-i18n="sequenceTaggingQuality.metricLabel">u-α</div>
+      <div class="iaa-card-value">0.78</div>
+      <div class="iaa-card-calc" id="lblSeqTagCalc" data-i18n="sequenceTaggingQuality.calcDesc">以 span 為比較單位；u-α 以連續體長度加權處理未標記區段</div>
+      <div class="iaa-bar-wrap"><div class="iaa-bar-fill" style="width:78%"></div></div>
     </div>
   </div>
-  <p class="group-avg-note" style="margin-top:var(--space-sm)" id="seqTagMaskingNote" data-i18n="sequenceTaggingQuality.maskingNote">O tag 遮罩規則：全體標記員皆標為 O 的 token 不計入比較單位，避免大量背景 token 稀釋分歧訊號（強制套用，不可關閉）。</p>
+  <p class="group-avg-note" style="margin-top:var(--space-sm)" id="seqTagCalibrationNote" data-i18n="sequenceTaggingQuality.calibrationNote">u-α 待實證校準：目前僅顯示點估計值與排序，尚未訂定達標門檻。</p>
 </section>
 
 <section class="panel" aria-labelledby="lowConsistencyTitle">
@@ -45,13 +39,13 @@
           <tr>
             <td><span style="font-family:var(--font-mono);color:var(--color-primary)">#312</span></td>
             <td><span class="badge badge-fail">0.71</span></td>
-            <td style="white-space:normal;font-size:12px" data-i18n="sequenceTaggingListRank.sample1Detail">「散熱表現優異」span 邊界在 3 位標記員間差異達 4 個 token</td>
+            <td style="white-space:normal;font-size:12px" data-i18n="sequenceTaggingListRank.sample1Detail">「散熱表現優異」span 邊界標記在 3 位標記員間出現分歧，pairwise F1（strict）為 0.71</td>
             <td><span class="badge badge-warn" data-i18n="qualityListRank.queuePending">待審核</span></td>
           </tr>
           <tr>
             <td><span style="font-family:var(--font-mono);color:var(--color-primary)">#078</span></td>
             <td><span class="badge badge-warn">0.58</span></td>
-            <td style="white-space:normal;font-size:12px" data-i18n="sequenceTaggingListRank.sample2Detail">「退換貨流程」與「繁瑣」是否合併為單一 span 意見分歧</td>
+            <td style="white-space:normal;font-size:12px" data-i18n="sequenceTaggingListRank.sample2Detail">「退換貨流程」與「繁瑣」是否合併為單一 span 意見分歧，pairwise F1（strict）為 0.58</td>
             <td><span class="badge badge-neutral" data-i18n="qualityListRank.queueCompleted">已完成</span></td>
           </tr>
         </tbody>
@@ -75,9 +69,9 @@
           </tr>
         </thead>
         <tbody>
-          <tr><td>1</td><td><span class="annotator-name">Mandy Chen</span></td><td data-i18n="sequenceTaggingListRank.rankMetricName">與多數決 token 標記一致率</td><td>0.84</td></tr>
-          <tr><td>2</td><td><span class="annotator-name">Avery Lin</span></td><td data-i18n="sequenceTaggingListRank.rankMetricName">與多數決 token 標記一致率</td><td>0.79</td></tr>
-          <tr><td>3</td><td><span class="annotator-name">Jordan Wu</span></td><td data-i18n="sequenceTaggingListRank.rankMetricName">與多數決 token 標記一致率</td><td>0.66</td></tr>
+          <tr><td>1</td><td><span class="annotator-name">Mandy Chen</span></td><td data-i18n="sequenceTaggingListRank.rankMetricName">與合併聚合參考值 F1</td><td>0.84</td></tr>
+          <tr><td>2</td><td><span class="annotator-name">Avery Lin</span></td><td data-i18n="sequenceTaggingListRank.rankMetricName">與合併聚合參考值 F1</td><td>0.79</td></tr>
+          <tr><td>3</td><td><span class="annotator-name">Jordan Wu</span></td><td data-i18n="sequenceTaggingListRank.rankMetricName">與合併聚合參考值 F1</td><td>0.66</td></tr>
         </tbody>
       </table>
     </div>
@@ -139,7 +133,7 @@
     <div class="table-wrap">
       <div class="table-scroll">
         <table class="annotator-table" aria-label="標記員分析（序列標記）" data-i18n-aria-label="qualityRisk.sequenceTableLabel">
-          <thead><tr><th data-i18n="qualityRisk.headerAnnotator">標記員</th><th data-i18n="qualityRisk.headerSpeed">平均速度</th><th>Token Alpha</th><th data-i18n="qualityRisk.headerLevel">風險等級</th><th data-i18n="qualityRisk.headerCause">異常原因</th><th data-i18n="qualityRisk.headerSamples">樣本數</th><th data-i18n="qualityRisk.headerAction">建議行動</th></tr></thead>
+          <thead><tr><th data-i18n="qualityRisk.headerAnnotator">標記員</th><th data-i18n="qualityRisk.headerSpeed">平均速度</th><th data-i18n="qualityRisk.headerUAlpha">u-α</th><th data-i18n="qualityRisk.headerLevel">風險等級</th><th data-i18n="qualityRisk.headerCause">異常原因</th><th data-i18n="qualityRisk.headerSamples">樣本數</th><th data-i18n="qualityRisk.headerAction">建議行動</th></tr></thead>
           <tbody>
             <tr><td><span class="annotator-name">Mandy Chen</span></td><td data-i18n="qualityRisk.seqSpeed1">52s / 句</td><td><span class="badge badge-pass">0.84</span></td><td><span class="risk-level-badge normal" data-risk-level="normal">正常</span></td><td><div class="cause-muted" data-i18n="qualityRisk.causeNone">無異常原因</div></td><td>28</td><td><div class="action-stack"><button class="btn btn-secondary btn-sm risk-action-btn" data-role-action type="button" data-i18n="qualityRisk.actionReview">審核標記</button><div class="risk-readonly-note hidden" data-role-note data-i18n="qualityRisk.leaderOnly">僅 Project Leader 可執行</div></div></td></tr>
             <tr><td><span class="annotator-name">Avery Lin</span></td><td data-i18n="qualityRisk.seqSpeed2">60s / 句</td><td><span class="badge badge-pass">0.79</span></td><td><span class="risk-level-badge normal" data-risk-level="normal">正常</span></td><td><div class="cause-muted" data-i18n="qualityRisk.causeNone">無異常原因</div></td><td>26</td><td><div class="action-stack"><button class="btn btn-secondary btn-sm risk-action-btn" data-role-action type="button" data-i18n="qualityRisk.actionReview">審核標記</button><div class="risk-readonly-note hidden" data-role-note data-i18n="qualityRisk.leaderOnly">僅 Project Leader 可執行</div></div></td></tr>
@@ -148,7 +142,7 @@
         </table>
       </div>
     </div>
-    <p class="group-avg-note" id="sequenceTaggingGroupAvg" data-i18n="sequenceTaggingQuality.groupAvg">群體平均 — Token Alpha: 0.78 ／ 平均速度: 44.0s／句</p>
+    <p class="group-avg-note" id="sequenceTaggingGroupAvg" data-i18n="sequenceTaggingQuality.groupAvg">群體平均 — u-α: 0.78 ／ 平均速度: 44.0s／句</p>
   </div>
 </section>
 
@@ -159,7 +153,7 @@
     <div class="table-wrap">
       <div class="table-scroll">
         <table class="annotator-table" aria-label="標記一致性偏離分析（序列標記）">
-          <thead><tr><th>標記員</th><th id="consistencyUnitCol">可比較 token 數</th><th id="consistencyOutlier15CountCol">離群值(1.5xSTD)筆數</th><th id="consistencyOutlier15RateCol">離群值(1.5xSTD)比例</th><th id="consistencyOutlier2CountCol">離群值(2xSTD)筆數</th><th id="consistencyOutlier2RateCol">離群值(2xSTD)比例</th></tr></thead>
+          <thead><tr><th>標記員</th><th id="consistencyUnitCol">可比較 span 數</th><th id="consistencyOutlier15CountCol">離群值(1.5xSTD)筆數</th><th id="consistencyOutlier15RateCol">離群值(1.5xSTD)比例</th><th id="consistencyOutlier2CountCol">離群值(2xSTD)筆數</th><th id="consistencyOutlier2RateCol">離群值(2xSTD)比例</th></tr></thead>
           <tbody>
             <tr><td><span class="annotator-name">Mandy Chen</span></td><td>28</td><td>2</td><td>7.1%</td><td>0</td><td>0%</td></tr>
             <tr><td><span class="annotator-name">Avery Lin</span></td><td>26</td><td>4</td><td>15.4%</td><td>1</td><td>3.8%</td></tr>
@@ -168,6 +162,6 @@
         </table>
       </div>
     </div>
-    <p class="group-avg-note" id="consistencyNote">序列標記以 O tag 遮罩後的 token 作為比較母體；邊界 high_divergence 樣本仍維持獨立旗標呈現。</p>
+    <p class="group-avg-note" id="consistencyNote">序列標記以可對齊的 span 作為比較母體；邊界 high_divergence 樣本仍維持獨立旗標呈現。</p>
   </div>
 </section>

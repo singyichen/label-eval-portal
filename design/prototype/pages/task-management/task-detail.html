@@ -5464,7 +5464,7 @@ function interpolate(template, payload) {
 
   function getEffectiveTargetAgreement(outputType, overridesMap) {
     var entry = getIaaEntry(outputType);
-    if (!entry || entry.notApplicable) return null;
+    if (!entry || entry.notApplicable || !Number.isFinite(entry.defaultThreshold)) return null;
     var overrides = overridesMap || TASK_DATA.targetAgreementOverrides || {};
     var overrideVal = Number(overrides[outputType]);
     return Number.isFinite(overrideVal) ? overrideVal : entry.defaultThreshold;
@@ -5499,6 +5499,10 @@ function interpolate(template, payload) {
       value.className = 'kv-dl-value';
       if (!entry || entry.notApplicable) {
         value.textContent = t('iaaNotApplicable');
+      } else if (!Number.isFinite(entry.defaultThreshold)) {
+        /* FR-012L: uncalibrated types (e.g. sequence_tagging) show the
+           metric name only -- no threshold, so no target-agreement suffix. */
+        value.textContent = getIaaMetricLabel(out.type);
       } else {
         value.textContent = interpolate(t('iaaSummaryValueTpl'), {
           metric: getIaaMetricLabel(out.type),
@@ -5713,7 +5717,7 @@ function interpolate(template, payload) {
       metricText.textContent = getIaaMetricLabel(out.type);
       row.appendChild(metricText);
 
-      if (entry && !entry.notApplicable) {
+      if (entry && Number.isFinite(entry.defaultThreshold)) {
         var input = document.createElement('input');
         input.className = 'input-number iaa-override-input';
         input.type = 'text';
