@@ -382,6 +382,405 @@ footer { margin-top: var(--space-3xl); padding-top: var(--space-lg); border-top:
   </div>
 </section>
 
+<!-- ══════════════════════════ 3. 訪客 ══════════════════════════ -->
+<section id="m3">
+  <div class="sec-head"><span class="idx">03</span><h2>訪客與帳號路徑</h2><span class="note">畫面 01–05 · 全角色共通</span></div>
+
+  <div class="stack">
+
+    <!-- G1 -->
+    <div class="goal">
+      <div class="goal-head"><span class="gid">G1</span><h3>登入系統</h3><span class="role">訪客</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">1</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">1</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">dashboard.html</span></div>
+        <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--entry">index.html</span>
+        <span class="edge"><span class="lbl">meta refresh</span><span class="clicks">0</span><span class="arrow">→</span></span>
+        <span class="n n--screen">登入頁</span>
+        <span class="edge"><span class="lbl">登入鈕</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--bg">模擬驗證 800ms</span>
+        <span class="edge"><span class="lbl">自動導向</span><span class="clicks">0</span><span class="arrow">→</span></span>
+        <span class="n n--screen n--end">儀表板</span>
+      </div>
+      <div class="branch">
+        <div class="blabel">分支：忘記密碼 → 見 G3；前往註冊 → 見 G2</div>
+      </div>
+      <p class="cites"><b>證據</b> login.html:736 <span style="opacity:.6">window.location.href = '../dashboard/dashboard.html'</span> · <span class="mono">data-testid="login-btn"</span> · <span class="mono">data-testid="forgot-password-link"</span> · <span class="mono">data-testid="register-link"</span> · index.html meta refresh（screen-inventory.md V00）</p>
+    </div>
+
+    <!-- G2 -->
+    <div class="goal">
+      <div class="goal-head"><span class="gid">G2</span><h3>註冊帳號</h3><span class="role">訪客</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">1</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">1</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">dashboard.html</span></div>
+        <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--entry">登入頁 · 前往註冊</span>
+        <span class="edge"><span class="lbl">連結</span><span class="clicks">0</span><span class="arrow">→</span></span>
+        <span class="n n--screen">註冊頁</span>
+        <span class="edge"><span class="lbl">建立帳號</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--bg">模擬送出</span>
+        <span class="edge"><span class="lbl">自動導向</span><span class="clicks">0</span><span class="arrow">→</span></span>
+        <span class="n n--screen n--end">儀表板</span>
+      </div>
+      <p class="cites"><b>證據</b> 實走 register.html：填妥四欄後點 <span class="mono">data-testid="submit-btn"</span>，URL 由 register.html 變為 dashboard.html · 欄位 <span class="mono">name-input / email-input / password-input / confirm-password-input</span>（四欄皆為打字，不計點擊）</p>
+    </div>
+
+    <!-- G3 -->
+    <div class="goal">
+      <div class="goal-head"><span class="gid">G3</span><h3>忘記密碼並重新登入</h3><span class="role">訪客</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">4</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">4</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">dashboard.html</span></div>
+        <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--screen">忘記密碼</span>
+        <span class="edge"><span class="lbl">寄送連結</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+        <span class="n n--state">已寄出提示</span>
+        <span class="edge"><span class="lbl">站外信箱</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--screen">重設密碼</span>
+        <span class="edge"><span class="lbl">更新密碼</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+        <span class="n n--state">重設成功</span>
+        <span class="edge"><span class="lbl">前往登入</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--screen n--end">登入頁 → G1</span>
+      </div>
+      <div class="branch">
+        <div class="blabel">token 分支（原型狀態切換器）</div>
+        <div class="lane">
+          <span class="cond">token 已過期／已使用</span>
+          <span class="edge"><span class="lbl">重新申請</span><span class="clicks">1</span><span class="arrow">→</span></span>
+          <span class="n n--screen">忘記密碼</span>
+        </div>
+      </div>
+      <p class="cites"><b>證據</b> 實走：forgot-password 點 <span class="mono">data-testid="send-reset-btn"</span> 後 URL 不變，畫面出現「若此 Email 已註冊，重設連結已寄出，請查收信箱。」 · reset-password 點 <span class="mono">data-testid="update-password-btn"</span> 後 URL 不變，出現「密碼重設成功，請重新登入。」＋「前往登入」 · <span class="mono">data-testid="reapply-link"</span> → ./forgot-password.html</p>
+      <p class="cites" style="color:var(--color-info)"><b>備註</b> 兩頁送出後皆停在原頁而未導向（偏離 UXC-06「Success → Navigate to target page」），但均提供明確的具名出口，且未登入狀態下無可導向的目標頁，判定為合理設計而非 F3。</p>
+    </div>
+
+    <!-- G4 -->
+    <div class="goal">
+      <div class="goal-head"><span class="gid">G4</span><h3>更新個人資料</h3><span class="role">全角色</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">1</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">1</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">profile.html（原頁 + toast）</span></div>
+        <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--entry">側欄 · 個人設定</span>
+        <span class="edge"><span class="lbl">導覽</span><span class="clicks">0</span><span class="arrow">→</span></span>
+        <span class="n n--screen">個人設定</span>
+        <span class="edge"><span class="lbl">儲存</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--bg">模擬 600ms</span>
+        <span class="edge"><span class="lbl">回饋</span><span class="clicks">0</span><span class="arrow">→</span></span>
+        <span class="n n--toast">已儲存</span>
+      </div>
+      <div class="branch">
+        <div class="blabel">分支：變更電子郵件（2 點擊，終點為原頁「待驗證」狀態）</div>
+        <div class="lane">
+          <span class="n n--screen">個人設定</span>
+          <span class="edge"><span class="lbl">變更</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+          <span class="n n--state">變更 Email 表單</span>
+          <span class="edge"><span class="lbl">下一步</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+          <span class="n n--state n--end">待驗證（可重寄／返回）</span>
+        </div>
+      </div>
+      <p class="cites"><b>證據</b> profile.html:792 <span class="mono">onclick="handleSaveProfile()"</span> · profile.html:1438 <span class="mono">setBtnLoading('saveProfileBtn', true)</span>（UXC-06 雙送出防護）· profile.html:1442 <span class="mono">showToast('success', t('toastSaveSuccess'), …)</span> · 實走：<span class="mono">#emailChangeBtn</span> → <span class="mono">#emailChangeSubmitBtn</span>，URL 全程維持 profile.html</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════ 4. Data Creator ══════════════════════════ -->
+<section id="m4">
+  <div class="sec-head"><span class="idx">04</span><h2>Data Creator ／ 專案負責人</h2><span class="note">畫面 06–09</span></div>
+
+  <div class="stack">
+
+    <!-- G5 -->
+    <div class="goal">
+      <div class="goal-head"><span class="gid">G5</span><h3>建立一個標記任務</h3><span class="role">Data Creator</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">5</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">11</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">task-detail.html?task_id=…</span></div>
+        <div class="verdicts"><span class="vd vd--hit">F1 命中</span><span class="vd vd--hit">F2 命中</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--entry">儀表板 CTA</span>
+        <span class="edge"><span class="lbl">開始建立任務</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--screen">Step 1 基本設定</span>
+        <span class="edge"><span class="lbl">型態·檔案·欄位</span><span class="clicks">7</span><span class="arrow">⇢</span></span>
+        <span class="n n--state">Step 2–4</span>
+        <span class="edge"><span class="lbl">下一步 ×2 + 建立</span><span class="clicks">3</span><span class="arrow">→</span></span>
+        <span class="n n--bg">模擬建立 900ms</span>
+        <span class="edge"><span class="lbl">toast + 導向</span><span class="clicks">0</span><span class="arrow">→</span></span>
+        <span class="n n--screen n--end">任務詳情</span>
+      </div>
+      <div class="branch">
+        <div class="blabel">阻斷分支：Step 1 未填完 → 下一步鈕維持 disabled，無法前進</div>
+        <div class="blabel">離開分支：有草稿時離開 → 未儲存確認（UXC-03）</div>
+        <div class="blabel">入口缺口：專案負責人視角的儀表板<strong>沒有</strong>建立任務 CTA（見第 10 節）</div>
+      </div>
+      <p class="cites"><b>證據</b> dashboard.html:151 <span class="mono">id="ctaLeaderBtn"</span> · dashboard.js:658 導向 task-new.html · task-new.html:960 <span class="mono">validateStep1()</span>（任務名稱、任務型態、資料檔案、輸入／證據欄位角色皆必填）· task-new.html:1122 逐步 <span class="mono">nextBtn.disabled</span> · task-new.html:1437 <span class="mono">submitTask()</span> → <span class="mono">clearWizardState()</span> → toast → task-new.html:1387 <span class="mono">redirectToTaskDetail()</span></p>
+      <p class="cites" style="color:var(--color-error)"><b>F1／F2 成因</b> 11 &gt; 4，且 11 − 5 = 6 ≥ 2。多出的 6 次全部落在 Step 1：任務型態選擇與每個資料欄位的角色指派都必須逐一點選，才會解鎖「下一步」。</p>
+    </div>
+
+    <!-- G6 -->
+    <div class="goal">
+      <div class="goal-head"><span class="gid">G6</span><h3>加入任務成員</h3><span class="role">Data Creator</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">4</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">4</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">?tab=member-management</span></div>
+        <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--screen">任務詳情</span>
+        <span class="edge"><span class="lbl">成員管理</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+        <span class="n n--state">成員管理分頁</span>
+        <span class="edge"><span class="lbl">搜尋 + 選取</span><span class="clicks">2</span><span class="arrow">⇢</span></span>
+        <span class="n n--state">待加入清單</span>
+        <span class="edge"><span class="lbl">加入</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--toast n--end">成員設定已更新</span>
+      </div>
+      <div class="branch">
+        <div class="blabel">阻斷分支：移除成員 → 確認 Dialog（UXC-10）</div>
+        <div class="lane">
+          <span class="n n--state">成員列 · 移除</span>
+          <span class="edge"><span class="lbl">開啟</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+          <span class="n n--dialog">確認成員操作</span>
+          <span class="edge"><span class="lbl">確認</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+          <span class="n n--state">清單已更新</span>
+        </div>
+      </div>
+      <p class="cites"><b>證據</b> task-detail.html:2259 <span class="mono">id="tabMemberManagement"</span> · task-detail.html:2331 <span class="mono">id="memberActionModalTitle"</span>「確認成員操作」· task-detail.html:2594「任務角色在加入時決定，既有成員不可中途改角色」· task-detail.html:2763 <span class="mono">toastMemberUpdated</span></p>
+    </div>
+
+    <!-- G7 -->
+    <div class="goal">
+      <div class="goal-head"><span class="gid">G7</span><h3>從儀表板檢視任務詳情</h3><span class="role">Data Creator</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">2</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">2</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">task-detail.html?task_id=T001</span></div>
+        <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--hit">F6 命中</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--entry">儀表板 · 查看全部</span>
+        <span class="edge"><span class="lbl">導向</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--screen">任務列表</span>
+        <span class="edge"><span class="lbl">點任務列</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--screen n--end">任務詳情 · 概覽</span>
+      </div>
+      <div class="branch">
+        <div class="blabel">分頁分支：5 個 tab 切換皆為畫面內狀態，<strong>不寫回 URL</strong>（F6 成因，見第 10 節）</div>
+        <div class="blabel">錯誤分支：任務列表載入失敗 → Alert Banner ＋ 重試（<span class="mono">?view=error</span>）</div>
+      </div>
+      <p class="cites"><b>證據</b> 實走：<span class="mono">#plViewAllBtn</span> → task-list.html?task_role=project_leader → 點第一列 → task-detail.html?task_id=T001 · dashboard.js:683 <span class="mono">plViewAllBtn</span> handler · task-list.html:784 <span class="mono">window.location.href = './task-detail.html?task_id=' + …</span> · task-detail.html:4729 <span class="mono">var tab = params.get('tab') || 'overview'</span></p>
+      <p class="cites" style="color:var(--color-error)"><b>F6 成因</b> <span class="mono">grep -c "replaceState" task-detail.html</span> = <b>0</b>，同儕頁 dataset-analysis-detail.html = <b>1</b>。分頁、篩選、分頁碼切換後 URL 恆為 <span class="mono">?task_id=T001</span>，F5 重載退回概覽、網址不可分享，違反 UXC-11。</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════ 5. Annotator ══════════════════════════ -->
+<section id="m5">
+  <div class="sec-head"><span class="idx">05</span><h2>Annotator ／ 標記員</h2><span class="note">畫面 10–11 · 視圖 V15–V23</span></div>
+
+  <div class="goal">
+    <div class="goal-head"><span class="gid">G8</span><h3>完成一筆標記並前往下一筆</h3><span class="role">Annotator</span></div>
+    <div class="metrics">
+      <div class="m"><span class="k">最短</span><span class="v">2</span></div>
+      <div class="m"><span class="k">實際</span><span class="v">2</span></div>
+      <div class="m"><span class="k">終點</span><span class="v v--end">工作區 · 下一筆未完成樣本</span></div>
+      <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+    </div>
+    <div class="lane">
+      <span class="n n--entry">儀表板 · 開始標記</span>
+      <span class="edge"><span class="lbl">導向</span><span class="clicks">1</span><span class="arrow">→</span></span>
+      <span class="n n--screen">標記任務列表</span>
+      <span class="edge"><span class="lbl">編輯</span><span class="clicks">1</span><span class="arrow">→</span></span>
+      <span class="n n--screen">標記工作區</span>
+      <span class="edge"><span class="lbl">送出</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+      <span class="n n--state n--end">自動跳下一筆</span>
+    </div>
+    <div class="branch">
+      <div class="blabel">收尾分支：無下一筆未完成 → 自動返回標記任務列表</div>
+      <div class="lane">
+        <span class="cond">findNextPendingUnit 為空</span>
+        <span class="edge"><span class="lbl">自動</span><span class="clicks">0</span><span class="arrow">→</span></span>
+        <span class="n n--screen n--end">標記任務列表</span>
+      </div>
+      <div class="blabel">型態分支：8 種輸出型態（V15–V22）＋ 組合輸出 ABSA（V23）共用同一條路徑，僅作答面板不同</div>
+    </div>
+    <p class="cites"><b>證據</b> annotation-workspace.config.js:2381 <span class="mono">handleSubmit()</span>，尾段 :2437–2441 <span class="mono">var nextUnit = findNextPendingUnit(buildUnits()); if (nextUnit) { selectSample(nextUnit.recordId); } else { window.location.href = buildListReturnUrl(); }</span> · :2369 <span class="mono">findNextPendingUnit</span> · :1376 <span class="mono">buildListReturnUrl</span> · annotation-list.html:1525 <span class="mono">openWorkspace()</span> · dashboard.js:665 <span class="mono">ctaAnnotatorBtn</span></p>
+    <p class="cites" style="color:var(--color-success)"><b>F3 通過</b> 這是全站唯一具備「送出即前推」的送出流程，其他兩個角色（G9／G10）皆缺此段——標記員路徑是對照組，不是特例。</p>
+    <p class="cites" style="color:var(--color-info)"><b>實走說明</b> 實際只點 2 次即完成，因示範資料的每筆樣本都預先帶有草稿答案，作答點擊可省略；名目最短為 3（列表 → 編輯 → 作答 → 送出）。</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 6. Reviewer ══════════════════════════ -->
+<section id="m6">
+  <div class="sec-head"><span class="idx">06</span><h2>Reviewer ／ 審核員</h2><span class="note">視圖 V14 · V24 · 三層單人接力（issue #596）</span></div>
+
+  <div class="goal">
+    <div class="goal-head"><span class="gid">G9</span><h3>審核一個審核單位</h3><span class="role">Reviewer</span></div>
+    <div class="metrics">
+      <div class="m"><span class="k">最短</span><span class="v">2</span></div>
+      <div class="m"><span class="k">實際</span><span class="v">2</span></div>
+      <div class="m"><span class="k">終點</span><span class="v v--end">停在同一審核單位</span></div>
+      <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--hit">F3 命中</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+    </div>
+    <div class="lane">
+      <span class="n n--entry">儀表板 · 開始審核</span>
+      <span class="edge"><span class="lbl">導向</span><span class="clicks">1</span><span class="arrow">→</span></span>
+      <span class="n n--screen">審核佇列</span>
+      <span class="edge"><span class="lbl">編輯</span><span class="clicks">1</span><span class="arrow">→</span></span>
+      <span class="n n--screen">工作區 · 審查模式</span>
+      <span class="edge"><span class="lbl">送出審核</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+      <span class="n n--dead">原地 · 無下一筆導引</span>
+    </div>
+    <div class="branch">
+      <div class="blabel">結果分支：通過／退回 皆走同一送出函式，終點相同</div>
+      <div class="blabel">唯一出路：手動點左側樣本清單另一列，或用麵包屑返回佇列（需自行判斷）</div>
+    </div>
+    <p class="cites"><b>證據</b> annotation-workspace.config.js:4689 <span class="mono">handleReviewSubmit()</span>，尾段 :4794–4802 依序呼叫 <span class="mono">renderSampleNav(); renderHistoryPanel(); … renderReviewerWorkspace(); showToast(t('wsReviewSubmitSuccess'));</span>——<strong>全部是重繪與提示，沒有任何導向或選取下一筆的呼叫</strong>。對照 :2437–2441 的標記員實作。</p>
+    <p class="cites" style="color:var(--color-error)"><b>F3 成因</b> 送出後 URL 不變、仍停在同一審核單位；系統知道下一筆是誰（<span class="mono">findNextActionableReviewUnit</span> 已存在於 annotation-workspace.data.js:2745），但送出流程未使用它。</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 7. Arbiter ══════════════════════════ -->
+<section id="m7">
+  <div class="sec-head"><span class="idx">07</span><h2>Arbiter ／ 仲裁員</h2><span class="note">爭議單位第三人仲裁 · <span class="mono">can_arbitrate</span></span></div>
+
+  <div class="goal">
+    <div class="goal-head"><span class="gid">G10</span><h3>仲裁一個爭議單位</h3><span class="role">Reviewer + can_arbitrate</span></div>
+    <div class="metrics">
+      <div class="m"><span class="k">最短</span><span class="v">3</span></div>
+      <div class="m"><span class="k">實際</span><span class="v">3</span></div>
+      <div class="m"><span class="k">終點</span><span class="v v--end">停在同一單位 · 面板消失</span></div>
+      <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--hit">F3 命中</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--hit">F6 命中</span></div>
+    </div>
+    <div class="lane">
+      <span class="n n--screen">審核佇列</span>
+      <span class="edge"><span class="lbl">仲裁</span><span class="clicks">1</span><span class="arrow">→</span></span>
+      <span class="n n--screen">工作區 · 仲裁模式</span>
+      <span class="edge"><span class="lbl">選裁決 + 送出</span><span class="clicks">2</span><span class="arrow">⇢</span></span>
+      <span class="n n--toast">仲裁已送出</span>
+      <span class="edge"><span class="lbl">重繪</span><span class="clicks">0</span><span class="arrow">⇢</span></span>
+      <span class="n n--dead">面板消失 · 無送出鈕</span>
+    </div>
+    <div class="branch">
+      <div class="blabel">入口條件：<span class="mono">status === DISPUTED</span> 且 <span class="mono">isArbiterCandidate(...)</span> 為真，列操作鈕才由「編輯」變為「仲裁」</div>
+      <div class="blabel">進度指標缺陷：頂端計數器對仲裁員恆為「我的審核提交 0 / N」</div>
+    </div>
+    <p class="cites"><b>證據</b> annotation-workspace.config.js:3903 <span class="mono">handleArbitrationSubmit()</span>，尾段 :3937–3940 <span class="mono">clearUnsaved(); showToast(t('wsArbitrationSubmitSuccess')); renderSampleList(); renderReviewerWorkspace();</span>——同樣沒有導向 · annotation-list.html:1630 <span class="mono">arbiterEntry: status === REVIEW_UNIT_STATUS.DISPUTED &amp;&amp; data.isArbiterCandidate(…)</span> · annotation-list.html:1549 <span class="mono">data-testid="list-arbitrate-entry"</span> · annotation-workspace.data.js:2128 <span class="mono">isArbiterCandidate</span> · :214 <span class="mono">{ id: 'reviewer_chen', name: '陳美玲', can_arbitrate: true }</span></p>
+    <p class="cites" style="color:var(--color-error)"><b>F6 成因</b> 進度文案為 <span class="mono">wsProgressTextReview</span>（config.js:33「我的審核提交 {done} / {total} 個審核單位」），其 <span class="mono">done</span> 由 config.js:1535 <span class="mono">countSubmittedUnits()</span> 計算，只統計 <span class="mono">isSampleSubmitted(…, 'reviewer', …)</span>；仲裁走的是 <span class="mono">submitArbitration</span>，永遠不會被計入。且 config.js:3903 的尾段未呼叫 config.js:1548 <span class="mono">renderSampleNav()</span>，該數字連重繪都沒有。仲裁員因此無法判斷自己完成到第幾筆。</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 8. Super Admin ══════════════════════════ -->
+<section id="m8">
+  <div class="sec-head"><span class="idx">08</span><h2>Super Admin ／ 系統管理員</h2><span class="note">畫面 12–13</span></div>
+
+  <div class="stack">
+
+    <!-- G11 -->
+    <div class="goal">
+      <div class="goal-head"><span class="gid">G11</span><h3>停用一個使用者</h3><span class="role">Super Admin</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">3</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">3</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">user-management.html + toast</span></div>
+        <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--entry">側欄 · 系統管理</span>
+        <span class="edge"><span class="lbl">導向</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--screen">使用者管理</span>
+        <span class="edge"><span class="lbl">停用</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+        <span class="n n--dialog">停用確認</span>
+        <span class="edge"><span class="lbl">確認停用</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+        <span class="n n--toast n--end">已停用 · 連線已撤銷</span>
+      </div>
+      <div class="branch">
+        <div class="blabel">還原分支：停用後同列出現「重新啟用」，1 點擊即可回復</div>
+      </div>
+      <p class="cites"><b>證據</b> shared/sidebar.js:391 <span class="mono">adminHref</span> · dashboard.html:29 <span class="mono">adminHref: '../admin/user-management.html'</span> · user-management.html:783 <span class="mono">id="disableConfirmBtn" class="btn-danger" onclick="confirmDisable()"</span>（UXC-10 具名動詞 + danger 樣式）· user-management.html:1477 <span class="mono">confirmDisable()</span> · :1485 <span class="mono">showToast('success', t.toastDisabled, t.toastSessionRevoked)</span> · :1495 <span class="mono">toastReEnabled</span></p>
+    </div>
+
+    <!-- G12 -->
+    <div class="goal">
+      <div class="goal-head"><span class="gid">G12</span><h3>調整角色權限</h3><span class="role">Super Admin</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">4</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">5</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">role-settings.html（原頁 + toast）</span></div>
+        <div class="verdicts"><span class="vd vd--hit">F1 命中</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--entry">側欄 · 系統管理</span>
+        <span class="edge"><span class="lbl">導向</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--screen">使用者管理</span>
+        <span class="edge"><span class="lbl">角色設定</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--screen">角色權限矩陣</span>
+        <span class="edge"><span class="lbl">編輯</span><span class="clicks">1</span><span class="arrow">⇢</span></span>
+        <span class="n n--state">可編輯矩陣</span>
+        <span class="edge"><span class="lbl">勾選 + 儲存</span><span class="clicks">2</span><span class="arrow">⇢</span></span>
+        <span class="n n--toast n--end">權限已更新</span>
+      </div>
+      <div class="branch">
+        <div class="blabel">離開分支：編輯中離開 → 未儲存變更 Dialog（UXC-03）</div>
+        <div class="blabel">稽核分支：操作紀錄抽屜（1 點擊開啟，不離開頁面）</div>
+        <div class="blabel">錯誤分支：矩陣載入失敗 → Alert Banner ＋ 重新載入</div>
+      </div>
+      <p class="cites"><b>證據</b> user-management.html:448 <span class="mono">&lt;a id="tabRoles" class="admin-tab" href="role-settings.html"&gt;角色設定&lt;/a&gt;</span> · role-settings.html:454 <span class="mono">id="editBtn" onclick="enterEditMode()"</span> · :472 <span class="mono">id="saveBtn" onclick="saveMatrix()"</span> · :887–890 未儲存 Dialog（<span class="mono">hideDirtyModal / confirmDiscardChanges</span>）· :461 <span class="mono">id="auditLogBtn" onclick="openAuditDrawer()"</span> · :424 <span class="mono">id="reloadBtn" onclick="reloadMatrix()"</span></p>
+      <p class="cites" style="color:var(--color-error)"><b>F1 成因</b> 5 &gt; 4。「角色設定」不是側欄的一級項目，必須先落地「使用者管理」再切分頁；矩陣預設唯讀，改一格前要先進編輯模式。兩者各多耗 1 次點擊。</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════ 9. 資料集分析 ══════════════════════════ -->
+<section id="m9">
+  <div class="sec-head"><span class="idx">09</span><h2>資料集分析</h2><span class="note">畫面 14–15 · 視圖 V25–V35</span></div>
+
+  <div class="goal">
+    <div class="goal-head"><span class="gid">G13</span><h3>檢視一個任務的標記品質</h3><span class="role">全角色</span></div>
+    <div class="metrics">
+      <div class="m"><span class="k">最短</span><span class="v">2</span></div>
+      <div class="m"><span class="k">實際</span><span class="v">2</span></div>
+      <div class="m"><span class="k">終點</span><span class="v v--end">?task_id=…&amp;tab=quality</span></div>
+      <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+    </div>
+    <div class="lane">
+      <span class="n n--entry">側欄 · 資料集分析</span>
+      <span class="edge"><span class="lbl">導向</span><span class="clicks">0</span><span class="arrow">→</span></span>
+      <span class="n n--screen">分析列表</span>
+      <span class="edge"><span class="lbl">點任務列</span><span class="clicks">1</span><span class="arrow">→</span></span>
+      <span class="n n--screen">分析詳情 · 統計</span>
+      <span class="edge"><span class="lbl">品質監控</span><span class="clicks">1</span><span class="arrow">→</span></span>
+      <span class="n n--screen n--end">品質監控（URL 同步）</span>
+    </div>
+    <div class="branch">
+      <div class="blabel">空狀態分支：尚無標記資料 → 「前往任務詳情」CTA（V35，UXC-09）</div>
+      <div class="blabel">型態分支：8 種輸出型態（V25–V32）＋ 組合輸出（V34）共用同一條路徑</div>
+    </div>
+    <p class="cites"><b>證據</b> shared/sidebar.js:354 <span class="mono">datasetHref</span> 預設 <span class="mono">'../dataset/dataset-analysis-list.html'</span> · dataset-analysis-list.view.js:110 <span class="mono">global.location.href = './dataset-analysis-detail.html?task_id=' + …</span> · <span class="mono">grep -c "replaceState" dataset-analysis-detail.html</span> = <b>1</b>（tab 切換寫回 URL，符合 UXC-11）· V35 需 <span class="mono">?task_id=T001&amp;tab=stats&amp;s_state=empty</span></p>
+    <p class="cites" style="color:var(--color-success)"><b>對照</b> 本頁是 UXC-11 的正例；同為「列表 → 詳情 → 分頁」結構的 task-detail.html 則完全不寫回 URL（見 G7）。兩頁不一致，前端實作前需先裁定採哪一套。</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 10. 權限分歧 ══════════════════════════ -->
 <footer>
   <p>Label Suite · <span class="mono">design/system/user-path-map.html</span> · 認知演練法（專家評估）· 來源 commit <span class="mono">c9cf83209257</span> · 實走 2026-09-08<br>
   相關文件：<a href="screen-inventory.md">screen-inventory.md</a> · <a href="ux-conventions.md">ux-conventions.md</a>（UXC-01–11）· <a href="anti-pattern-checklist.md">anti-pattern-checklist.md</a> · <a href="MASTER.md">MASTER.md</a></p>
