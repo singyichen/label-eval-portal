@@ -53,3 +53,4 @@ Each ADR follows this structure:
 | [032](032-user-action-audit-trail.md) | User-Action Audit Trail | Proposed | 2026-08-19 |
 | [033](033-openspec-change-workflow.md) | OpenSpec as the Change Workflow Layer (`specs/` Remains Canon) | Proposed | 2026-08-24 |
 | [034](034-formal-e2e-directory-location.md) | Formal E2E Test Directory — Root `e2e/[module]/` | Proposed | 2026-08-24 |
+| [035](035-google-oidc-no-external-idp.md) | Google SSO via Direct OIDC Integration — No External IdP | Accepted | 2026-09-08 |
