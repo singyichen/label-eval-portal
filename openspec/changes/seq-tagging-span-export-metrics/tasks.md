@@ -2,7 +2,7 @@
 
 > **Apply 前硬閘**：先執行 `~/Library/pnpm/openspec validate seq-tagging-span-export-metrics --type change`（或等價 non-strict all-changes command）與 `scripts/check-sdd.sh`，分別回報 OpenSpec schema validation 與 Project SDD lint。兩者通過後必須停止，取得使用者明確確認才可進入 Stage 1 `/opsx:apply`。主 session／team lead 是唯一可驗證 Red／Green evidence 與更新 checkbox 的角色；QA 與實作 agent 皆不得自行勾選。
 
-> **裁決前置（NON-CHECKBOX）**：`design.md` 的 D1～D4 四項 Open Decisions 必須先由維護者逐項裁定，才可開始 1.1。D1 影響 2.x 的常數命名與文案、D2 影響 delta 範圍是否需擴充至 `entity_recognition`、D3 決定匯出對話框 UI 是否另開 companion change、D4 決定推導模組落點。任一項未裁定時，該項影響到的任務 blocked。
+> **裁決前置（NON-CHECKBOX）**：`design.md` 的 D1、D2、D3、D5 已於 2026-09-08 由維護者裁定（見 `design.md` 之「裁決紀錄與待決事項」），D1 取新增 `IAA_UNCALIBRATED_TYPES`、D2 只改 `sequence_tagging`、D3 不在本 change 做匯出對話框 UI、D5 之孤兒常數併入下一個以 015 為正典的 change 清除且 `SINGLE` 退場，四項皆與草案一致故 delta 無需修改。**D4（推導模組落點）仍待裁定**，未裁定前受其影響的任務 blocked。
 
 ## 1. PR-SEQ-STATS-SPAN — 統計總覽改以 span 為母體
 

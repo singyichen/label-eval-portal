@@ -49,15 +49,20 @@ Token-level nominal α 需要一個所有標記員共用的 token 網格才能�
 
 第三種狀態不得沿用第二種的文案：對一個算得出數值的型別說「不適用」是錯誤陳述。
 
-## Open Decisions（需維護者裁決，實作者不得自行選擇）
+## 裁決紀錄與待決事項
 
-- **D1 — 未校準型別以新常數表達，或沿用既有排除集合？**
-  草案選擇**新增 `IAA_UNCALIBRATED_TYPES`**。理由是兩者語意不同（見上表），沿用 `IAA_GATE_EXCLUDED_TYPES` 會讓畫面對一個有數值的型別顯示「不適用—由審核員評估」。代價是多一個常數與一條分支。若維護者認為 UI 複雜度優先於語意精確，可裁定沿用單一集合並接受文案不精確。
-- **D2 — 「指標全面 span-level」是否也要動 `entity_recognition`？**
-  草案**只改 `sequence_tagging`**，`entity_recognition` 維持既有 Pairwise Span F1 strict 主指標與其門檻。理由是該型別本來就是 span-level，沒有 token 座標系遺留問題；把它一併換成 u-α 會廢掉一個已有門檻的既有指標，屬於 issue 未要求的範圍擴張。若維護者要的是「兩型主指標統一為 u-α」，需另行裁定並擴充 delta。
-- **D3 — 匯出對話框 UI 的規格歸屬**
-  匯出入口、匯出記錄表與匯出 metadata 條文目前在 `task-management/014-task-detail`（已封存）。`scripts/check-sdd.sh` 規定一個 change 只能對應一份正典 spec，因此本 change 的正典鎖定 017，只定義**推導契約與欄位語意**，不改 014 的 UI 條文。若維護者要求同時落地匯出對話框的方案／單位選擇器與擴張報告 UI，需開一個以 014 為正典的 companion change。本 change 的 tasks 已把 UI 接線標為 blocked。
+> D1、D2、D3、D5 已於 2026-09-08 由維護者逐項裁定，記錄於下；**D4 仍為待決**，須於 apply 前確認。實作者不得自行變更已裁決項，亦不得自行選擇 D4。
+
+### 已裁決
+
+- **D1 — 未校準型別以新常數表達** ✅ 裁定：**新增 `IAA_UNCALIBRATED_TYPES`**（草案選項）。理由是與 `IAA_GATE_EXCLUDED_TYPES` 語意不同——後者是「不適用—由審核員評估」，前者是「有數值但門檻未校準」；沿用單一集合會讓畫面對一個有 u-α 數值的型別顯示錯誤文案。代價是多一個常數與一條分支，維護者接受此代價。delta 依草案不需修改。
+- **D2 — 「指標全面 span-level」的範圍** ✅ 裁定：**只改 `sequence_tagging`**（草案選項）。`entity_recognition` 維持既有 Pairwise Span F1 strict 主指標與其門檻不動——該型別本來就是 span-level，沒有 token 座標系遺留問題，一併換成 u-α 等於廢掉一個已校準的既有指標，屬 issue 未要求的範圍擴張。delta 依草案不需修改。
+- **D3 — 匯出對話框 UI 的規格歸屬** ✅ 裁定：**本 change 不做 UI**（草案選項）。017 只定義推導契約與欄位語意；匯出入口、匯出記錄表與匯出 metadata 條文留在 `task-management/014-task-detail`（已封存），依「一 change 一正典」規則須另開以 014 為正典的 companion change 承接。本 change 的 tasks 中 UI 接線維持 blocked，不在本輪解除。
+- **D5 — 015 遺留孤兒常數與 `SINGLE` 方案** ✅ 裁定兩項：
+  - (a) **併入下一個以 015 為正典的 change 清除**，不另開 lightweight 清理。目前該 change 為 `carry-relation-span-offsets`（issue #590），其正典正是 `specs/annotation/015-annotation-workspace/spec.md`，且已規劃回寫 v6.1.0，可於該次回寫一併刪除第 31 行的孤兒宣告。本 change 的正典鎖定 017，依 lint 規則不得在此順手刪。
+  - (b) **`SINGLE` 確定退場**。`EXPORT_TAGGING_SCHEMES` 維持 BIO／BIOES／IOB2 三案，不擴充、delta 不需補 `SINGLE` 的 scenario。
+
+### 待決（apply 前必須裁定）
+
 - **D4 — 推導模組的檔案落點**
   草案建議放在原型的共用模組層（與既有 `dataset-analysis-detail` partial 平行的共用 JS），而非塞進單一頁面檔，因為匯出（014 頁面）與統計（017 頁面）都會用到同一份推導。確切路徑未指定，待 apply 前由維護者確認，以免與正在進行的其他 change 撞檔。
-- **D5 — 015 遺留的孤兒常數 `SEQUENCE_TAGGING_SCHEMES` 與 `SINGLE` 方案**
-  `specs/annotation/015-annotation-workspace/spec.md` 第 31 行仍宣告 `SEQUENCE_TAGGING_SCHEMES = BIO | BIOES | IOB2 | SINGLE`，而全檔無任何條文引用它——change ② 移除 payload 的 `scheme` 時漏清這行。本 change 的正典是 017，依 lint 的「一 change 一正典」規則不能在此順手刪。兩件事需要裁決：(a) 由誰清除——一個以 015 為正典的 lightweight 清理，或併入下一個動 015 的 change；(b) `SINGLE` 是否確定退場——鎖定決策只列 BIO／BIOES／IOB2，本 change 的 `EXPORT_TAGGING_SCHEMES` 依此定義，不含 `SINGLE`；若 `SINGLE`（整段單一標籤，無前綴）仍是需要保留的匯出格式，`EXPORT_TAGGING_SCHEMES` 需擴充，delta 也要補對應 scenario。在裁決前，本 change 不主張 `SINGLE` 的存廢。
