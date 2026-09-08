@@ -527,6 +527,7 @@
       paginationTpl: '共 {total} 筆 · 第 {page} / {totalPages} 頁',
       toastNoPermission: '無權限檢視任務詳情',
       toastNavigating: '前往任務詳情…',
+      toastUnauthorizedAnnotator: '標記員無權限檢視任務設定，已為你返回任務列表。',
       toastTaskSoftDeleted: '任務已移至封存（軟刪除）',
       toastDeleteNotAllowed: '此任務狀態不允許刪除',
       toastDeleteForbidden: '無權限刪除任務',
@@ -588,6 +589,7 @@
       paginationTpl: 'Total {total} · Page {page} / {totalPages}',
       toastNoPermission: 'No permission to view task detail',
       toastNavigating: 'Navigating to task detail…',
+      toastUnauthorizedAnnotator: 'Annotators cannot view task settings. Returned you to the task list.',
       toastTaskSoftDeleted: 'Task moved to archive (soft deleted)',
       toastDeleteNotAllowed: 'This task status cannot be deleted',
       toastDeleteForbidden: 'No permission to delete task',
@@ -644,7 +646,7 @@
   var RUN_BADGE_CLS = { unmaterialized: 'badge-run-unmaterialized', dry_run: 'badge-dry-run', official_run: 'badge-official' };
 
   /* ── State ───────────────────────────────────────────────────── */
-  var state = { lang: 'zh', keyword: '', outputType: '', runType: '', status: '', limit: 20, offset: 0, loadFailed: !TASK_LIST_DATA_READY };
+  var state = { lang: 'zh', keyword: '', outputType: '', runType: '', status: '', limit: 20, offset: 0, loadFailed: !TASK_LIST_DATA_READY, pendingUnauthorizedToast: false };
   var pendingDeleteTaskId = null;
   var toastTimer = null;
   var pageTaskRole = 'user';
@@ -1318,6 +1320,7 @@
     var q = new URLSearchParams(window.location.search);
     var view = q.get('view');
     var taskRole = normalizeTaskRole(q.get('task_role'));
+    if (q.get('unauthorized') === 'annotator') state.pendingUnauthorizedToast = true;
     if (view !== 'empty') {
       loadCreatedTaskSeed();
     }
@@ -1349,6 +1352,11 @@
     applyLang(window.LabelSuiteSharedSidebar.getStoredLang());
   } else {
     applyLang('zh');
+  }
+
+  if (state.pendingUnauthorizedToast) {
+    state.pendingUnauthorizedToast = false;
+    showToast(t('toastUnauthorizedAnnotator'), true);
   }
 
   if (window.LabelSuiteAnalytics) {
