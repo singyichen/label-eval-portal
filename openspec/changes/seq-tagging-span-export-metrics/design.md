@@ -51,7 +51,7 @@ Token-level nominal α 需要一個所有標記員共用的 token 網格才能�
 
 ## 裁決紀錄與待決事項
 
-> D1、D2、D3、D5 已於 2026-09-08 由維護者逐項裁定，記錄於下；**D4 仍為待決**，須於 apply 前確認。實作者不得自行變更已裁決項，亦不得自行選擇 D4。
+> D1～D5 五項已於 2026-09-08 由維護者逐項裁定，記錄於下。實作者不得自行變更任何一項；如實作過程發現某項裁決不可行，必須回頭修訂本節與對應 delta，不得就地改採其他方案。
 
 ### 已裁決
 
@@ -62,7 +62,6 @@ Token-level nominal α 需要一個所有標記員共用的 token 網格才能�
   - (a) **併入下一個以 015 為正典的 change 清除**，不另開 lightweight 清理。目前該 change 為 `carry-relation-span-offsets`（issue #590），其正典正是 `specs/annotation/015-annotation-workspace/spec.md`，且已規劃回寫 v6.1.0，可於該次回寫一併刪除第 31 行的孤兒宣告。本 change 的正典鎖定 017，依 lint 規則不得在此順手刪。
   - (b) **`SINGLE` 確定退場**。`EXPORT_TAGGING_SCHEMES` 維持 BIO／BIOES／IOB2 三案，不擴充、delta 不需補 `SINGLE` 的 scenario。
 
-### 待決（apply 前必須裁定）
+### 已裁決（續）
 
-- **D4 — 推導模組的檔案落點**
-  草案建議放在原型的共用模組層（與既有 `dataset-analysis-detail` partial 平行的共用 JS），而非塞進單一頁面檔，因為匯出（014 頁面）與統計（017 頁面）都會用到同一份推導。確切路徑未指定，待 apply 前由維護者確認，以免與正在進行的其他 change 撞檔。
+- **D4 — 推導模組的檔案落點** ✅ 裁定：**於 `design/prototype/pages/shared/` 新建共用模組**（草案方向）。沿用 `design/prototype/pages/shared/annotation-history.js` 的現成先例——該支正是跨頁共用的差異比對層，證明此目錄就是「多個頁面消費同一份邏輯」的既定落點。匯出端（014 頁）與統計端（017 頁）共用同一份推導，避免兩邊各寫一份而在方案定義或擴張規則上漂移。確切檔名於 apply 時依當下 `pages/shared/` 的命名慣例決定，但目錄已鎖定，不得改塞進任一單一頁面檔。
