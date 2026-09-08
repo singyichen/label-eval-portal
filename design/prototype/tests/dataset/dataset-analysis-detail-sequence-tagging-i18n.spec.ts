@@ -86,6 +86,26 @@ test.describe('Dataset analysis detail sequence_tagging i18n', () => {
     await expect(rankMetricCells.first()).toHaveText('與合併聚合參考值 F1');
     await expect(rankingSection).not.toContainText('token_majority_agreement_rate');
     await expect(rankingSection).not.toContainText('與多數決 token 標記一致率');
+
+    // AC-3.7 (task 2.1b supplement): task 2.1 removed the old exact-text assertions on
+    // #sequenceTaggingGroupAvg and #consistencyNote without replacing them, and neither
+    // element is inside iaaPanel/lowConsistencySection/rankingSection, so this gap was
+    // otherwise unguarded. The group-average line must report the new span-level u-alpha
+    // metric, not the retired token-level one.
+    const groupAvg = page.locator('#sequenceTaggingGroupAvg');
+    await expect(groupAvg).toContainText(/u-α/i);
+    await expect(groupAvg).not.toContainText('Token Alpha');
+
+    // AC-3.7 (task 2.1b supplement): the consistency-deviation note's comparison-pool
+    // description must be span-based, not the retired O-tag-masking wording.
+    const consistencyNote = page.locator('#consistencyNote');
+    await expect(consistencyNote).toContainText(/span/i);
+    await expect(consistencyNote).not.toContainText('遮罩');
+
+    // AC-3.7 (task 2.1b supplement): page-level guardrail — no hyphen-less "Token Alpha"
+    // or masking wording may survive anywhere in the quality tab.
+    await expect(qualityContainer).not.toContainText('Token Alpha');
+    await expect(qualityContainer).not.toContainText('遮罩');
   });
 
   test('renders sequence_tagging quality panel in en, including type-scoped low-consistency / ranking / boundary sections', async ({ page }) => {
@@ -144,5 +164,25 @@ test.describe('Dataset analysis detail sequence_tagging i18n', () => {
     await expect(rankMetricCells.first()).toHaveText('F1 vs. merged aggregate reference');
     await expect(rankingSection).not.toContainText('token_majority_agreement_rate');
     await expect(rankingSection).not.toContainText('Token majority agreement rate');
+
+    // AC-3.7 (task 2.1b supplement): task 2.1 removed the old exact-text assertions on
+    // #sequenceTaggingGroupAvg and #consistencyNote without replacing them, and neither
+    // element is inside iaaPanel/lowConsistencySection/rankingSection, so this gap was
+    // otherwise unguarded. The group-average line must report the new span-level u-alpha
+    // metric, not the retired token-level one.
+    const groupAvg = page.locator('#sequenceTaggingGroupAvg');
+    await expect(groupAvg).toContainText(/u-α/i);
+    await expect(groupAvg).not.toContainText('Token Alpha');
+
+    // AC-3.7 (task 2.1b supplement): the consistency-deviation note's comparison-pool
+    // description must be span-based, not the retired O-tag-masking wording.
+    const consistencyNote = page.locator('#consistencyNote');
+    await expect(consistencyNote).toContainText(/span/i);
+    await expect(consistencyNote).not.toContainText(/mask/i);
+
+    // AC-3.7 (task 2.1b supplement): page-level guardrail — no hyphen-less "Token Alpha"
+    // or masking wording may survive anywhere in the quality tab.
+    await expect(qualityContainer).not.toContainText('Token Alpha');
+    await expect(qualityContainer).not.toContainText(/mask/i);
   });
 });
