@@ -160,12 +160,26 @@ test.describe('Dataset analysis detail stats i18n across task types', () => {
     // auto-retry timeout on innerText() against a nonexistent section.
     expect(await avgSpanSection.count()).toBe(1);
 
-    const sectionText = await avgSpanSection.innerText();
+    // Scope the "2, not 5" check to a single named value element — mirroring
+    // the `.stats-hbar-value` pattern used above (:144) — instead of
+    // scanning the whole section's text. AC-2.7 only constrains the total
+    // span count itself; a whole-section text scan would false-Red against
+    // any correct Green that happens to render an unrelated "5" elsewhere
+    // in the section (e.g. a percentage), which would tempt Green to weaken
+    // this test file — forbidden. Green must add this element.
+    const totalSpansValue = avgSpanSection.locator('#statsSeqTagTotalSpansValue');
+    expect(await totalSpansValue.count()).toBe(1);
+
+    const extractCount = (text: string) => {
+      const match = text.trim().match(/([\d,]+)\s*$/);
+      return match ? match[1].replace(/,/g, '') : null;
+    };
+    const totalSpansText = await totalSpansValue.innerText();
 
     // AC-2.7: "該樣本的標記片段數為 2，未因字元數被放大為 5" — one 3-char ORG span
     // plus one 2-char TITLE span is 2 span instances, not 3+2=5 characters.
-    expect(sectionText).toMatch(/(^|\D)2(\D|$)/);
-    expect(sectionText).not.toMatch(/(^|\D)5(\D|$)/);
+    expect(extractCount(totalSpansText)).toBe('2');
+    expect(extractCount(totalSpansText)).not.toBe('5');
   });
 
   test('purges token-population vocabulary ("token", "O tag") from every sequence_tagging stats section (AC-2.7 / FR-009L)', async ({ page }) => {
@@ -199,5 +213,50 @@ test.describe('Dataset analysis detail stats i18n across task types', () => {
     // the population as "character".
     await expect(spanLenSection).toContainText(/character/i);
     await expect(spanLenSection).not.toContainText(/token/i);
+  });
+
+  // --- Round 3 (zh-mode coverage for AC-2.7 / FR-009L) ---
+  //
+  // Every sequence_tagging test above only ever calls
+  // gotoStatsWithLang(page, 'T103', 'en'). That leaves a hole: the token
+  // population and "O tag" wording that FR-009L (delta :91, :95) and
+  // AC-2.7 (:107) forbid are not only present in the English I18N.en
+  // bundle — they are ALSO hardcoded directly as Chinese source text in the
+  // static partial itself (stats-sequence_tagging.html:6 "token 數量", :31
+  // "O tag 佔全體 token 71%"). These are two independent literal strings, not
+  // one shared source translated two ways — proved by the en-mode failure
+  // output above rendering distinct English copy ("Token count and share of
+  // each tag type..."). A Green that retranslates only the English bundle
+  // while leaving the embedded Chinese source untouched would turn every
+  // en-mode test above green while the DEFAULT zh-rendered page (zh is not
+  // an edge case — it is this app's default language) still violates
+  // FR-009L/AC-2.7. This is the same class of hole as round 1's original
+  // gap, just shifted from "value vs. existence" to "one language vs. the
+  // other". This zh assertion is added to this same file, not a new sibling
+  // file: this file's own name and existing role is "stats i18n across task
+  // types", so asserting the zh-rendered surface of an i18n-governed section
+  // is exactly this file's stated purpose (i18n means testing more than one
+  // language, not only English), and a separate file would only duplicate
+  // gotoStatsWithLang/DETAIL_URL/describe.configure for no isolation benefit
+  // (DRY / Simplicity First, .claude/rules/general.md).
+  test('purges token-population vocabulary and requires character-length wording from every sequence_tagging stats section in zh mode (AC-2.7 / FR-009L)', async ({ page }) => {
+    await gotoStatsWithLang(page, 'T103', 'zh');
+
+    const labelDistribution = page.locator('section[aria-labelledby="statsSeqTagDistTitle"]');
+    const avgSpanSection = page.locator('section[aria-labelledby="statsSeqTagAvgSpanTitle"]');
+    const spanLenSection = page.locator('section[aria-labelledby="statsSeqTagSpanLenTitle"]');
+
+    // Same purge as the en-mode test above (:171), but against the
+    // default-language (zh) rendering, whose "token"/"O tag" copy today
+    // comes from embedded Chinese source text, not the English bundle.
+    for (const section of [labelDistribution, avgSpanSection, spanLenSection]) {
+      await expect(section).not.toContainText(/token/i);
+      await expect(section).not.toContainText(/O\s*tag/i);
+    }
+
+    // AC-2.7's last AND-clause in its own (Chinese) wording: "標記片段長度分佈
+    // 以字元長度分桶" — the zh-mode span-length section copy must name the
+    // population as 字元 (character), not leave a token-based description.
+    await expect(spanLenSection).toContainText('字元');
   });
 });
