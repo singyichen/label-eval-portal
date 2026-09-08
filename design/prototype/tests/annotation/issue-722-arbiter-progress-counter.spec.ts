@@ -34,19 +34,15 @@ type WorkspaceData = {
   ) => void;
 };
 
-declare global {
-  interface Window {
-    LabelSuiteAnnotationWorkspaceData: WorkspaceData;
-  }
-}
-
 function seedUnit(page: Page): Promise<void> {
   return page.evaluate(
     (a) => {
-      window.LabelSuiteAnnotationWorkspaceData.markSampleSubmitted(
+      const data = (window as unknown as { LabelSuiteAnnotationWorkspaceData: WorkspaceData })
+        .LabelSuiteAnnotationWorkspaceData;
+      data.markSampleSubmitted(
         a.task, 'annotator', 'official_run', a.sample, a.annotatorPayload, '', { annotatorId: a.annotator }
       );
-      window.LabelSuiteAnnotationWorkspaceData.markSampleSubmitted(
+      data.markSampleSubmitted(
         a.task, 'reviewer', 'official_run', a.sample, a.reviewerPayload, '',
         { annotatorId: a.annotator, reviewerId: a.participant }
       );
