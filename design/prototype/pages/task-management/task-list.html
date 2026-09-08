@@ -648,6 +648,7 @@
   var pendingDeleteTaskId = null;
   var toastTimer = null;
   var pageTaskRole = 'user';
+  var pendingUnauthorizedToast = false;
 
   /* ── Helpers ─────────────────────────────────────────────────── */
   function t(key) { return (I18N[state.lang] || I18N.zh)[key] || key; }
@@ -1329,6 +1330,7 @@
     var offsetQuery = q.get('offset');
     var limit = limitQuery !== null && /^\d+$/.test(limitQuery) ? Number(limitQuery) : NaN;
     var offset = offsetQuery !== null && /^\d+$/.test(offsetQuery) ? Number(offsetQuery) : NaN;
+    pendingUnauthorizedToast = !!q.get('unauthorized');
     pageTaskRole = taskRole;
     var validOutputTypes = OUTPUT_TYPES.map(function(item) { return item.key; });
     var validRunStages = I18N.zh.runTypeOptions.map(function(item) { return item.value; });
@@ -1349,6 +1351,14 @@
     applyLang(window.LabelSuiteSharedSidebar.getStoredLang());
   } else {
     applyLang('zh');
+  }
+
+  if (pendingUnauthorizedToast) {
+    /* render() (called from applyLang() above) already ran syncUrl(),
+       which drops `unauthorized` since it is not part of `state` --
+       nothing left to clean up here, and a refresh cannot re-trigger it. */
+    pendingUnauthorizedToast = false;
+    showToast(t('toastNoPermission'), true);
   }
 
   if (window.LabelSuiteAnalytics) {
