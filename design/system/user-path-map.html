@@ -781,6 +781,228 @@ footer { margin-top: var(--space-3xl); padding-top: var(--space-lg); border-top:
 </section>
 
 <!-- ══════════════════════════ 10. 權限分歧 ══════════════════════════ -->
+<section id="m10">
+  <div class="sec-head"><span class="idx">10</span><h2>權限分歧與阻斷</h2><span class="note">同一 URL、不同角色的結果差異</span></div>
+
+  <div class="stack">
+
+    <div class="goal">
+      <div class="goal-head"><span class="gid">P1</span><h3>標記員直接開啟任務詳情</h3><span class="role">Annotator</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">1</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">1</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">task-list.html（query 被清空）</span></div>
+        <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--pass">F3 通過</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--hit">F6 命中</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--entry">task-detail?task_role=annotator</span>
+        <span class="edge"><span class="lbl">立即轉址</span><span class="clicks">0</span><span class="arrow">→</span></span>
+        <span class="n n--screen n--dead">任務列表 · 無任何提示</span>
+      </div>
+      <div class="branch">
+        <div class="blabel">對照：審核員開啟成員管理分頁 → <strong>有</strong> toast「reviewer 無權限檢視成員管理，已導回任務概覽。」</div>
+      </div>
+      <p class="cites"><b>證據</b> task-detail.html:4746–4756 標記員分支，:4753 <span class="mono">window.location.href = './task-list.html?unauthorized=annotator';</span> · <span class="mono">/usr/bin/grep -rn "unauthorized" design/prototype/pages/</span> 只有這 1 行——<span class="mono">unauthorized</span> 參數<strong>全樹只寫不讀</strong>，落地頁不會顯示任何訊息 · 對照組 task-detail.html:5105 與 :6821 <span class="mono">showToast(t('reviewerTabBlocked'), true)</span>，文案在 :2762</p>
+      <p class="cites" style="color:var(--color-error)"><b>F6 成因</b> 使用者點了一個連結，畫面換成任務列表，沒有任何說明。同一支檔案對審核員有提示、對標記員沒有，是實作不一致而非設計意圖。</p>
+    </div>
+
+    <div class="goal">
+      <div class="goal-head"><span class="gid">P2</span><h3>專案負責人視角缺少建立任務入口</h3><span class="role">Data Creator</span></div>
+      <div class="metrics">
+        <div class="m"><span class="k">最短</span><span class="v">1</span></div>
+        <div class="m"><span class="k">實際</span><span class="v">—</span></div>
+        <div class="m"><span class="k">終點</span><span class="v v--end">無法從此視角到達</span></div>
+        <div class="verdicts"><span class="vd vd--pass">F1 通過</span><span class="vd vd--pass">F2 通過</span><span class="vd vd--hit">F3 命中</span><span class="vd vd--pass">F4 通過</span><span class="vd vd--pass">F5 通過</span><span class="vd vd--pass">F6 通過</span></div>
+      </div>
+      <div class="lane">
+        <span class="n n--entry">儀表板 <span class="mono">?scenario=project_leader</span></span>
+        <span class="edge"><span class="lbl">唯一按鈕</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--screen">任務列表</span>
+        <span class="edge"><span class="lbl">建立任務 CTA</span><span class="clicks">1</span><span class="arrow">→</span></span>
+        <span class="n n--screen n--end">建立任務精靈</span>
+      </div>
+      <div class="branch">
+        <div class="blabel">缺口：<span class="mono">#ctaLeaderBtn</span>「開始建立任務」位於 <span class="mono">#view-user</span>，切到 <span class="mono">#view-project_leader</span> 後不再可見</div>
+        <div class="blabel">缺口：該視角的 3 張任務卡不可點（0 個 anchor、<span class="mono">cursor: auto</span>、無 onclick）</div>
+      </div>
+      <p class="cites"><b>證據</b> dashboard.html:105 <span class="mono">&lt;section class="view is-active" id="view-user" …&gt;</span> 內含 :151 <span class="mono">id="ctaLeaderBtn"</span> · dashboard.html:340 <span class="mono">&lt;section class="view" id="view-project_leader" …&gt;</span> 僅含 :375 <span class="mono">id="plViewAllBtn"</span>「查看全部」· 實走：該視角主內容區任務卡查無 anchor 與 onclick</p>
+      <p class="cites" style="color:var(--color-error)"><b>F3 成因</b> 專案負責人的核心目標（建立任務）在自己的儀表板視角上沒有入口，必須先繞去任務列表。這使 G5 的實際起點比設計意圖多一跳。</p>
+    </div>
+
+    <div class="panel">
+      <h3>不構成分歧的兩個誤判（已驗證排除）</h3>
+      <p style="font-size:14px">① 任務列表的 <span class="mono">?task_role=annotator|reviewer</span> 並非真實視角：task-list.html:667–670 <span class="mono">normalizeTaskRole()</span> 僅認 <span class="mono">super_admin</span> 與 <span class="mono">project_leader</span>，其餘一律歸為 <span class="mono">'user'</span>。② 審核員在任務詳情看到的 5 個「編輯」鈕全部 <span class="mono">disabled: true</span>，且唯讀提示無條件渲染——不是「可點但無效」。</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════════════════ 11. 涵蓋對照 ══════════════════════════ -->
+<section id="m11">
+  <div class="sec-head"><span class="idx">11</span><h2>畫面／視圖涵蓋對照</h2><span class="note">15 畫面 · 36 視圖 · 逐項對照 inventory-manifest.json</span></div>
+
+  <div class="stack">
+    <div class="tablebox">
+      <table>
+        <caption class="eyebrow" style="text-align:left;padding:var(--space-md) var(--space-md) 0">15 畫面</caption>
+        <thead><tr><th class="num">#</th><th>畫面</th><th>路徑</th><th>本圖涵蓋於</th></tr></thead>
+        <tbody>
+          <tr><td class="num">01</td><td>登入</td><td class="src">pages/account/login.html</td><td>G1</td></tr>
+          <tr><td class="num">02</td><td>註冊</td><td class="src">pages/account/register.html</td><td>G2</td></tr>
+          <tr><td class="num">03</td><td>忘記密碼</td><td class="src">pages/account/forgot-password.html</td><td>G3</td></tr>
+          <tr><td class="num">04</td><td>重設密碼</td><td class="src">pages/account/reset-password.html</td><td>G3</td></tr>
+          <tr><td class="num">05</td><td>個人資料</td><td class="src">pages/account/profile.html</td><td>G4</td></tr>
+          <tr><td class="num">06</td><td>儀表板</td><td class="src">pages/dashboard/dashboard.html</td><td>G5 · G7 · G8 · G9 · P2</td></tr>
+          <tr><td class="num">07</td><td>任務列表</td><td class="src">pages/task-management/task-list.html</td><td>G7 · P1 · P2</td></tr>
+          <tr><td class="num">08</td><td>建立任務</td><td class="src">pages/task-management/task-new.html</td><td>G5</td></tr>
+          <tr><td class="num">09</td><td>任務詳情</td><td class="src">pages/task-management/task-detail.html</td><td>G6 · G7 · P1</td></tr>
+          <tr><td class="num">10</td><td>標記任務列表</td><td class="src">pages/annotation/annotation-list.html</td><td>G8 · G9 · G10</td></tr>
+          <tr><td class="num">11</td><td>標記工作區</td><td class="src">pages/annotation/annotation-workspace.html</td><td>G8 · G9 · G10</td></tr>
+          <tr><td class="num">12</td><td>使用者管理</td><td class="src">pages/admin/user-management.html</td><td>G11 · G12</td></tr>
+          <tr><td class="num">13</td><td>角色設定</td><td class="src">pages/admin/role-settings.html</td><td>G12</td></tr>
+          <tr><td class="num">14</td><td>資料集分析列表</td><td class="src">pages/dataset/dataset-analysis-list.html</td><td>G13</td></tr>
+          <tr><td class="num">15</td><td>資料集分析詳情</td><td class="src">pages/dataset/dataset-analysis-detail.html</td><td>G13</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tablebox">
+      <table>
+        <caption class="eyebrow" style="text-align:left;padding:var(--space-md) var(--space-md) 0">36 視圖（V00 來自 screen-inventory.md；V01–V35 來自 manifest screenViews）</caption>
+        <thead><tr><th class="vid">視圖</th><th>說明</th><th>實走結果</th><th>對應目標</th></tr></thead>
+        <tbody>
+          <tr><td class="vid">V00</td><td>入口導向頁</td><td><span class="tag tag--ok">已到達</span> meta refresh → login.html</td><td>G1</td></tr>
+          <tr><td class="vid">V01</td><td>儀表板 · 系統管理員</td><td><span class="tag tag--ok">已到達</span></td><td>G11</td></tr>
+          <tr><td class="vid">V02</td><td>儀表板 · 專案負責人</td><td><span class="tag tag--ok">已到達</span></td><td>P2</td></tr>
+          <tr><td class="vid">V03</td><td>儀表板 · 標記員</td><td><span class="tag tag--ok">已到達</span></td><td>G8</td></tr>
+          <tr><td class="vid">V04</td><td>儀表板 · 審核員</td><td><span class="tag tag--ok">已到達</span></td><td>G9</td></tr>
+          <tr><td class="vid">V05</td><td>任務列表 · 專案負責人</td><td><span class="tag tag--ok">已到達</span></td><td>G7</td></tr>
+          <tr><td class="vid">V06</td><td>任務列表 · 標記員（唯讀）</td><td><span class="tag tag--gap">不存在</span> 參數被 normalizeTaskRole 歸為 user</td><td>—</td></tr>
+          <tr><td class="vid">V07</td><td>任務列表 · 審核員</td><td><span class="tag tag--gap">不存在</span> 同上</td><td>—</td></tr>
+          <tr><td class="vid">V08</td><td>任務列表 · 載入失敗</td><td><span class="tag tag--ok">已到達</span> Alert Banner + 重試</td><td>G7 分支</td></tr>
+          <tr><td class="vid">V09</td><td>任務詳情 · 標記進度</td><td><span class="tag tag--ok">已到達</span></td><td>G7</td></tr>
+          <tr><td class="vid">V10</td><td>任務詳情 · 標記結果</td><td><span class="tag tag--ok">已到達</span></td><td>G7</td></tr>
+          <tr><td class="vid">V11</td><td>任務詳情 · 成員管理</td><td><span class="tag tag--ok">已到達</span></td><td>G6</td></tr>
+          <tr><td class="vid">V12</td><td>任務詳情 · 工時紀錄</td><td><span class="tag tag--ok">已到達</span></td><td>G7</td></tr>
+          <tr><td class="vid">V13</td><td>任務詳情 · 審核員角色</td><td><span class="tag tag--ok">已到達</span> 成員管理 tab 隱藏</td><td>P1 對照</td></tr>
+          <tr><td class="vid">V14</td><td>標記清單 · 審核員佇列</td><td><span class="tag tag--ok">已到達</span></td><td>G9 · G10</td></tr>
+          <tr><td class="vid">V15–V22</td><td>工作區 · 8 種輸出型態</td><td><span class="tag tag--ok">已到達</span> 工作區自動補上 sample_id</td><td>G8</td></tr>
+          <tr><td class="vid">V23</td><td>工作區 · 組合輸出 ABSA</td><td><span class="tag tag--ok">已到達</span></td><td>G8</td></tr>
+          <tr><td class="vid">V24</td><td>工作區 · 審查模式</td><td><span class="tag tag--ok">已到達</span></td><td>G9</td></tr>
+          <tr><td class="vid">V25–V32</td><td>分析詳情 · 8 種型態統計</td><td><span class="tag tag--ok">已到達</span></td><td>G13</td></tr>
+          <tr><td class="vid">V33</td><td>分析詳情 · 品質監控</td><td><span class="tag tag--ok">已到達</span></td><td>G13</td></tr>
+          <tr><td class="vid">V34</td><td>分析詳情 · 組合輸出品質</td><td><span class="tag tag--ok">已到達</span></td><td>G13</td></tr>
+          <tr><td class="vid">V35</td><td>分析詳情 · 空狀態</td><td><span class="tag tag--ok">已到達</span> 需帶 <span class="mono">&amp;s_state=empty</span></td><td>G13 分支</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <p><strong>結論：36 視圖中 34 個實走可達，2 個（V06 / V07）在 <span class="mono">c9cf83209257</span> 上不存在。</strong>清單缺口不是路徑缺口——manifest 記載了兩個實作未提供的視角，屬盤點資料與實作的落差，詳見第 13 節。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ 12. 摩擦點總表 ══════════════════════════ -->
+<section id="m12">
+  <div class="sec-head"><span class="idx">12</span><h2>摩擦點總表</h2><span class="note">8 項 · 每項一行成因 · 皆可 grep 複驗</span></div>
+
+  <div class="tablebox">
+    <table>
+      <thead><tr><th class="num">#</th><th>門檻</th><th>目標</th><th>一行成因</th><th>證據位置</th><th>追蹤</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="num">1</td><td><span class="tag tag--gap">F3</span></td><td>G9 審核員送出審核</td>
+          <td>送出函式尾段只重繪與提示，沒有任何導向或選取下一筆的呼叫。</td>
+          <td class="src">annotation-workspace.config.js:4689 · 尾段 :4794–4802</td>
+          <td class="todo">（待開單）</td>
+        </tr>
+        <tr>
+          <td class="num">2</td><td><span class="tag tag--gap">F3</span></td><td>G10 仲裁員送出仲裁</td>
+          <td>同上；送出後仲裁面板消失、單位仍為爭議中，畫面上不再有任何送出鈕。</td>
+          <td class="src">annotation-workspace.config.js:3903 · 尾段 :3937–3940</td>
+          <td class="todo">（待開單）</td>
+        </tr>
+        <tr>
+          <td class="num">3</td><td><span class="tag tag--gap">F6</span></td><td>P1 標記員開任務詳情</td>
+          <td><span class="mono">unauthorized</span> 參數全樹只寫不讀，落地頁不顯示任何說明。</td>
+          <td class="src">task-detail.html:4753 · <span class="mono">grep -rn unauthorized pages/</span> → 1 行</td>
+          <td class="todo">（待開單）</td>
+        </tr>
+        <tr>
+          <td class="num">4</td><td><span class="tag tag--gap">F6</span></td><td>G10 仲裁員進度指標</td>
+          <td>計數器只統計 <span class="mono">'reviewer'</span> 提交，仲裁走另一條寫入路徑，故恆為 0 / N。</td>
+          <td class="src">config.js:33 · :1535 <span class="mono">countSubmittedUnits</span> · :1548 未被 :3903 呼叫</td>
+          <td class="todo">（待開單）</td>
+        </tr>
+        <tr>
+          <td class="num">5</td><td><span class="tag tag--gap">F3</span></td><td>P2 專案負責人建立任務</td>
+          <td>建立任務 CTA 只存在於 <span class="mono">#view-user</span>，專案負責人視角看不到。</td>
+          <td class="src">dashboard.html:151（在 :105 內）vs :340</td>
+          <td class="todo">（待開單）</td>
+        </tr>
+        <tr>
+          <td class="num">6</td><td><span class="tag tag--gap">F1 + F2</span></td><td>G5 建立任務</td>
+          <td>Step 1 的型態選擇與逐欄位角色指派全為必點，11 次點擊中有 7 次集中於此。</td>
+          <td class="src">task-new.html:960 <span class="mono">validateStep1</span> · :1122 <span class="mono">nextBtn.disabled</span></td>
+          <td class="todo">（待開單）</td>
+        </tr>
+        <tr>
+          <td class="num">7</td><td><span class="tag tag--gap">F1</span></td><td>G12 調整角色權限</td>
+          <td>角色設定非側欄一級項目，且矩陣預設唯讀，兩處各多耗 1 次點擊。</td>
+          <td class="src">user-management.html:448 · role-settings.html:454</td>
+          <td class="todo">（待開單）</td>
+        </tr>
+        <tr>
+          <td class="num">8</td><td><span class="tag tag--warn">UXC-11</span></td><td>G7 任務詳情全頁</td>
+          <td>分頁／篩選／分頁碼皆不寫回 URL，同儕頁 dataset-analysis-detail 則有寫。</td>
+          <td class="src"><span class="mono">grep -c replaceState</span>：task-detail.html = 0 · dataset-analysis-detail.html = 1</td>
+          <td class="todo">（待開單）</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="margin-top:var(--space-md);font-size:13.5px;color:var(--color-text-soft)">摩擦點集中在<strong>審核與仲裁的送出收尾</strong>（#1 #2 #4）與<strong>入口可及性</strong>（#3 #5 #7）兩處。標記員路徑（G8）與資料集分析路徑（G13）已具備正確的收尾與 URL 同步實作，可直接作為修補時的參照實作。</p>
+</section>
+
+<!-- ══════════════════════════ 13. 限制與偏差 ══════════════════════════ -->
+<section id="m13">
+  <div class="sec-head"><span class="idx">13</span><h2>原型限制與 manifest 偏差</h2><span class="note">不列為摩擦點的已知落差</span></div>
+
+  <div class="stack">
+    <div class="tablebox">
+      <table>
+        <caption class="eyebrow" style="text-align:left;padding:var(--space-md) var(--space-md) 0">原型限制（原始碼已註記，非設計缺陷）</caption>
+        <thead><tr><th>項目</th><th>行為</th><th>證據</th></tr></thead>
+        <tbody>
+          <tr><td>Google SSO 按鈕</td><td>點擊只有視覺回饋，不導向</td><td class="src">login.html:740–745 <span class="mono">// Prototype: no-op with visual press feedback</span></td></tr>
+          <tr><td>儀表板角色切換器</td><td>以 <span class="mono">?scenario=</span> 模擬四角色，正式版由登入身分決定</td><td class="src">screen-inventory.md「⚠ 切換器 prototype-only」</td></tr>
+          <tr><td>重設密碼 token 狀態鈕</td><td>「有效／已過期／已使用」為原型狀態切換器</td><td class="src">reset-password.html <span class="mono">#btnValid / #btnExpired / #btnUsed</span></td></tr>
+          <tr><td>各頁送出延遲</td><td>600–900ms <span class="mono">setTimeout</span> 模擬後端</td><td class="src">login.html:736 · task-new.html:1437 · profile.html:1439</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tablebox">
+      <table>
+        <caption class="eyebrow" style="text-align:left;padding:var(--space-md) var(--space-md) 0">manifest 與實作的四項落差</caption>
+        <thead><tr><th>視圖</th><th>manifest 記載</th><th>實走事實</th></tr></thead>
+        <tbody>
+          <tr><td class="vid">V06 / V07</td><td><span class="mono">?task_role=annotator|reviewer</span> 為獨立視角</td><td>參數被 <span class="mono">normalizeTaskRole()</span> 歸為 <span class="mono">'user'</span>，畫面與預設視角相同（task-list.html:667–670）</td></tr>
+          <tr><td class="vid">V15–V22</td><td>URL 帶 <span class="mono">&amp;task_type=…</span></td><td>工作區全程未讀取該參數，型態由 <span class="mono">task_id</span> 決定</td></tr>
+          <tr><td class="vid">V01</td><td>「使用者管理捷徑」</td><td>系統管理員儀表板主內容區查無此捷徑，入口只在側欄「系統管理」</td></tr>
+          <tr><td class="vid">V02</td><td>「空狀態 CTA『建立第一個任務』」</td><td>專案負責人視角實際顯示 3 張任務卡，無此 CTA（見 P2）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <p><strong>這四項是盤點資料的偏差，不是使用者路徑的摩擦點。</strong>修正方向是更新 <span class="mono">inventory-manifest.json</span> 後重跑 <span class="mono">node scripts/gen-screen-inventory.mjs</span>，而不是改動原型；本圖的 36 視圖基數維持不變，以便與 <a href="screen-inventory.md">screen-inventory.md</a> 對齊。</p>
+    </div>
+  </div>
+</section>
+
 <footer>
   <p>Label Suite · <span class="mono">design/system/user-path-map.html</span> · 認知演練法（專家評估）· 來源 commit <span class="mono">c9cf83209257</span> · 實走 2026-09-08<br>
   相關文件：<a href="screen-inventory.md">screen-inventory.md</a> · <a href="ux-conventions.md">ux-conventions.md</a>（UXC-01–11）· <a href="anti-pattern-checklist.md">anti-pattern-checklist.md</a> · <a href="MASTER.md">MASTER.md</a></p>
