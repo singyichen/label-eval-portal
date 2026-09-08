@@ -40,7 +40,7 @@ assert_file() {
 assert_contains() {
     local path="$1"
     local text="$2"
-    if ! grep -Fq "$text" "$path"; then
+    if ! grep -Fq -- "$text" "$path"; then
         echo "Expected $path to contain: $text" >&2
         echo "--- $path ---" >&2
         cat "$path" >&2
@@ -968,11 +968,20 @@ assert_not_contains() {
     local path="$1"
     local text="$2"
 
-    if grep -Fq "$text" "$path"; then
+    if grep -Fq -- "$text" "$path"; then
         echo "Expected $path not to contain: $text" >&2
         cat "$path" >&2
         exit 1
     fi
+}
+
+test_assert_contains_handles_dash_prefixed_needles() {
+    local file
+    file="$(mktemp "$TMP_ROOT/dash-needle.XXXXXX")"
+    printf 'unsupported argument: --fix\n' > "$file"
+
+    assert_contains "$file" "--fix"
+    assert_not_contains "$file" "--missing-flag"
 }
 
 record_expected_lint_failure() {
@@ -2465,6 +2474,7 @@ test_check_sdd_collects_final_review_high_regressions() {
     fi
 }
 
+test_assert_contains_handles_dash_prefixed_needles
 test_prerequisites_resolve_module_feature_paths
 test_create_feature_creates_module_branch_spec_and_status
 test_setup_plan_and_status_update
