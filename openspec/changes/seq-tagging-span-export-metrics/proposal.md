@@ -59,6 +59,7 @@
 - 上游（本 change 不修改，僅引用）：`specs/task-management/013-task-new/spec.md`（`SPAN_OVERLAP_POLICY_BY_OUTPUT_TYPE`、`SPAN_SNAP_UNITS`、FR-003d-1 指名的契約歸屬）、`specs/annotation/015-annotation-workspace/spec.md`（`spans[]` 儲存契約與 FR-052 CompactAnswer 形狀 `{ text, label, start, end }`）
 - 下游（本 change 不修改）：匯出對話框與匯出檔 metadata 欄位由 `specs/_archive/014-task-detail/spec.md` 擁有（匯出記錄表、`匯出 JSON` / `匯出 JSON-MIN`、匯出條件快照）。017 只定義推導契約本身，**不定義對話框 UI**；兩者的接縫列為待裁決事項（見 `design.md` 的 D3）
 - `specs/_shared/constants.md`：經查證**不含** `IAA_THRESHOLD_TOKEN` 或 `SEQUENCE_TAGGING_SCHEMES` 任一定義（issue #581 表格所列該列為誤記，change ① 已記載同一結論），本 change 不修改該檔
+- **孤兒常數（本 change 無法修，需裁決）**：`specs/annotation/015-annotation-workspace/spec.md` 第 31 行仍宣告 `SEQUENCE_TAGGING_SCHEMES = BIO | BIOES | IOB2 | SINGLE`，但全檔僅此一處出現、無任何條文引用——change ② 於 v6.0.0 自 payload 移除 `scheme` 時未一併清掉這行宣告。`scripts/check-sdd.sh` 規定一個 change 只對應一份正典 spec，本 change 的正典鎖定 017，故無法在此清除；處置與 `SINGLE` 是否確定退場列為待裁決事項（見 `design.md` 的 D5）
 - 流程同步：`specs/STATUS.md` 之 `dataset-017` 列由 `spec-ready` 改為 `change-open`。**附帶校正兩處既有不一致**：該列現寫 `spec v2.2.1`（正典 frontmatter 已是 `2.2.2`，v2.2.2 於 2026-09-07 合併時漏更 STATUS）、branch 欄現寫 `fix/dataset-analysis-risk-action-nav`（正典 frontmatter 為 `feat/dataset/017-dataset-analysis-detail`，兩者不符會使 `scripts/check-sdd.sh` 回報 `ACTIVE_CHANGE_STAGE`）
 
 **ADR**

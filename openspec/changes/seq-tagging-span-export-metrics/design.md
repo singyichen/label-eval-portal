@@ -59,3 +59,5 @@ Token-level nominal α 需要一個所有標記員共用的 token 網格才能�
   匯出入口、匯出記錄表與匯出 metadata 條文目前在 `task-management/014-task-detail`（已封存）。`scripts/check-sdd.sh` 規定一個 change 只能對應一份正典 spec，因此本 change 的正典鎖定 017，只定義**推導契約與欄位語意**，不改 014 的 UI 條文。若維護者要求同時落地匯出對話框的方案／單位選擇器與擴張報告 UI，需開一個以 014 為正典的 companion change。本 change 的 tasks 已把 UI 接線標為 blocked。
 - **D4 — 推導模組的檔案落點**
   草案建議放在原型的共用模組層（與既有 `dataset-analysis-detail` partial 平行的共用 JS），而非塞進單一頁面檔，因為匯出（014 頁面）與統計（017 頁面）都會用到同一份推導。確切路徑未指定，待 apply 前由維護者確認，以免與正在進行的其他 change 撞檔。
+- **D5 — 015 遺留的孤兒常數 `SEQUENCE_TAGGING_SCHEMES` 與 `SINGLE` 方案**
+  `specs/annotation/015-annotation-workspace/spec.md` 第 31 行仍宣告 `SEQUENCE_TAGGING_SCHEMES = BIO | BIOES | IOB2 | SINGLE`，而全檔無任何條文引用它——change ② 移除 payload 的 `scheme` 時漏清這行。本 change 的正典是 017，依 lint 的「一 change 一正典」規則不能在此順手刪。兩件事需要裁決：(a) 由誰清除——一個以 015 為正典的 lightweight 清理，或併入下一個動 015 的 change；(b) `SINGLE` 是否確定退場——鎖定決策只列 BIO／BIOES／IOB2，本 change 的 `EXPORT_TAGGING_SCHEMES` 依此定義，不含 `SINGLE`；若 `SINGLE`（整段單一標籤，無前綴）仍是需要保留的匯出格式，`EXPORT_TAGGING_SCHEMES` 需擴充，delta 也要補對應 scenario。在裁決前，本 change 不主張 `SINGLE` 的存廢。

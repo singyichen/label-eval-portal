@@ -45,7 +45,7 @@
 **故事目標**：SC-033、SC-035 — 以四個獨立 gate 與 Source-Verify evidence 證明本 change 可回寫正典並封存。
 
 - [ ] 4.1 執行 command-only final verification：`~/Library/pnpm/openspec validate seq-tagging-span-export-metrics --type change`、`scripts/check-sdd.sh`、`scripts/check-spec-artifacts.sh`、`scripts/pre-commit-tests.sh`、`pnpm playwright test`、`git diff --check`；全部預期 exit `0`，並分開記錄 OpenSpec schema、Project SDD lint、code/test 與 scope evidence。 [@main]
-- [ ] 4.2 執行正典回寫前的 Source-Verify：逐條 `rg` 驗證 delta 引用的 FR、AC、SC、常數與檔案路徑皆可在正典或 delta 定位，並確認 `IAA_THRESHOLD_TOKEN` 與 `SEQUENCE_TAGGING_SCHEMES` 兩個名稱在 `specs/` 與 `design/` 下只剩歷史 Changelog 記述，現行條文查無引用。 [@main]
+- [ ] 4.2 執行正典回寫前的 Source-Verify：逐條 `rg` 驗證 delta 引用的 FR、AC、SC、常數與檔案路徑皆可在正典或 delta 定位，並確認 `IAA_THRESHOLD_TOKEN` 在 `specs/` 與 `design/` 下只剩歷史 Changelog 記述、現行條文查無引用；`SEQUENCE_TAGGING_SCHEMES` 於 015 的孤兒宣告依 D5 裁定處理，其清除不屬本 change 的通過條件。 [@main]
 
 ## Pre-merge finalization（在 /opsx:apply 外，NON-CHECKBOX）
 
