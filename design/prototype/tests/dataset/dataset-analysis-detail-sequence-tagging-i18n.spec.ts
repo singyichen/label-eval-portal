@@ -106,6 +106,13 @@ test.describe('Dataset analysis detail sequence_tagging i18n', () => {
     // or masking wording may survive anywhere in the quality tab.
     await expect(qualityContainer).not.toContainText('Token Alpha');
     await expect(qualityContainer).not.toContainText('遮罩');
+
+    // AC-3.7 (task 2.1c supplement): the consistency-deviation table's unit column header
+    // must agree with #consistencyNote's span-level comparison pool, not the retired
+    // token-level wording.
+    const consistencyUnitCol = page.locator('#consistencyUnitCol');
+    await expect(consistencyUnitCol).toContainText(/span/i);
+    await expect(consistencyUnitCol).not.toContainText('可比較 token 數');
   });
 
   test('renders sequence_tagging quality panel in en, including type-scoped low-consistency / ranking / boundary sections', async ({ page }) => {
@@ -184,5 +191,12 @@ test.describe('Dataset analysis detail sequence_tagging i18n', () => {
     // or masking wording may survive anywhere in the quality tab.
     await expect(qualityContainer).not.toContainText('Token Alpha');
     await expect(qualityContainer).not.toContainText(/mask/i);
+
+    // AC-3.7 (task 2.1c supplement): the consistency-deviation table's unit column header
+    // must agree with #consistencyNote's span-level comparison pool, not the retired
+    // token-level wording.
+    const consistencyUnitCol = page.locator('#consistencyUnitCol');
+    await expect(consistencyUnitCol).toContainText(/span/i);
+    await expect(consistencyUnitCol).not.toContainText('Comparable Tokens');
   });
 });
