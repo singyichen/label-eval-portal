@@ -2632,7 +2632,7 @@ test_path_map_freshness_rejects_unsupported_argument() {
     repo="$(make_path_map_repo)"
     run_path_map_checker_capture "$repo" 2 --fix
     assert_contains "$PATH_MAP_OUTPUT" "ERROR [PATH_MAP_USAGE]"
-    assert_contains "$PATH_MAP_OUTPUT" "--fix"
+    assert_contains "$PATH_MAP_OUTPUT" "unsupported argument: --fix"
     assert_contains "$PATH_MAP_OUTPUT" "usage: node scripts/check-user-path-map-freshness.mjs"
     assert_not_contains "$PATH_MAP_OUTPUT" "freshness: fresh"
 }
