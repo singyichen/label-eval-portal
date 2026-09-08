@@ -2532,6 +2532,177 @@ test_check_sdd_accepts_reasoned_ci_job_exemption() {
 }
 
 
+# --- User path map freshness checker (issue #665 Stage 1) -------------------
+# Stage 1 fixtures only pin the fail-closed CLI surface. They must never supply
+# or guess the authoritative source metadata contract owned by issue #645.
+
+make_path_map_repo() {
+    local repo
+    repo="$(mktemp -d "$TMP_ROOT/path-map-repo.XXXXXX")"
+
+    mkdir -p "$repo/design/system" "$repo/design/prototype/pages/shared" "$repo/scripts"
+    printf '# Screen inventory fixture\n' > "$repo/design/system/screen-inventory.md"
+    printf '<!doctype html>\n<title>Prototype page fixture</title>\n' \
+        > "$repo/design/prototype/pages/shared/index.html"
+    if [[ -f "$ROOT/scripts/check-user-path-map-freshness.mjs" ]]; then
+        cp "$ROOT/scripts/check-user-path-map-freshness.mjs" \
+            "$repo/scripts/check-user-path-map-freshness.mjs"
+    fi
+
+    git -C "$repo" init -q
+    git -C "$repo" add .
+    git -C "$repo" -c user.email="speckit-test@example.com" -c user.name="Speckit Test" \
+        commit -q -m "seed path map fixture repo"
+    echo "$repo"
+}
+
+write_path_map_artifact() {
+    local repo="$1"
+
+    cat > "$repo/design/system/user-path-map.html" <<'HTML'
+<!doctype html>
+<title>User Path Map</title>
+<p>Fixture artifact without any authoritative source metadata header.</p>
+HTML
+    git -C "$repo" add .
+    git -C "$repo" -c user.email="speckit-test@example.com" -c user.name="Speckit Test" \
+        commit -q -m "add path map fixture artifact"
+}
+
+run_path_map_checker() {
+    local repo="$1"
+    shift
+    local command="$repo/scripts/check-user-path-map-freshness.mjs"
+
+    if [[ ! -f "$command" ]]; then
+        echo "Expected user path map freshness checker is missing: scripts/check-user-path-map-freshness.mjs" >&2
+        return 127
+    fi
+
+    (
+        cd "$TMP_ROOT"
+        node "$command" "$@"
+    )
+}
+
+# Sets PATH_MAP_OUTPUT to the captured stdout+stderr file of one invocation.
+run_path_map_checker_capture() {
+    local repo="$1"
+    local expected_status="$2"
+    shift 2
+    local status
+
+    PATH_MAP_OUTPUT="$(mktemp "$TMP_ROOT/path-map-check.XXXXXX")"
+    if run_path_map_checker "$repo" "$@" >"$PATH_MAP_OUTPUT" 2>&1; then
+        status=0
+    else
+        status=$?
+    fi
+    if [[ "$status" -ne "$expected_status" ]]; then
+        echo "Expected scripts/check-user-path-map-freshness.mjs to exit $expected_status, got: $status" >&2
+        cat "$PATH_MAP_OUTPUT" >&2
+        exit 1
+    fi
+}
+
+snapshot_path_map_repo() {
+    local repo="$1"
+
+    (
+        cd "$repo"
+        git status --porcelain
+        git ls-files -s
+        find . -path ./.git -prune -o -type f -exec cksum {} + | LC_ALL=C sort
+    )
+}
+
+test_path_map_freshness_help_documents_issue_645_dependency() {
+    local repo
+
+    repo="$(make_path_map_repo)"
+    run_path_map_checker_capture "$repo" 0 --help
+    assert_contains "$PATH_MAP_OUTPUT" "usage: node scripts/check-user-path-map-freshness.mjs"
+    assert_contains "$PATH_MAP_OUTPUT" "issue #645"
+    assert_not_contains "$PATH_MAP_OUTPUT" "freshness: fresh"
+}
+
+test_path_map_freshness_rejects_unsupported_argument() {
+    local repo
+
+    repo="$(make_path_map_repo)"
+    run_path_map_checker_capture "$repo" 2 --fix
+    assert_contains "$PATH_MAP_OUTPUT" "ERROR [PATH_MAP_USAGE]"
+    assert_contains "$PATH_MAP_OUTPUT" "--fix"
+    assert_contains "$PATH_MAP_OUTPUT" "usage: node scripts/check-user-path-map-freshness.mjs"
+    assert_not_contains "$PATH_MAP_OUTPUT" "freshness: fresh"
+}
+
+test_path_map_freshness_rejects_extra_positional_argument() {
+    local repo
+
+    repo="$(make_path_map_repo)"
+    run_path_map_checker_capture "$repo" 2 "$repo" "$repo"
+    assert_contains "$PATH_MAP_OUTPUT" "ERROR [PATH_MAP_USAGE]"
+    assert_not_contains "$PATH_MAP_OUTPUT" "freshness: fresh"
+}
+
+test_path_map_freshness_rejects_unresolvable_root() {
+    local repo
+
+    repo="$(make_path_map_repo)"
+    run_path_map_checker_capture "$repo" 2 ""
+    assert_contains "$PATH_MAP_OUTPUT" "ERROR [PATH_MAP_ROOT]"
+    assert_not_contains "$PATH_MAP_OUTPUT" "freshness: fresh"
+
+    run_path_map_checker_capture "$repo" 2 "$TMP_ROOT/path-map-absent-root"
+    assert_contains "$PATH_MAP_OUTPUT" "ERROR [PATH_MAP_ROOT]"
+    assert_not_contains "$PATH_MAP_OUTPUT" "freshness: fresh"
+}
+
+test_path_map_freshness_fails_closed_for_missing_artifact() {
+    local repo
+
+    repo="$(make_path_map_repo)"
+    run_path_map_checker_capture "$repo" 2
+    assert_contains "$PATH_MAP_OUTPUT" "ERROR [PATH_MAP_ARTIFACT_MISSING] design/system/user-path-map.html:"
+    assert_not_contains "$PATH_MAP_OUTPUT" "freshness: fresh"
+    assert_not_contains "$PATH_MAP_OUTPUT" "freshness: stale"
+}
+
+test_path_map_freshness_fails_closed_for_unsettled_authority() {
+    local repo
+
+    repo="$(make_path_map_repo)"
+    write_path_map_artifact "$repo"
+    run_path_map_checker_capture "$repo" 2
+    assert_contains "$PATH_MAP_OUTPUT" "ERROR [PATH_MAP_AUTHORITY_UNSETTLED] design/system/user-path-map.html:"
+    assert_contains "$PATH_MAP_OUTPUT" "issue #645"
+    assert_not_contains "$PATH_MAP_OUTPUT" "freshness: fresh"
+    assert_not_contains "$PATH_MAP_OUTPUT" "freshness: stale"
+}
+
+test_path_map_freshness_does_not_write_to_the_repository() {
+    local repo before after
+
+    repo="$(make_path_map_repo)"
+    write_path_map_artifact "$repo"
+    before="$(mktemp "$TMP_ROOT/path-map-before.XXXXXX")"
+    after="$(mktemp "$TMP_ROOT/path-map-after.XXXXXX")"
+
+    snapshot_path_map_repo "$repo" > "$before"
+    run_path_map_checker_capture "$repo" 0 --help
+    run_path_map_checker_capture "$repo" 2 --fix
+    run_path_map_checker_capture "$repo" 2 "$TMP_ROOT/path-map-absent-root"
+    run_path_map_checker_capture "$repo" 2
+    snapshot_path_map_repo "$repo" > "$after"
+
+    if ! diff -u "$before" "$after" >/dev/null; then
+        echo "Expected scripts/check-user-path-map-freshness.mjs to leave the repository unchanged" >&2
+        diff -u "$before" "$after" >&2 || true
+        exit 1
+    fi
+}
+
 test_check_spec_artifacts_passes_for_synced_repo
 test_check_spec_artifacts_fails_for_untracked_spec
 test_check_spec_artifacts_accepts_archived_spec_location
@@ -2608,5 +2779,12 @@ test_check_sdd_fails_for_registry_job_absent_from_ci
 test_check_sdd_fails_for_local_command_absent_from_claude_md
 test_check_sdd_fails_for_exempt_row_without_reason
 test_check_sdd_accepts_reasoned_ci_job_exemption
+test_path_map_freshness_help_documents_issue_645_dependency
+test_path_map_freshness_rejects_unsupported_argument
+test_path_map_freshness_rejects_extra_positional_argument
+test_path_map_freshness_rejects_unresolvable_root
+test_path_map_freshness_fails_closed_for_missing_artifact
+test_path_map_freshness_fails_closed_for_unsettled_authority
+test_path_map_freshness_does_not_write_to_the_repository
 
 echo "speckit script tests passed"
