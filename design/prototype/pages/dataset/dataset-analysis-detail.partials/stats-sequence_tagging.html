@@ -1,32 +1,75 @@
-<!-- Sequence Tagging (Token-level) Statistics -->
+<!-- Sequence Tagging (span-level) Statistics -->
 <section class="panel" aria-labelledby="statsSeqTagDistTitle">
   <div class="panel-head-row">
     <div>
-      <h2 class="panel-title" id="statsSeqTagDistTitle" data-i18n="sequenceTaggingStats.distTitle">標記類型分佈</h2>
-      <p class="panel-subtitle" id="statsSeqTagDistDesc" data-i18n="sequenceTaggingStats.distDesc">各 tag 類型在提交標記中的 token 數量與比例（含 O tag）</p>
+      <h2 class="panel-title" id="statsSeqTagDistTitle" data-i18n="sequenceTaggingStats.distTitle">標籤類型分佈</h2>
+      <p class="panel-subtitle" id="statsSeqTagDistDesc" data-i18n="sequenceTaggingStats.distDesc">各標籤類型在已提交標記片段中的筆數與比例</p>
     </div>
   </div>
   <div class="stats-hbar-chart" style="margin-top:var(--space-sm)">
     <div class="stats-hbar-row">
-      <div class="stats-hbar-label" data-i18n="sequenceTaggingStats.tags.o">O</div>
-      <div class="stats-hbar-track"><div class="stats-hbar-fill" style="width:88%"></div></div>
-      <div class="stats-hbar-value">71% · 8,842</div>
+      <div class="stats-hbar-label">ORG</div>
+      <div class="stats-hbar-track"><div class="stats-hbar-fill" style="width:100%"></div></div>
+      <div class="stats-hbar-value">50% · 1</div>
     </div>
     <div class="stats-hbar-row">
-      <div class="stats-hbar-label" data-i18n="sequenceTaggingStats.tags.bPer">B-PER</div>
-      <div class="stats-hbar-track"><div class="stats-hbar-fill" style="width:18%;background:var(--color-primary);opacity:.75"></div></div>
-      <div class="stats-hbar-value">9% · 1,120</div>
-    </div>
-    <div class="stats-hbar-row">
-      <div class="stats-hbar-label" data-i18n="sequenceTaggingStats.tags.iPer">I-PER</div>
-      <div class="stats-hbar-track"><div class="stats-hbar-fill" style="width:12%;background:var(--color-primary);opacity:.6"></div></div>
-      <div class="stats-hbar-value">6% · 748</div>
-    </div>
-    <div class="stats-hbar-row">
-      <div class="stats-hbar-label" data-i18n="sequenceTaggingStats.tags.bOrg">B-ORG</div>
-      <div class="stats-hbar-track"><div class="stats-hbar-fill" style="width:14%;background:var(--color-primary);opacity:.55"></div></div>
-      <div class="stats-hbar-value">7% · 872</div>
+      <div class="stats-hbar-label">TITLE</div>
+      <div class="stats-hbar-track"><div class="stats-hbar-fill" style="width:100%;opacity:.75"></div></div>
+      <div class="stats-hbar-value">50% · 1</div>
     </div>
   </div>
-  <p class="group-avg-note" style="margin-top:var(--space-sm)" id="statsSeqTagDistNote" data-i18n="sequenceTaggingStats.distNote">O tag 佔全體 token 71%；IAA 計算時 O tag 全體標記員一致的 token 會依規則遮罩（見品質分頁說明）</p>
+  <p class="group-avg-note" style="margin-top:var(--space-sm)" id="statsSeqTagDistNote" data-i18n="sequenceTaggingStats.distNote">一段連續字元的標記片段計為 1 筆，不因字元數放大計算</p>
+</section>
+
+<section class="panel" aria-labelledby="statsSeqTagAvgSpanTitle">
+  <h2 class="panel-title" id="statsSeqTagAvgSpanTitle" data-i18n="sequenceTaggingStats.avgSpanTitle">每句平均標記片段數</h2>
+  <div style="margin-top:var(--space-md);display:flex;align-items:center;gap:var(--space-xl);flex-wrap:wrap">
+    <div class="stats-inline-card">
+      <div>
+        <div class="stats-metric-label" id="statsSeqTagAvgLabel" data-i18n="sequenceTaggingStats.avgSpanLabel">平均標記片段數／句</div>
+        <div class="stats-metric-value" style="font-size:40px">2.0</div>
+      </div>
+    </div>
+    <div style="display:grid;gap:10px;font-size:13px;color:var(--color-ink)">
+      <div style="display:flex;gap:var(--space-md)">
+        <span style="color:var(--color-text-soft);min-width:120px" id="statsSeqTagTotalSentLabel" data-i18n="sequenceTaggingStats.totalSentLabel">總句子數</span>
+        <span style="font-family:var(--font-mono);font-weight:600">1</span>
+      </div>
+      <div style="display:flex;gap:var(--space-md)">
+        <span style="color:var(--color-text-soft);min-width:120px" id="statsSeqTagTotalSpansLabel" data-i18n="sequenceTaggingStats.totalSpansLabel">總標記片段數</span>
+        <span style="font-family:var(--font-mono);font-weight:600" id="statsSeqTagTotalSpansValue">2</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="panel" aria-labelledby="statsSeqTagSpanLenTitle">
+  <div class="panel-head-row">
+    <div>
+      <h2 class="panel-title" id="statsSeqTagSpanLenTitle" data-i18n="sequenceTaggingStats.spanLenTitle">標記片段長度分佈</h2>
+      <p class="panel-subtitle" id="statsSeqTagSpanLenDesc" data-i18n="sequenceTaggingStats.spanLenDesc">依片段字元長度（end − start）分桶的分佈（4 字元以上合併為「4+」）</p>
+    </div>
+  </div>
+  <div class="stats-hbar-chart" style="margin-top:var(--space-sm)">
+    <div class="stats-hbar-row">
+      <div class="stats-hbar-label" data-i18n="sequenceTaggingStats.spanLenBuckets.one">1 字元</div>
+      <div class="stats-hbar-track"><div class="stats-hbar-fill" style="width:0%"></div></div>
+      <div class="stats-hbar-value">0</div>
+    </div>
+    <div class="stats-hbar-row">
+      <div class="stats-hbar-label" data-i18n="sequenceTaggingStats.spanLenBuckets.two">2 字元</div>
+      <div class="stats-hbar-track"><div class="stats-hbar-fill" style="width:100%;opacity:.85"></div></div>
+      <div class="stats-hbar-value">50% · 1</div>
+    </div>
+    <div class="stats-hbar-row">
+      <div class="stats-hbar-label" data-i18n="sequenceTaggingStats.spanLenBuckets.three">3 字元</div>
+      <div class="stats-hbar-track"><div class="stats-hbar-fill" style="width:100%;opacity:.7"></div></div>
+      <div class="stats-hbar-value">50% · 1</div>
+    </div>
+    <div class="stats-hbar-row">
+      <div class="stats-hbar-label" data-i18n="sequenceTaggingStats.spanLenBuckets.fourPlus">4+ 字元</div>
+      <div class="stats-hbar-track"><div class="stats-hbar-fill" style="width:0%"></div></div>
+      <div class="stats-hbar-value">0</div>
+    </div>
+  </div>
 </section>
