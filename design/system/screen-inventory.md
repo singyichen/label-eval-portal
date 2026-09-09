@@ -4,7 +4,7 @@
 >
 > **本檔為 generated view——請勿手動編輯。** 唯一生成來源是 [inventory-manifest.json](inventory-manifest.json)；改完 manifest 後執行 `node scripts/gen-screen-inventory.mjs` 重新產生，並以 `bash scripts/inventory-tests.sh` 驗證。元件規格唯一正典是 [MASTER.md](MASTER.md)；行為規格在 `specs/<module>/`；token 實作在 `design/prototype/assets/tokens.css`。
 >
-> **Prototype 來源 commit：** `3207f8096064`（2026-09-08）——`design/prototype/pages` · `design/prototype/index.html` 的最後一次變更。
+> **Prototype 來源 commit：** `2a7124aff198`（2026-09-09）——`design/prototype/pages` · `design/prototype/index.html` 的最後一次變更。
 > 本檔若落後於該 commit，`node scripts/gen-screen-inventory.mjs --check` 會失敗。
 
 ---
@@ -111,7 +111,7 @@
 | 12 | 使用者管理 | [`006-user-management`](../../specs/admin/006-user-management/spec.md) FR ×13 · SC ×12<br>[`008-sidebar-navbar-shared`](../../specs/shared/008-sidebar-navbar-shared/spec.md) FR ×48 · SC ×34 | [`pages/user-management.md`](pages/user-management.md) | `admin/user-management.spec.ts`（1 檔） | ⚠ 未定義 | super_admin | default、空狀態 | 0 | `features/admin` | `shared/`：5 · `features/admin/`：4 |
 | 13 | 角色設定 | [`007-role-settings`](../../specs/admin/007-role-settings/spec.md) FR ×10 · SC ×10<br>[`008-sidebar-navbar-shared`](../../specs/shared/008-sidebar-navbar-shared/spec.md) FR ×48 · SC ×34 | [`pages/role-settings.md`](pages/role-settings.md) | `admin/role-settings.spec.ts`（1 檔） | ⚠ 未定義 | super_admin | default、刪除確認（alertdialog） | 0 | `features/admin` | `shared/`：5 · `features/admin/`：1 |
 | 14 | 資料集分析列表 | [`016-dataset-analysis-list`](../../specs/dataset/016-dataset-analysis-list/spec.md) FR ×20 · SC ×12<br>[`008-sidebar-navbar-shared`](../../specs/shared/008-sidebar-navbar-shared/spec.md) FR ×48 · SC ×34 | [`pages/dataset-analysis-list.md`](pages/dataset-analysis-list.md) | `dataset/dataset-analysis-list-*.spec.ts`（4 檔） | ⚠ 未定義 | project_leader / super_admin | default、空狀態、Toast 提示 | 0 | `features/dataset` | `shared/`：4 · `features/dataset/`：3 |
-| 15 | 資料集分析詳情 | [`017-dataset-analysis-detail`](../../specs/dataset/017-dataset-analysis-detail/spec.md) FR ×60 · SC ×32<br>[`008-sidebar-navbar-shared`](../../specs/shared/008-sidebar-navbar-shared/spec.md) FR ×48 · SC ×34 | [`pages/dataset-analysis-detail.md`](pages/dataset-analysis-detail.md) | `dataset/dataset-analysis-detail-*.spec.ts`（11 檔） | ⚠ 未定義 | project_leader / super_admin | default、空狀態（`?s_state=empty`）、IAA 未達標 | 0 | `features/dataset` | `shared/`：5 · `features/dataset/`：3 |
+| 15 | 資料集分析詳情 | [`017-dataset-analysis-detail`](../../specs/dataset/017-dataset-analysis-detail/spec.md) FR ×60 · SC ×32<br>[`008-sidebar-navbar-shared`](../../specs/shared/008-sidebar-navbar-shared/spec.md) FR ×48 · SC ×34 | [`pages/dataset-analysis-detail.md`](pages/dataset-analysis-detail.md) | `dataset/dataset-analysis-detail-*.spec.ts`（12 檔） | ⚠ 未定義 | project_leader / super_admin | default、空狀態（`?s_state=empty`）、IAA 未達標 | 0 | `features/dataset` | `shared/`：5 · `features/dataset/`：3 |
 
 > Route 欄全數為「⚠ 未定義」代表 `frontend/src/routes/paths.ts` 目前只有 foundation 的 `healthCheck`；每個畫面的路由在該 feature 落地時回填 manifest `routeKey`，生成器會驗證該鍵確實存在。
 >
