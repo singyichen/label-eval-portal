@@ -35,14 +35,14 @@
 
 ## 3. PR-SEQ-EXPORT-DERIVATION — 匯出層 BIO 推導與 tokenizer metadata
 
-> **相依與平行性**：本群組嚴格序列 3.1 → 3.2 → 3.3 → 3.4 → 3.5；前置為群組 2 合併、D3 與 D4 已裁定。3.1 的 committed Red 必須先於 3.2，3.3 的 committed Red 必須先於 3.4。D3 若裁定匯出對話框改由以 `specs/_archive/014-task-detail/spec.md` 為正典的 companion change 承載，3.3 與 3.4 整組移出本 change。
+> **相依與平行性**：本群組嚴格序列 3.1 → 3.2 → 3.3 → 3.4 → 3.5；前置為群組 2 合併、D3 與 D4 已裁定。3.1 的 committed Red 必須先於 3.2，3.3 的 committed Red 必須先於 3.4。D3 已裁定匯出對話框改由以 `specs/_archive/014-task-detail/spec.md` 為正典的 companion change 承載，該 companion 單為 **issue #742**。**裁決 H（2026-09-09，維護者）**：3.3 與 3.4 不整組移出，改為**拆兩半**——FR-042 的詞級推導屬 017 正典，其純函式層（對齊擴張、tokenizer metadata 必填檢查、擴張摘要的資料產出）留在本 change；AC-5.3 與 AC-5.4 中屬畫面的子句（擴張摘要的顯示與展開、阻擋匯出的提示、匯出檔 metadata 呈現）連同方案與單位選擇器一併移交 issue #742。理由是整組移出會讓 FR-042 於 archive 時寫進 017 正典卻無任何實作與測試，留下空頭條文。
 
 **故事目標**：SC-033、SC-034 — 以決定性推導把 `spans[]` 轉為 BIO／BIOES／IOB2 序列，並在詞級模式下強制 tokenizer metadata 與對齊擴張報告。
 
 - [ ] 3.1 新增 `design/prototype/tests/dataset/dataset-analysis-detail-span-to-bio.spec.ts`，依 AC-5.1、AC-5.2 建立 Red 斷言：字元級 BIO 與 BIOES 序列逐格正確、空 span 樣本輸出等長全 `O`、重複匯出結果逐字元相同；先提交此單檔再執行，expected failure 必須來自推導模組尚未存在，並保存 command、exit 與失敗訊息。 [@senior-qa]
 - [ ] 3.2 Green：依 D4 裁定的落點新增 span 轉序列推導模組，實作 FR-041 的三種方案；此模組為純函式，輸入僅限 `spans[]` 與原始文本，QA 契約維持原樣。 [@senior-frontend]
-- [ ] 3.3 修改 `design/prototype/tests/dataset/dataset-analysis-detail-span-to-bio.spec.ts`，依 AC-5.3、AC-5.4 補上詞級 Red 斷言：擴張筆數與逐筆展開內容正確、原始 span 於擴張後維持原值、缺 tokenizer 版本時匯出被阻擋且查無匯出檔；先提交此單檔再執行，expected failure 必須來自詞級路徑尚未實作，並保存 command、exit 與失敗訊息。 [@senior-qa]
-- [ ] 3.4 Green：依 FR-042 於推導模組補上詞級對齊擴張、tokenizer metadata 必填檢查與擴張摘要輸出，並依 D3 裁定接線匯出流程的方案與單位選擇器；QA 契約維持原樣。 [@senior-frontend]
+- [ ] 3.3 修改 `design/prototype/tests/dataset/dataset-analysis-detail-span-to-bio.spec.ts`，依 AC-5.3、AC-5.4 之資料層子句（裁決 H）補上詞級 Red 斷言：擴張筆數與逐筆內容正確、原始 span 於擴張後維持原值、缺 tokenizer 版本時推導回傳阻擋結果且不產生任何序列產物、字元級路徑不得帶 tokenizer metadata 亦不得產生擴張紀錄；先提交此單檔再執行，expected failure 必須來自詞級路徑尚未實作，並保存 command、exit 與失敗訊息。畫面子句（摘要顯示與展開、阻擋提示文案）依裁決 H 不在本任務斷言範圍，由 issue #742 承接。 [@senior-qa]
+- [ ] 3.4 Green：依 FR-042 於推導模組補上詞級對齊擴張、tokenizer metadata 必填檢查與擴張摘要的資料產出；此模組維持純函式，不得自行讀取 DOM 或觸發匯出。依裁決 H，匯出流程的方案與單位選擇器接線不在本任務，移交 issue #742；QA 契約維持原樣。 [@senior-frontend]
 - [ ] 3.5 執行 command-only 群組驗證：`pnpm typecheck`、`pnpm playwright test tests/dataset/`、`scripts/check-sdd.sh`、`scripts/check-spec-artifacts.sh`、`git diff --check`；全部預期 exit `0`，並保存字元級與詞級各一組實際匯出樣本作為決定性 evidence。 [@main]
 
 ## 4. PR-SEQ-EXPORT-FINAL — 完整驗證、正典回寫與 archive readiness
