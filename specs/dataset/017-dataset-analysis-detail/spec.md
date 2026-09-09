@@ -1,7 +1,7 @@
 ---
 功能分支: feat/dataset/017-dataset-analysis-detail
 建立日期: 2026-04-24
-版本: 2.2.2
+版本: 3.0.0
 狀態: Draft
 ---
 
@@ -47,6 +47,11 @@
 - `IAA_SUMMARY_STATES = pass | fail | pending | not_started | not_applicable`（`not_applicable` 專供 `y = 0`〔任務 `outputs[]` 僅含被排除類型，如僅 `free_text`〕情境使用）
 - `CONSISTENCY_DEVIATION_BLOCK = annotator_consistency_deviation_analysis`
 - `CONSISTENCY_DEVIATION_STD_LEVELS = 1.5xSTD | 2xSTD`
+- `EXPORT_TAGGING_SCHEMES = BIO | BIOES | IOB2`（v3.0.0 新增，FR-041）
+- `EXPORT_DEFAULT_TAGGING_SCHEME = BIO`（v3.0.0 新增，FR-041）
+- `EXPORT_TOKEN_UNITS = character | word`（v3.0.0 新增，FR-041）
+- `EXPORT_DEFAULT_TOKEN_UNIT = character`（v3.0.0 新增，FR-041）
+- `SPAN_TOKEN_ALIGNMENT_MODE = expand`（v3.0.0 新增，FR-042；唯一模式，無其他選項）
 
 - 標記員風險等級：
   - `ANNOTATOR_RISK_LEVELS = normal | watch | high_risk`
@@ -84,7 +89,7 @@
 | `multi_dim` | 逐維度 ICC(2,1) → 巨集平均 ⭐️ | dimension | `IAA_THRESHOLD_MULTI_DIM_RECOMMENDED = 0.75`（建議，僅顯示）/ `IAA_THRESHOLD_MULTI_DIM_STRICT = 0.80`（嚴格，**gate 用**） | 泛化 `single_dim` 之 N 維版本 |
 | `entity_recognition` | Pairwise Span F1 strict（start + end + type 全同）⭐️；partial-overlap F1 僅供顯示，不入閘門 | span | `IAA_THRESHOLD_ENTITY_RECOGNITION_STRICT = 0.80`（`IAA_THRESHOLD_ENTITY_RECOGNITION_PARTIAL_DISPLAY = 0.70` 僅顯示） | 以任兩位標記員配對（`C(n,2)`）計算後取平均 |
 | `relation_identification` | Pairwise Triple-level F1（subject + relation + object 全同）⭐️；輔助顯示 entity-level F1 | triple | `IAA_THRESHOLD_RELATION_IDENTIFICATION = 0.75`（`IAA_THRESHOLD_RELATION_IDENTIFICATION_HIGH_DISPLAY = 0.80` 為「高品質」顯示帶，非第二道閘門） | |
-| `sequence_tagging` | Token-level Alpha（nominal）⭐️ | token | `IAA_THRESHOLD_TOKEN = 0.75` | 計算前必須遮罩全體標記員皆標為 `O` 的 token（或等價地僅納入非 `O` 位置），避免 `O` 佔多數造成指標虛高 |
+| `sequence_tagging` | Krippendorff 單位化 α（unitizing alpha，u-α）⭐️ | span | —（本型別屬 `IAA_UNCALIBRATED_TYPES`，門檻欄位留空；MUST NOT 訂定任何預設值或建議值） | u-α 直接吃 `(start, end, label)`，以連續體長度加權處理未標記區段，不需要 token 網格、不需要 `O` 遮罩。**v3.0.0（BREAKING）**：Token-level Alpha（nominal）與 `IAA_THRESHOLD_TOKEN = 0.75` 一併廢止，該識別名稱 MUST NOT 重新使用 |
 | `free_text` | 不計自動 IAA | — | — | 排除於 `x/y` 分母；UI 顯示「不適用—由審核員評估」，不得顯示空白或 0 |
 
 > `⭐️` 標示為該輸出類型的主要（gate）指標；其餘為輔助 / 顯示用指標，不影響達標判定。
@@ -93,6 +98,7 @@
 
 - `IAA_LABEL_MIN_POSITIVE = 5`（`multi_label` 巨集平均排除正例出現次數低於此值的稀有標籤）
 - `IAA_GATE_EXCLUDED_TYPES = free_text`（IAA 達標分母排除集，registry/常數驅動，不得硬編任務類型判斷）
+- `IAA_UNCALIBRATED_TYPES = sequence_tagging`（v3.0.0 新增，FR-043；主指標可計算、但平台尚未取得足以訂定門檻之實證資料的輸出類型集合。與 `IAA_GATE_EXCLUDED_TYPES` 在 `x/y` 分母上效果相同，但語意與文案 MUST NOT 共用——前者是「永久沒有自動指標，由審核員評估」，後者是「已算出數值、暫不判定」）
 - `IAA_COMPOSITE_BADGE_FORMAT = "{x}/{y} 達標 · {N} 型排除"`（`N = 0` 時省略「· {N} 型排除」後綴）
 - `IAA_COMPOSITE_GATE_RULE = pass ⟺ x == y AND y > 0`（全部達標，非多數決；`y = 1` 時仍以「1/1 達標」分數形式呈現，不分岔 UI）
 - `IAA_PENDING_BADGE_FORMAT = "—/{y} 待完成 Dry Run"`（`y` 可由 `outputs[]` 靜態算出；尚無 Dry Run 資料時不得顯示 `0/{y}`）
@@ -106,7 +112,7 @@
     - `single_label` / `multi_label`：逐樣本投票分裂度（`1 - 眾數票數佔比`；`multi_label` 取各標籤分裂度平均）
     - `single_dim` / `multi_dim`：逐樣本標記值離散度（樣本內各標記員給值的標準差；`multi_dim` 取各維度離散度平均）
     - `entity_recognition` / `relation_identification`：該樣本的 pairwise F1（沿用 `OUTPUT_TYPE_IAA_REGISTRY` 對應主指標定義，逐樣本計算而非整體平均）
-    - `sequence_tagging`：該樣本非 `O` token 分歧率（樣本內非 `O` token 中標記不一致者所佔比例）
+    - `sequence_tagging`：該樣本的 pairwise span F1 strict（**v3.0.0 BREAKING**：原「非 `O` token 分歧率」隨 token 座標系一併廢止，改與 `entity_recognition` 同口徑；舊識別名稱 MUST NOT 重新使用）
   - **（v2.2.0 修正）** 本清單原引用 `annotation-015` v3.0.0 dry_run 共識仲裁流程中的「divergent」分歧項作為同源概念；該流程已於 `annotation-015` v4.0.0（見其「使用者故事 3」的「⚠️ v4.0.0 適用範圍再次收斂（BREAKING）」段落）整批廢止，不復存在。本清單為 017 品質監控獨立提供的唯讀觀測清單，分歧度計算單位（見下方逐型定義）由本規格自行定義，不外推、不依賴任何審核流程的仲裁結果；亦不與 `annotation-015` 現行審核單位（`ReviewUnit`，`sample_id × annotator_id × run_type`，FR-051）狀態機或爭議池混淆或互相驅動——兩者分屬品質監控與審核工作流的獨立機制，僅概念上皆處理「分歧」，資料來源與計算方式互不相依。
 - 逐型標記員品質排名（Annotator Quality Ranking 泛化版）：
   - `ANNOTATOR_QUALITY_RANKING_SCOPE = single_label | multi_label | single_dim | multi_dim | entity_recognition | relation_identification | sequence_tagging`（7 型；`free_text` 不參與排名）
@@ -114,7 +120,7 @@
     - `single_label` / `multi_label`：與多數決一致率（該標記員標記與樣本多數決結果相同之比例）
     - `single_dim` / `multi_dim`：與平均值的平均絕對偏差（MAD），依 MAD 由低到高排序（MAD 越低排名越前）
     - `entity_recognition` / `relation_identification`：與合併聚合參考值（多標記員標記聚合後的參考集合，非任務 ground truth）的 F1
-    - `sequence_tagging`：與多數決 token 標記一致率
+    - `sequence_tagging`：與合併聚合參考值（多標記員標記聚合後的參考集合，非任務 ground truth）的 F1（**v3.0.0 BREAKING**：原「與多數決 token 標記一致率」所依賴的 token 網格已不存在，改與 `entity_recognition` 同口徑）
   - 排名沿用 `IAA_SMALL_SAMPLE_THRESHOLD` 小樣本警示規則：完成樣本數 `< IAA_SMALL_SAMPLE_THRESHOLD` 的標記員於排名中顯示小樣本估計警示，不因此被剔除排名。
 - 邊界分歧分析（Boundary Error Analysis 泛化版；僅 `entity_recognition`、`sequence_tagging` 適用）：
   - `BOUNDARY_DISAGREEMENT_SCOPE = entity_recognition | sequence_tagging`
@@ -218,7 +224,7 @@ sequenceDiagram
 4. **AC-2.4**：**Given** 任務 `outputs[]` 含 `multi_dim`，**When** 進入統計總覽 tab，**Then** 依維度數量顯示逐維度分佈直方圖與統計摘要，並提供維度間分佈視覺化（2 維為 scatter plot，3 維以上為逐對散佈或平行座標）。
 5. **AC-2.5**：**Given** 任務 `outputs[]` 含 `entity_recognition`，**When** 進入統計總覽 tab，**Then** 顯示實體類型分佈、每句平均實體數、Entity span 長度分佈。
 6. **AC-2.6**：**Given** 任務 `outputs[]` 含 `relation_identification`，**When** 進入統計總覽 tab，**Then** 顯示關係類型分佈與 Triple 數量統計；若同任務 `outputs[]` 亦含 `entity_recognition`，實體類型分佈僅顯示於 `entity_recognition` 區塊，不重複呈現。
-7. **AC-2.7**：**Given** 任務 `outputs[]` 含 `sequence_tagging`，**When** 進入統計總覽 tab，**Then** 顯示標記類型（tag）分佈、每句平均標記片段數、標記片段長度分佈。
+7. **AC-2.7**：**Given** 任務 `outputs[]` 含 `sequence_tagging`，某樣本含一筆 3 字元的 `ORG` span 與一筆 2 字元的 `TITLE` span，**When** 進入統計總覽 tab，**Then** 顯示標籤類型（label）分佈、每句平均標記片段數、標記片段長度分佈三項；標籤類型分佈顯示 `ORG` 1 筆、`TITLE` 1 筆，未出現任何帶 `B-`／`I-`／`E-`／`S-` 前綴的項目，也未出現 `O`；該樣本的標記片段數為 2，未因字元數被放大為 5；標記片段長度分佈以字元長度分桶，畫面未出現任何以 token 為單位的長度說明。
 8. **AC-2.8**：**Given** 任務 `outputs[]` 含 `free_text`，**When** 進入統計總覽 tab，**Then** 顯示已提交回答數與平均回答字數，不提供標籤 / 分數類圖表。
 9. **AC-2.9**：**Given** 任務 `outputs[]` 含多個輸出類型，**When** 進入統計總覽 tab，**Then** 依 `outputs[]` 原順序逐型並列顯示各自的特定統計區塊。
 10. **AC-2.10**：**Given** 尚無已提交標記資料（`STATS_EMPTY_STATE_TRIGGER`），**When** 進入統計總覽 tab，**Then** 顯示「尚無標記資料，請先發布 Dry Run」與「前往任務詳情」次要按鈕。
@@ -234,7 +240,7 @@ sequenceDiagram
   - `multi_dim`：逐維度分佈直方圖、逐維度統計摘要、維度間分佈視覺化
   - `entity_recognition`：實體類型分佈、每句平均實體數、Entity span 長度分佈
   - `relation_identification`：關係類型分佈、Triple 數量統計
-  - `sequence_tagging`：標記類型（tag）分佈、每句平均標記片段數、標記片段長度分佈
+  - `sequence_tagging`：標籤類型（label）分佈、每句平均標記片段數、標記片段長度分佈（長度以字元計）
   - `free_text`：已提交回答數、平均回答字數
 - 區塊 C：`Stats 空狀態`
   - 必要元素：說明文字、「前往任務詳情」次要按鈕（→ `task-detail`）
@@ -256,10 +262,10 @@ sequenceDiagram
 
 **`sequence_tagging` 分析規則**：
 
-- 統計母體：以任務 `tokenization` 設定（`character` / `word`，來源 `task-management-013` v6.3.0）切分後的 token 序列為準。
-- `標記類型（tag）分佈`：依任務 `scheme`（`BIO / BIOES / IOB2 / SINGLE`）解析後的 tag 類型聚合。
-- `每句平均標記片段數`：將連續同類型 tag 還原為片段（span）後計算平均值。
-- `標記片段長度分佈`：以 token 長度計算，至少輸出 1、2、3、4+ token buckets。
+- 統計母體（**v3.0.0 BREAKING**）：以已提交的 `spans[]` 為準。原以任務 `tokenization` 設定切分後的 token 序列為母體，該設定欄位已於 `specs/task-management/013-task-new/spec.md` v7.0.0 破壞性移除，母體無對象。
+- `標籤類型（label）分佈`（**v3.0.0 BREAKING**）：直接依 span 的 `label` 聚合，不得出現 `B-`／`I-`／`E-`／`S-`／`O` 任一前綴或標籤；原「依任務 `scheme` 解析後的 tag 類型聚合」的解析步驟不再保留（`tagging_scheme` 同於 013 v7.0.0 移除）。一段 n 字的標記計為 1 筆，不得計為 n 筆。
+- `每句平均標記片段數`（**v3.0.0**）：直接以樣本內 span 筆數計算平均值；「將連續同類型 tag 還原為片段」的還原步驟不再保留——span 本身即片段。
+- `標記片段長度分佈`（**v3.0.0 BREAKING**）：以字元長度（`end - start`）計算，至少輸出 1、2、3、4+ 字元 buckets，不得以 token 長度分桶。
 
 ---
 
@@ -278,16 +284,16 @@ sequenceDiagram
 4. **AC-3.4**：**Given** `outputs[]` 含 `multi_dim`，**When** 進入品質監控，**Then** 顯示逐維度 ICC → 巨集平均 ⭐️ 為主要指標，並標示 `IAA_THRESHOLD_MULTI_DIM_RECOMMENDED` 與 `IAA_THRESHOLD_MULTI_DIM_STRICT`。
 5. **AC-3.5**：**Given** `outputs[]` 含 `entity_recognition`，**When** 進入品質監控，**Then** 顯示 Pairwise Span F1 strict ⭐️ 為主要指標，partial-overlap F1 僅供顯示切換且不影響達標判定，並標示 `IAA_THRESHOLD_ENTITY_RECOGNITION_STRICT`。
 6. **AC-3.6**：**Given** `outputs[]` 含 `relation_identification`，**When** 進入品質監控，**Then** 顯示 Pairwise Triple-level F1 ⭐️ 為主要指標，entity-level F1 以輔助指標顯示，並標示 `IAA_THRESHOLD_RELATION_IDENTIFICATION`（`IAA_THRESHOLD_RELATION_IDENTIFICATION_HIGH_DISPLAY` 僅為「高品質」顯示帶）。
-7. **AC-3.7**：**Given** `outputs[]` 含 `sequence_tagging`，**When** 進入品質監控，**Then** 顯示 Token-level Alpha ⭐️ 為主要指標，計算前遮罩全體標記員皆標為 `O` 的 token，並標示 `IAA_THRESHOLD_TOKEN`。
-8. **AC-3.8**：**Given** `outputs[]` 含 `free_text`，**When** 進入品質監控，**Then** 該輸出類型子區塊顯示「不適用—由審核員評估」狀態，不計入自動 IAA，且不得顯示空白或 0。
-9. **AC-3.9**：**Given** `outputs[]` 含多個輸出類型，**When** 進入品質監控，**Then** 依原順序逐型並列顯示各自 IAA 報告，並顯示任務層級 `x/y` 達標徽章（依 `IAA_COMPOSITE_BADGE_FORMAT`）。
+7. **AC-3.7**：**Given** `outputs[]` 含 `sequence_tagging`，Dry Run 已完成，**When** 進入品質監控，**Then** 該型別子區塊顯示 Krippendorff u-α ⭐️ 為主要指標，計算單位標示為 span；畫面上不存在 `Token-level Alpha` 字樣、不存在 `IAA_THRESHOLD_TOKEN`、不存在任何門檻數值；亦不存在「遮罩全體標記員皆標為 `O` 的 token」或任何等價的遮罩說明。有效樣本數 `< 2` 或有效標記員數 `< 2` 時，依 FR-039 顯示「無法計算」狀態並說明原因，不顯示 `0.00`。
+8. **AC-3.8**：**Given** `outputs[]` 同時含 `free_text` 與 `sequence_tagging`，**When** 進入品質監控，**Then** `free_text` 子區塊顯示「不適用—由審核員評估」，不計入自動 IAA，且不得顯示空白或 0；`sequence_tagging` 子區塊顯示 u-α 點估計值與「待實證校準」中性標示；兩個子區塊皆未套用達標綠或未達標紅色彩，且 `sequence_tagging` 子區塊未出現「不適用—由審核員評估」文案。
+9. **AC-3.9**：**Given** `outputs[]` 依序為 `single_label`、`sequence_tagging`、`free_text`，Dry Run 已完成且 `single_label` 達標，**When** 進入品質監控，**Then** 依原順序逐型並列顯示三個子區塊，任務層級徽章顯示 `1/1 達標 · 2 型排除`，`sequence_tagging` 與 `free_text` 皆未計入分母；`outputs[]` 僅含 `sequence_tagging` 與 `free_text` 時，任務層級摘要狀態為 `IAA_SUMMARY_STATES = not_applicable`，不顯示 `0/0`，也不顯示任何 pass 或 fail 判定。
 10. **AC-3.10**：**Given** 任務 `outputs[]` 僅含 `free_text`（`y = 0`），**When** 進入品質監控，**Then** 任務層級摘要狀態為 `IAA_SUMMARY_STATES = not_applicable`，不顯示任何 pass / fail 判定。
 11. **AC-3.11**：**Given** 完成標記員數 `n < IAA_SMALL_SAMPLE_THRESHOLD`，**When** 檢視任一輸出類型的 IAA 指標，**Then** 指標旁顯示中性「小樣本估計」警示徽章，不阻擋閘門且點估計照常顯示。
 12. **AC-3.12**：**Given** Dry Run 尚未完成（`QUALITY_EMPTY_STATE_TRIGGER`），**When** 進入品質監控，**Then** 顯示「IAA 報告將在 Dry Run 完成後產生」與「前往任務詳情」次要按鈕；若可由 `outputs[]` 靜態算出 `y`，另以 `IAA_PENDING_BADGE_FORMAT` 顯示待完成徽章。
-13. **AC-3.13**：**Given** `outputs[]` 含 `LOW_CONSISTENCY_SAMPLE_SCOPE` 中任一型別（`single_label` / `multi_label` / `single_dim` / `multi_dim` / `entity_recognition` / `relation_identification` / `sequence_tagging`），**When** 進入品質監控，**Then** 該型別子區塊顯示「一致性最低樣本清單」，依 `DISAGREEMENT_SAMPLE_SORT` 由高到低排序，並依型別使用對應分歧度計算單位；`outputs[]` 含 `free_text` 時，該型別不顯示此清單。
-14. **AC-3.14**：**Given** `outputs[]` 含 `ANNOTATOR_QUALITY_RANKING_SCOPE` 中任一型別，**When** 進入品質監控，**Then** 該型別子區塊顯示「標記員品質排名」，依型別對應一致率計算方式排序，且完成樣本數 `< IAA_SMALL_SAMPLE_THRESHOLD` 的標記員顯示小樣本估計警示但不被剔除；`outputs[]` 含 `free_text` 時，該型別不參與排名。
+13. **AC-3.13**：**Given** `outputs[]` 含 `LOW_CONSISTENCY_SAMPLE_SCOPE` 中任一型別（`single_label` / `multi_label` / `single_dim` / `multi_dim` / `entity_recognition` / `relation_identification` / `sequence_tagging`），**When** 進入品質監控，**Then** 該型別子區塊顯示「一致性最低樣本清單」，依 `DISAGREEMENT_SAMPLE_SORT` 由高到低排序，並依型別使用對應分歧度計算單位；其中 `sequence_tagging` 清單的分歧度指標名稱為 `pairwise_f1`，畫面未出現 `non_o_token_disagreement_rate` 或任何以 token 為單位的分歧率說明；`outputs[]` 含 `free_text` 時，該型別不顯示此清單。
+14. **AC-3.14**：**Given** `outputs[]` 含 `ANNOTATOR_QUALITY_RANKING_SCOPE` 中任一型別，**When** 進入品質監控，**Then** 該型別子區塊顯示「標記員品質排名」，依型別對應一致率計算方式排序，且完成樣本數 `< IAA_SMALL_SAMPLE_THRESHOLD` 的標記員顯示小樣本估計警示但不被剔除；其中 `sequence_tagging` 的一致率指標名稱為 `f1_to_merged_reference`，畫面未出現 `token_majority_agreement_rate` 或任何以多數決 token 一致率為名的欄位；`outputs[]` 含 `free_text` 時，該型別不參與排名。
 15. **AC-3.15**：**Given** `outputs[]` 含 `entity_recognition` 或 `sequence_tagging`，**When** 進入品質監控，**Then** 該型別子區塊顯示「邊界分歧分析」，統計部分重疊但邊界不一致的案例數與範例；其他輸出類型不顯示邊界分歧分析區塊。
-16. **AC-3.16**：**Given** 任一輸出類型的有效樣本數 `< 2` 或有效標記員數 `< 2`（`De = 0`），**When** 檢視該型別的主要 IAA 指標，**Then** 顯示明確的「無法計算」狀態並附說明原因，不得顯示 `0.00` 或任何回退數值，且不阻擋使用者進入正式標記（FR-039）。
+16. **AC-3.16**：**Given** 任一輸出類型的有效樣本數 `< 2` 或有效標記員數 `< 2`（`De = 0`），**When** 檢視該型別的主要 IAA 指標，**Then** 顯示明確的「無法計算」狀態並附說明原因，不得顯示 `0.00` 或任何回退數值，且不阻擋使用者進入正式標記（FR-039）；`outputs[]` 含 `sequence_tagging` 且其 u-α 可計算時，該型別不顯示任何「未達門檻」警示、不被計入未通過，使用者仍可進入正式標記。
 17. **AC-3.17**：**Given** 任一標記員名下、`annotation-015` 定義之審核單位（sample × annotator）中已有至少一位審核員提交決策，**When** 檢視「標記員被修改率」表格，**Then** 該標記員在對應 `output_type` 欄位顯示 `modified_units / reviewed_units` 之比率，其中 `pending`（無審核員提交）審核單位不計入分母，且分子不得以 `REVIEW_UNIT_STATUS.MODIFIED` 狀態值計數（FR-040）；表格為任務層級（列 = 標記員），置於逐輸出類型子區塊迴圈之外。
 
 **介面定義（需與 IA 導覽語意一致）**：
@@ -335,9 +341,10 @@ sequenceDiagram
 
 **`sequence_tagging` 品質規則**：
 
-- `Token-level Alpha`（nominal）為主要指標。
-- O-tag 遮罩規則：計算前必須先遮罩全體標記員皆標為 `O` 的 token（或等價地僅納入至少一位標記員標為非 `O` 的 token 位置）；不得將全員一致的 `O` token 直接計入分子分母，避免 `O` 佔多數造成指標虛高。
-- 「一致性最低樣本清單」以該樣本非 `O` token 分歧率為分歧度；「標記員品質排名」以與多數決 token 標記一致率排序；「邊界分歧分析」統計 span 邊界部分重疊但不完全一致的案例。
+- `Krippendorff 單位化 α（u-α）` 為主要指標（**v3.0.0 BREAKING**），計算單位為 span；原 `Token-level Alpha`（nominal）與 `IAA_THRESHOLD_TOKEN = 0.75` 一併廢止，識別名稱不得重新使用（見 FR-012L）。
+- 無 O-tag 遮罩規則（**v3.0.0 BREAKING**）：span 模型下沒有 token 陣列、沒有 `O` 標籤，遮罩對象不存在；u-α 本就以連續體長度加權處理未標記區段，不得以任何 span 版本的等價遮罩規則取代。
+- 不標示門檻：本型別屬 `IAA_UNCALIBRATED_TYPES`，顯示 u-α 數值與排序但不做達標判定，以中性樣式標示「待實證校準」（見 FR-043）。
+- 「一致性最低樣本清單」以該樣本的 pairwise span F1 strict 為分歧度；「標記員品質排名」以與合併聚合參考值的 F1 排序；「邊界分歧分析」統計 span 邊界部分重疊但不完全一致的案例。
 
 ---
 
@@ -358,6 +365,28 @@ sequenceDiagram
 
 - Tab 切換屬頁內切換，不可重新導向到任務列表。
 - active tab 以 `?tab=` 反映，供 deep link 與重新整理後恢復狀態。
+
+---
+
+### 使用者故事 5 — 自 span 標記推導序列標記格式並匯出（優先級：P1，v3.0.0 新增）
+
+Project Leader 可將 `sequence_tagging` 的 span 標記結果以 BIO／BIOES／IOB2 任一方案匯出為扁平序列，字元級為預設且不需要切詞引擎；選用詞級時，匯出檔必須攜帶 tokenizer 版本並回報因對齊而擴張的標記筆數。
+
+**此優先級原因**：`sequence_tagging` 自 `specs/task-management/013-task-new/spec.md` v7.0.0 起改以字元 offset 的 `spans[]` 儲存，序列標記格式不再是標記時的設定；若匯出層不定義推導契約，下游研究流程就沒有任何管道取得序列標記格式，該輸出類型等同不可用於訓練。
+
+**獨立測試方式**：以固定的 `spans[]` 與文本重複匯出，比對序列逐字元相同；切換方案與 token 單位，驗證方案不寫回任務 config、詞級缺版本時被阻擋。
+
+**驗收情境**：
+
+1. **AC-5.1**：**Given** 任務 `outputs[]` 含 `sequence_tagging`，某樣本文本為「台積電董事長出席」且已提交一筆 `{ start: 0, end: 3, label: "ORG" }`，**When** 使用者以預設設定匯出該任務，**Then** 匯出的序列為 `B-ORG`、`I-ORG`、`I-ORG`、`O`、`O`、`O`、`O`、`O`，長度等於文本字元數；匯出過程未使用任何切詞引擎，匯出檔 metadata 不含 `tokenizer.engine` 或 `tokenizer.version`，且記錄 `tagging_scheme` 為 `BIO`、`token_unit` 為 `character`；同一份標記結果改以 `BIOES` 匯出時序列為 `B-ORG`、`I-ORG`、`E-ORG`、`O`、`O`、`O`、`O`、`O`，且任務 config 未被寫入任何標記方案欄位。
+2. **AC-5.2**：**Given** 某任務的 `sequence_tagging` 標記結果與匯出選項皆未變動，**When** 於不同時間、不同瀏覽器重複匯出兩次，**Then** 兩次匯出的序列逐字元相同；某樣本不含任何 span 時，該樣本輸出與其文本等長的全 `O` 序列，未被省略、未輸出空陣列。
+3. **AC-5.3**：**Given** 某樣本文本為「台積電董事長出席」，已提交一筆涵蓋「董事」的 `{ start: 3, end: 5, label: "TITLE" }`，而所選切詞引擎將「董事長」切為單一 token，**When** 使用者選擇詞級匯出並指定切詞引擎，**Then** 該筆標記被擴張為涵蓋「董事長」的完整 token，未被截斷或丟棄；匯出檔 metadata 含 `tokenizer.engine` 與 `tokenizer.version`；匯出完成後顯示「1 段標記因對齊被擴張」摘要，展開後列出原始標記文字「董事」、擴張後文字「董事長」與 offset 差值；已儲存的 `spans[]` 仍為 `{ start: 3, end: 5, label: "TITLE" }`，未被回寫。
+4. **AC-5.4**：**Given** 使用者選擇詞級匯出，但所選引擎未提供版本資訊，**When** 觸發匯出，**Then** 該次匯出被阻擋並顯示可理解的原因，未產生任何匯出檔；使用者改回字元級匯出時，匯出正常完成，匯出檔不含 tokenizer metadata，且畫面未顯示任何擴張摘要。
+
+**行為規則**：
+
+- 推導契約與欄位語意由本規格擁有（FR-041／FR-042）；匯出對話框 UI、匯出入口與匯出記錄表屬 `specs/task-management/014-task-detail/spec.md`，由 issue #742 承接的 companion change 落地，本規格不定義畫面。
+- AC-5.3／AC-5.4 中屬畫面呈現的子句（擴張摘要的顯示與展開、阻擋提示的呈現）同樣移交 issue #742；本規格於此層只保證推導與 metadata 的純函式行為可被獨立驗證。
 
 ---
 
@@ -395,7 +424,7 @@ sequenceDiagram
 - **FR-009I**: `multi_dim` 必須依維度數量顯示逐維度分佈直方圖、逐維度統計摘要，以及維度間分佈視覺化（2 維為 scatter plot，3 維以上為逐對散佈或平行座標）。
 - **FR-009J**: `entity_recognition` 必須顯示實體類型分佈、每句平均實體數與 Entity span 長度分佈。
 - **FR-009K**: `relation_identification` 必須顯示關係類型分佈與 Triple 數量統計；若同任務 `outputs[]` 亦含 `entity_recognition`，實體類型分佈不得於本區塊重複顯示。
-- **FR-009L**: `sequence_tagging` 必須依任務 `tokenization` 設定（來源 `task-management-013`）顯示標記類型（tag）分佈、每句平均標記片段數與標記片段長度分佈。
+- **FR-009L**（v3.0.0 修訂，BREAKING）: `sequence_tagging` 必須以已提交的 `spans[]` 為統計母體顯示三項指標：標籤類型（label）分佈、每句平均標記片段數、標記片段長度分佈。原條文以「依任務 `tokenization` 設定切分後的 token 序列」為母體並依任務 `scheme`（`BIO / BIOES / IOB2 / SINGLE`）解析 tag 類型；`tokenization` 與 `tagging_scheme` 兩個設定欄位已於 `specs/task-management/013-task-new/spec.md` v7.0.0 破壞性移除，該母體與該解析步驟皆無對象，MUST NOT 於任何路徑保留。改版後三項規則：（1）`標籤類型（label）分佈` 直接依 span 的 `label` 聚合，MUST NOT 出現 `B-`／`I-`／`E-`／`S-`／`O` 任一前綴或標籤，一段 n 字的標記計為 1 筆、MUST NOT 計為 n 筆（與 `specs/annotation/015-annotation-workspace/spec.md` FR-024L 的口徑一致）；（2）`每句平均標記片段數` 直接以樣本內 span 筆數計算平均值，「將連續同類型 tag 還原為片段」的還原步驟 MUST NOT 保留——span 本身即片段；（3）`標記片段長度分佈` MUST 以字元長度（`end - start`）計算，至少輸出 1、2、3、4+ 字元 buckets，MUST NOT 以 token 長度分桶。
 - **FR-009M**: `free_text` 必須顯示已提交回答數與平均回答字數，不得提供標籤 / 分數類圖表。
 - **FR-010**: 當 `STATS_EMPTY_STATE_TRIGGER` 觸發時，stats tab 必須顯示「尚無標記資料，請先發布 Dry Run」與「前往任務詳情」次要按鈕。
 - **FR-011**: 品質監控為 detail 頁的 `TAB_QUALITY`（`?tab=quality`）tab，必須由 stats tab 切換或 Dashboard badge deep link 進入。
@@ -406,9 +435,9 @@ sequenceDiagram
 - **FR-012I**: `multi_dim` 必須顯示逐維度 ICC(2,1) → 巨集平均為主要指標並標示 `IAA_THRESHOLD_MULTI_DIM_RECOMMENDED` 與 `IAA_THRESHOLD_MULTI_DIM_STRICT`。
 - **FR-012J**: `entity_recognition` 必須顯示 Pairwise Span F1 strict 為主要指標並標示 `IAA_THRESHOLD_ENTITY_RECOGNITION_STRICT`；partial-overlap F1（`IAA_THRESHOLD_ENTITY_RECOGNITION_PARTIAL_DISPLAY`）僅供顯示切換，不得作為第二道達標判定。
 - **FR-012K**: `relation_identification` 必須顯示 Pairwise Triple-level F1 為主要指標並標示 `IAA_THRESHOLD_RELATION_IDENTIFICATION`；entity-level F1 以輔助指標顯示；`IAA_THRESHOLD_RELATION_IDENTIFICATION_HIGH_DISPLAY` 僅為「高品質」顯示帶，不得作為第二道達標判定。
-- **FR-012L**: `sequence_tagging` 必須顯示 Token-level Alpha（nominal）為主要指標並標示 `IAA_THRESHOLD_TOKEN`；計算前必須先遮罩全體標記員皆標為 `O` 的 token（或等價僅納入非 `O` 位置），不得將全員一致的 `O` token 計入分子分母。
+- **FR-012L**（v3.0.0 修訂，BREAKING）: `sequence_tagging` 必須顯示 **Krippendorff 單位化 α（unitizing alpha，u-α）** 為主要指標，並 MUST 於 `OUTPUT_TYPE_IAA_REGISTRY` 中以 `span` 為計算單位登錄；該型別的門檻欄位 MUST 為空，計算前置規則欄位 MUST 記載 u-α 以連續體長度加權處理未標記區段。**Token-level Alpha（nominal）與 `IAA_THRESHOLD_TOKEN = 0.75` 一併廢止**：兩者皆依附已不存在的 token 座標系——span 模型下沒有 token 陣列、沒有 `O` 標籤，「遮罩全體標記員皆標為 `O` 的 token」的遮罩對象不存在；該遮罩規則 MUST NOT 保留，且 MUST NOT 以任何 span 版本的等價規則取代（u-α 本就以連續體長度加權處理未標記區段，「`O` 佔多數造成指標虛高」在新指標下不存在）。`IAA_THRESHOLD_TOKEN` 為正式廢止常數，其識別名稱 MUST NOT 於規格、原型或測試中重新使用。**本型別不設門檻**：`sequence_tagging` 自本版起屬 `IAA_UNCALIBRATED_TYPES`，quality tab MUST 顯示 u-α 數值與排序、MUST NOT 顯示門檻、MUST NOT 做達標判定（完整語意見 FR-043）；此為刻意留白，MUST NOT 以任何預設數字填補。u-α 的計算輸入沿用 FR-039 既有規則不變：僅標記員原始標記、逐 `trial_round`、排除 `task-management-014` FR-005h 排除作業、bypass 視為缺值、`De = 0` 時顯示「無法計算」。
 - **FR-012M**: `free_text` 不得計算自動 IAA；quality tab 必須顯示「不適用—由審核員評估」狀態，並排除於 `IAA_GATE_EXCLUDED_TYPES` 對應的 `x/y` 分母，不得顯示空白或 0。
-- **FR-013**: 系統必須以明確視覺（達標綠色 / 未達標紅色）標示各輸出類型 IAA 數值與門檻比較結果；`free_text` 子區塊改用中性樣式顯示「不適用」狀態，不套用達標 / 未達標判定色彩。
+- **FR-013**（v3.0.0 修訂）: 系統必須以明確視覺（達標綠色 / 未達標紅色）標示各輸出類型 IAA 數值與門檻比較結果，**但僅限實際具有門檻的輸出類型**。下列兩類 MUST 改用中性樣式，且兩者的文案 MUST NOT 互相沿用：`IAA_GATE_EXCLUDED_TYPES`（現值 `free_text`）顯示「不適用—由審核員評估」，不套用達標／未達標色彩；`IAA_UNCALIBRATED_TYPES`（現值 `sequence_tagging`，本版新增）顯示主指標點估計值與中性的「待實證校準」標示，不顯示門檻、不套用達標／未達標色彩，且 MUST NOT 顯示「不適用」語意的文案——該型別的指標是算得出來的。
 - **FR-014**: 系統必須提供異常偵測功能，至少涵蓋：標記速度異常（過快 / 過慢）與離群標記值（outliers）。
 - **FR-015**: 系統必須提供 `CONSISTENCY_DEVIATION_BLOCK`「標記一致性偏離分析」獨立區塊，顯示每位標記員在可比較單位中的偏離統計。
 - **FR-015A**: `標記一致性偏離分析` 至少必須顯示 5 個獨立欄位：可比較單位數、`離群值(1.5xSTD)筆數`、`離群值(1.5xSTD)比例`、`離群值(2xSTD)筆數`、`離群值(2xSTD)比例`。
@@ -422,7 +451,7 @@ sequenceDiagram
 - **FR-021**: Tab 切換時，各 tab 的捲動位置必須相互獨立且不重置。
 - **FR-022**: quality tab 必須實作正式狀態列舉 `QUALITY_TAB_STATES`，並以互斥狀態驅動 loading、空狀態、ready、error 顯示。
 - **FR-024**: quality tab 必須輸出 `IAA_SUMMARY_STATES`（`pass | fail | pending | not_started | not_applicable`）作為列表頁 `IAA 狀態徽章` 的唯一摘要來源，並依 `IAA_COMPOSITE_GATE_RULE` 由逐型結果推導。
-- **FR-024A**: 系統必須依 `IAA_COMPOSITE_BADGE_FORMAT` 顯示任務層級 `x/y` 達標徽章；`x` 為主指標達標的輸出類型數，`y` 為 `outputs[]` 中不在 `IAA_GATE_EXCLUDED_TYPES` 排除集的相異輸出類型數。
+- **FR-024A**（v3.0.0 修訂，BREAKING）: 系統必須依 `IAA_COMPOSITE_BADGE_FORMAT` 顯示任務層級 `x/y` 達標徽章；`x` 為主指標達標的輸出類型數，`y` 為 `outputs[]` 中**既不在 `IAA_GATE_EXCLUDED_TYPES`、也不在 `IAA_UNCALIBRATED_TYPES`** 的相異輸出類型數。未校準型別無門檻可比較，因此 MUST NOT 進入 `x` 或 `y` 任一側——把它算進分母會使一個永遠無法達標的型別把 `IAA_COMPOSITE_GATE_RULE`（`pass ⟺ x == y AND y > 0`）永久鎖在未通過。`IAA_COMPOSITE_BADGE_FORMAT` 的「`· {N} 型排除`」後綴 MUST 同時涵蓋兩類排除型別，`N` 為兩集合於該任務 `outputs[]` 中命中的相異型別總數。`y = 0`（`outputs[]` 中所有型別皆落入兩集合之一）時，MUST 依 FR-024B 輸出 `IAA_SUMMARY_STATES = not_applicable`，MUST NOT 顯示 `0/0` 或任何 `pass | fail | pending` 判定。
 - **FR-024B**: 當 `y = 0`（任務 `outputs[]` 僅含被排除類型，如僅 `free_text`）時，`IAA_SUMMARY_STATES` 必須為 `not_applicable`，不得顯示 `pass | fail | pending`。
 - **FR-024C**: 尚無 Dry Run 資料但 `y` 可由 `outputs[]` 靜態算出時，quality tab 必須以 `IAA_PENDING_BADGE_FORMAT`（`—/{y} 待完成 Dry Run`）顯示，不得顯示 `0/{y}`。
 - **FR-025**: 系統必須依 `ANNOTATOR_RISK_LEVELS` 規則為每位標記員計算並顯示風險等級（`normal | watch | high_risk`）。
@@ -432,16 +461,16 @@ sequenceDiagram
 - **FR-029**: 建議行動（審核標記 / 調整參與狀態）只能由 `RISK_ACTION_ALLOWED_ROLE`（`project_leader`）執行；`reviewer` 僅能查看風險等級與原因，不得觸發行動。
 - **FR-030**: `multi_dim` 任務的標記員風險等級必須以 `DIMENSION_RISK_AGGREGATION` 規則（取各維度中較高等級）決定；各維度的原因分類需分開標示，不合併顯示。
 - **FR-034**: 當任一輸出類型完成標記員數 `n < IAA_SMALL_SAMPLE_THRESHOLD` 時，quality tab 必須在該指標旁顯示中性「小樣本估計」警示徽章；此徽章不得阻擋 `IAA_COMPOSITE_GATE_RULE` 判定，且點估計仍須正常顯示。
-- **FR-035**: 系統必須為 `LOW_CONSISTENCY_SAMPLE_SCOPE`（`single_label` / `multi_label` / `single_dim` / `multi_dim` / `entity_recognition` / `relation_identification` / `sequence_tagging` 共 7 型；`free_text` 除外）逐型提供「一致性最低樣本清單」，依 `DISAGREEMENT_SAMPLE_SORT` 由高到低排序，且分歧度計算單位須依輸出類型分別採用投票分裂度（`single_label`/`multi_label`）、標記值離散度（`single_dim`/`multi_dim`）、逐樣本 pairwise F1（`entity_recognition`/`relation_identification`）或非 `O` token 分歧率（`sequence_tagging`）。
+- **FR-035**: 系統必須為 `LOW_CONSISTENCY_SAMPLE_SCOPE`（`single_label` / `multi_label` / `single_dim` / `multi_dim` / `entity_recognition` / `relation_identification` / `sequence_tagging` 共 7 型；`free_text` 除外）逐型提供「一致性最低樣本清單」，依 `DISAGREEMENT_SAMPLE_SORT` 由高到低排序，且分歧度計算單位須依輸出類型分別採用投票分裂度（`single_label`/`multi_label`）、標記值離散度（`single_dim`/`multi_dim`）、逐樣本 pairwise F1（`entity_recognition`/`relation_identification`）或逐樣本 pairwise F1（`entity_recognition` / `relation_identification` / **`sequence_tagging`**）。**v3.0.0（BREAKING）**：`sequence_tagging` 的分歧度單位由「該樣本非 `O` token 分歧率」改為「該樣本的 pairwise span F1 strict」，與 `entity_recognition` 同口徑；`LowConsistencySampleEntry.divergence_metric_name` 之對應值由 `non_o_token_disagreement_rate` 改為 `pairwise_f1`，舊值 MUST NOT 保留、其識別名稱 MUST NOT 重新使用。逐樣本刻意不使用 u-α——u-α 是語料層級的連續體單位化指標，於單一樣本上估計不穩定；主指標與逐樣本分歧度採用不同統計量為刻意選擇，MUST NOT 被視為不一致而「修正」為同一指標。
 - **FR-035A**：「一致性最低樣本清單」為 017 自行定義的品質監控唯讀觀測清單，分歧度計算單位（見規格常數區逐型定義）由本規格獨立擁有，不得外推或依賴任何審核流程的仲裁結果；亦不得直接觸發或修改 `annotation-015` 現行審核單位狀態機（FR-051）或爭議池仲裁狀態。（**v2.2.0 修正**：原條文引用 `annotation-015` v3.0.0 dry_run 共識仲裁流程中的「divergent」分歧項作為同源概念——該流程已於 `annotation-015` v4.0.0〔見其「使用者故事 3」的「⚠️ v4.0.0 適用範圍再次收斂（BREAKING）」段落〕整批廢止，繼續援引將形成 017 ↔ 015 的循環授權；本條文修正為 017 自行定義，不再外推。）
-- **FR-036**: 系統必須為 `ANNOTATOR_QUALITY_RANKING_SCOPE`（同 7 型；`free_text` 不參與）逐型提供標記員品質排名：`single_label`/`multi_label` 依與多數決一致率排序、`single_dim`/`multi_dim` 依與平均值的平均絕對偏差（MAD）由低到高排序、`entity_recognition`/`relation_identification` 依與合併聚合參考值的 F1 排序、`sequence_tagging` 依與多數決 token 標記一致率排序；排名須套用 `IAA_SMALL_SAMPLE_THRESHOLD` 小樣本警示規則，完成樣本數不足者顯示警示但不得從排名中剔除。
+- **FR-036**: 系統必須為 `ANNOTATOR_QUALITY_RANKING_SCOPE`（同 7 型；`free_text` 不參與）逐型提供標記員品質排名：`single_label`/`multi_label` 依與多數決一致率排序、`single_dim`/`multi_dim` 依與平均值的平均絕對偏差（MAD）由低到高排序、`entity_recognition`/`relation_identification`/**`sequence_tagging`** 依與合併聚合參考值（多標記員標記聚合後的參考集合，非任務 ground truth）的 F1 排序；排名須套用 `IAA_SMALL_SAMPLE_THRESHOLD` 小樣本警示規則，完成樣本數不足者顯示警示但不得從排名中剔除。**v3.0.0（BREAKING）**：`sequence_tagging` 的一致率單位由「與多數決 token 標記一致率」改為「與合併聚合參考值的 F1」，`AnnotatorQualityRankingEntry.metric_name` 之對應值由 `token_majority_agreement_rate` 改為 `f1_to_merged_reference`，舊值 MUST NOT 保留、其識別名稱 MUST NOT 重新使用——多數決在 span 模型下需要先把答案投影回 token 網格才能定義，該網格已不存在。排名 MUST 對 `IAA_UNCALIBRATED_TYPES` 中的型別照常提供：未校準的是門檻，不是指標與排序。
 - **FR-037**: 系統必須為 `BOUNDARY_DISAGREEMENT_SCOPE`（僅 `entity_recognition`、`sequence_tagging` 兩型）提供「邊界分歧分析」，統計 `BOUNDARY_ERROR_TYPES` 分類下部分重疊但邊界不一致的案例數與範例；`BOUNDARY_DISAGREEMENT_SCOPE` 以外的輸出類型不得顯示邊界分歧分析內容。
 - **FR-038**: 標記員風險表的建議行動按鈕必須可導頁（僅 `RISK_ACTION_ALLOWED_ROLE` 可觸發，見 FR-029）：「審核標記」導向 `/annotation-list?task_id={task_id}&role=reviewer&run_type=dry_run`（品質分析以 dry run 完成為前提，見 `QUALITY_EMPTY_STATE_TRIGGER`）；「調整參與狀態」導向 `/task-detail/{task_id}?tab=member-management`。
 - **FR-039**（v2.2.0 新增，IAA 閘門語意跨模組唯一權威來源）：本規格為 IAA（Inter-Annotator Agreement）閘門語意的唯一權威來源（SSoT）；`task-management-014`、`annotation-015` 及其他模組對 IAA 閘門行為的呈現須以本條為準，不得另行定義或推導出不同語意。核心語意如下：
-  1. **顧問性、非阻擋**：IAA 為顧問性指標，`waiting_iaa_confirmation`（或等義）狀態語意為「軟性警告 + 需人工確認」，非硬性閘門；α 未達 `OUTPUT_TYPE_IAA_REGISTRY` 門檻時系統必須顯示明顯警示，但不得阻擋使用者進入正式標記（承接並升格 FR-034 之既有語意為跨模組正典）。
+  1. **顧問性、非阻擋**：IAA 為顧問性指標，`waiting_iaa_confirmation`（或等義）狀態語意為「軟性警告 + 需人工確認」，非硬性閘門；α 未達 `OUTPUT_TYPE_IAA_REGISTRY` 門檻時系統必須顯示明顯警示，但不得阻擋使用者進入正式標記（承接並升格 FR-034 之既有語意為跨模組正典）。**（v3.0.0 新增例外）本點僅適用於 `OUTPUT_TYPE_IAA_REGISTRY` 中實際登錄門檻的輸出類型**；屬 `IAA_UNCALIBRATED_TYPES` 者沒有門檻可比較，MUST NOT 顯示任何「未達門檻」警示，亦 MUST NOT 因此被視為未通過（其呈現規則見 FR-043）。此例外 MUST NOT 被解讀為放寬阻擋語意——未校準型別同樣不阻擋流程。
   2. **輸入僅限標記員原始標記**：α 計算的輸入僅為標記員（`annotator`）於 `outputs[]` 各輸出類型的原始作答；審核員（`reviewer`）並非一位 rater，其審核修正值（`annotation-015` FR-051／FR-052 定義之審核單位差異）不得併入 α 計算。
   3. **逐回合計算**：α 以單一試標回合（`trial_round`）為計算單位，不得跨回合累積計算。
-  4. **樣本或標記員數不足時必須顯示「無法計算」**：Krippendorff nominal α 於 `De = 0`（有效樣本 `< 2` 或有效標記員 `< 2`）時數學上未定義；此情境系統必須顯示明確的「無法計算」狀態並說明原因，不得回退顯示 `0.00` 等任何數值，亦不得阻擋流程。
+  4. **樣本或標記員數不足時必須顯示「無法計算」**：Krippendorff α 於 `De = 0`（有效樣本 `< 2` 或有效標記員 `< 2`）時數學上未定義；此情境系統必須顯示明確的「無法計算」狀態並說明原因，不得回退顯示 `0.00` 等任何數值，亦不得阻擋流程。本點對 nominal α 與單位化 α（u-α）同等適用（v3.0.0 補述）。
   5. **排除與停用成員**：被 `task-management-014` FR-005h 明確排除之標記作業（`ExcludedAnnotationAssignment`）不計入 α；已停用成員之既有標記仍計入 α（沿用 `task-management-014` FR-005l 既有語意）；本規格不重新定義前述兩條排除規則，僅引用其結果。
   6. **Bypass 視為缺值**：標記員於某輸出類型 bypass 時，該筆作答於該 outKey 上視為缺值（missing value），不計入 α 之分母，不得視為一個與其他標記員實際答案比對的「空白答案」。
 - **FR-040**（v2.2.0 新增，標記員被修改率；獨立區塊，見 `ANNOTATOR_MODIFICATION_RATE_SCOPE`）：系統必須為每位標記員逐輸出類型計算並顯示「被修改率」（`AnnotatorModificationRateEntry`，見關鍵實體），定義如下：
@@ -454,6 +483,25 @@ sequenceDiagram
   - **run_type 範圍**：指標定義本身與 `run_type` 無關，`dry_run` 與 `official_run` 皆適用——`official_run` 每筆樣本恰指派一位標記員（`task-management-014` FR-010f-4），標記員間無重疊、α 無法計算，被修改率為 `official_run` 下唯一可能的逐標記員品質訊號；且 `annotation-015` FR-051／FR-052 明文禁止依 `run_type` 分流呈現。**但本版呈現僅落地 `dry_run` 區塊**：quality tab 現行整體綁定 `dry_run`（`QUALITY_EMPTY_STATE_TRIGGER`、`QUALITY_TAB_STATES`、FR-017、FR-024C、FR-038 皆硬寫 `run_type=dry_run`），本版不擴充 quality tab 的 `run_type` 範圍，`official_run` 的呈現位置待後續變更定案。
   - **呈現形狀**：`AnnotatorModificationRateEntry` 於品質監控 tab 以任務層級表格呈現（列 = 標記員，欄 = 各 `output_type` 之被修改率 + 總計），置於逐輸出類型迴圈**之外**，不逐型另建子區塊——分母以審核單位（sample × annotator）為準，本質是逐標記員一個數字，逐型拆分將使每個型別各自產生資訊密度極低的三列小表。
   - 系統必須依 `ANNOTATOR_MODIFICATION_RATE_SCOPE`（8 型全納，含 `free_text`）逐型計算被修改率；`free_text` 雖被 `IAA_GATE_EXCLUDED_TYPES` 排除於自動 IAA，被修改率不受此排除，為 `free_text` 唯一可能擁有的品質指標。
+- **FR-041**（v3.0.0 新增，匯出層 BIO 序列推導契約；SC-033）：本規格為「自 `spans[]` 推導序列標記」的跨模組唯一權威來源（SSoT）。`specs/task-management/013-task-new/spec.md` v7.0.0 的 FR-003d-1 與 `specs/annotation/015-annotation-workspace/spec.md` v6.0.0 的 FR-024A-3 皆明文將此契約指名給本規格，其他模組 MUST NOT 另行定義或推導出不同語意。契約規則如下：
+  1. **適用範圍**：本推導 MUST 僅適用 `sequence_tagging`。其正確性前提是 span 互不相交——該不變式由 `specs/task-management/013-task-new/spec.md` 的 `SPAN_OVERLAP_POLICY_BY_OUTPUT_TYPE` 將 `sequence_tagging` 的 `allow_overlapping` 鎖定為 `false` 所保證，因此扁平序列與 span 集合之間為雙射、壓縮無損。`entity_recognition` 允許重疊與巢狀，不具此性質，MUST NOT 套用本推導。
+  2. **決定性**：推導 MUST 為 `spans[]` 與原始文本的純函式。相同輸入在任何時間、任何執行環境重複匯出，MUST 產生逐字元相同的序列；MUST NOT 引入時間戳、隨機性、瀏覽器語系或本機設定作為輸入。
+  3. **方案屬於匯出，不屬於任務**：`EXPORT_TAGGING_SCHEMES` 之選擇 MUST 為匯出當下的輸出格式選項，MUST NOT 寫回任務 config、MUST NOT 影響任何既有標記，且同一份標記結果 MUST 可用不同方案重複匯出而不需要重新標記。
+  4. **字元級為預設**：`EXPORT_DEFAULT_TOKEN_UNIT = character` 時，每個字元即一個 token，span 的半開區間 `[start, end)` 直接對應 token 索引；`start` 位置給 `B-{label}`、`[start+1, end)` 給 `I-{label}`、未被任何 span 覆蓋的位置給 `O`。此路徑 MUST NOT 需要任何 tokenizer，MUST NOT 產生對齊誤差。
+  5. **方案轉換為表示層差異**：`BIOES` 於單字元／單 token span 給 `S-{label}`、多 token span 的末位給 `E-{label}`；`IOB2` 與 `BIO` 的標記集合相同，兩者差異僅在歷史命名，MUST 產生相同序列。三種方案 MUST 皆自同一組 span 推導，MUST NOT 各自維護獨立的轉換路徑。
+  6. **空集合**：某樣本無任何 span 時，MUST 輸出與文本等長的全 `O` 序列，MUST NOT 省略該樣本或輸出空陣列。
+- **FR-042**（v3.0.0 新增，詞級 BIO 的 tokenizer metadata 與對齊擴張報告；SC-034）：`EXPORT_TOKEN_UNITS = word` 為進階選項。選用詞級時：
+  1. **可重現性**：匯出檔 metadata MUST 寫入 `tokenizer.engine` 與 `tokenizer.version`。缺少任一欄位時 MUST 阻擋該次匯出並說明原因——同一份 `spans[]` 在不同切詞引擎或版本下會得到不同序列，缺少此二欄位的資料集不可重現。
+  2. **對齊採擴張**：span 邊界落在 token 內部時，MUST 依 `SPAN_TOKEN_ALIGNMENT_MODE = expand` 擴張至涵蓋該 span 的**完整 token**。MUST NOT 截斷該 span、MUST NOT 丟棄該筆標記、MUST NOT 以「無法對齊」為由略過該樣本。
+  3. **擴張必須被看見**：匯出完成後 MUST 顯示「N 段標記因對齊被擴張」摘要（`N = 0` 時 MUST NOT 顯示該摘要），且該摘要 MUST 可展開，逐筆列出原始標記文字、擴張後文字與起訖 offset 差值。此點屬畫面呈現，落地位置為 `specs/task-management/014-task-detail/spec.md`（issue #742 承接），本規格只定義應被回報的資料。
+  4. **不回寫**：擴張 MUST 只發生於匯出產物中，MUST NOT 修改任何已儲存的 `spans[]`——標記員實際圈選的字元 offset 為權威值，沿用 `specs/annotation/015-annotation-workspace/spec.md` FR-052 的「`(start, end)` 為權威」語意。
+  5. **字元級不適用**：`EXPORT_TOKEN_UNITS = character` 時，MUST NOT 寫入 tokenizer metadata、MUST NOT 顯示擴張摘要（字元級不可能發生擴張）。
+- **FR-043**（v3.0.0 新增，未校準門檻型別的中性呈現；SC-035、SC-036）：新增規格常數 `IAA_UNCALIBRATED_TYPES = sequence_tagging`——主指標可計算、但平台尚未取得足以訂定門檻之實證資料的輸出類型集合。
+  1. **顯示數值與排序，不做門檻判定**：屬 `IAA_UNCALIBRATED_TYPES` 的輸出類型，quality tab MUST 顯示其主指標點估計值，並 MUST 支援跨標記員與跨樣本的排序呈現；MUST NOT 顯示任何門檻值、MUST NOT 顯示達標／未達標判定文案、MUST NOT 套用達標綠或未達標紅色彩。該型別 MUST 以中性樣式標示「待實證校準」。
+  2. **不得偷渡預設門檻**：本規格 MUST NOT 為 `IAA_UNCALIBRATED_TYPES` 中的型別定義任何門檻常數、預設值或建議值；實作 MUST NOT 以任何硬編數字回退。門檻的訂定條件為：取得第一批 `dry_run` 實測分佈後，另開 change 依實證校準。
+  3. **與 `IAA_GATE_EXCLUDED_TYPES` 語意分離**：兩集合在 `x/y` 分母上的效果相同，但 MUST NOT 共用文案或狀態值。`IAA_GATE_EXCLUDED_TYPES`（現值 `free_text`）的語意是「永久沒有自動指標，由審核員評估」；`IAA_UNCALIBRATED_TYPES` 的語意是「已算出數值、暫不判定」。對未校準型別顯示「不適用—由審核員評估」為錯誤陳述，MUST NOT 發生。
+  4. **不阻擋流程**：未校準狀態 MUST NOT 阻擋使用者進入正式標記，亦 MUST NOT 使任務層級摘要落入 `fail`。
+  5. **其餘規則照常適用**：小樣本警示（`IAA_SMALL_SAMPLE_THRESHOLD`）、`De = 0` 的「無法計算」狀態、一致性最低樣本清單、標記員品質排名與邊界分歧分析對未校準型別 MUST 照常適用——未校準的是「門檻」，不是「指標」。
 
 ### 使用者流程與導頁 *(必填)*
 
@@ -497,7 +545,7 @@ flowchart LR
 - **MultiDimStats**: 包含逐維度分佈陣列、逐維度統計摘要與維度間分佈視覺化資料。
 - **EntityRecognitionStats**: 包含 `entity_type_distribution`、`avg_entities_per_sentence`、`entity_span_length_distribution`。
 - **RelationIdentificationStats**: 包含 `relation_type_distribution`、`triple_count_stats`。
-- **SequenceTaggingStats**: 包含 `tag_distribution`、`avg_spans_per_sentence`、`span_length_distribution`。
+- **SequenceTaggingStats**: 包含 `tag_distribution`、`avg_spans_per_sentence`、`span_length_distribution`。**v3.0.0**：`tag_distribution` 語意改為標籤類型（label）分佈（不含 `B-`／`I-`／`E-`／`S-`／`O` 前綴），`span_length_distribution` 之單位改為字元（`end - start`）。
 - **FreeTextStats**: 包含 `submitted_response_count`、`avg_response_length`。
 - **StatsTabState**: stats tab 狀態，包含 `view_state`（`loading | empty | ready | error`）、`shared_metrics`、`output_type_stats[]`（依 `outputs[]` 順序排列）、`empty_state`、`loading_state`。
 - **OutputTypeIAAReport**: 單一輸出類型的 IAA 報告抽象父型別，包含 `output_type`、`primary_metric_name`、`primary_metric_value`、`threshold`、`pass_state`、`auxiliary_metrics[]`；`free_text` 型別以 `not_applicable` 狀態取代數值欄位。
@@ -508,9 +556,9 @@ flowchart LR
 - **AnnotatorRiskAssessment**: 標記員風險評估結果，包含 `risk_level`（`normal | watch | high_risk | insufficient_data`）、`cause_types`（`ANNOTATOR_CAUSE_TYPES` 陣列）、`sample_count`、`insufficient_data`（布林）。
 - **SampleDivergenceFlag**: 樣本層級高分歧旗標，包含 `sample_id`、`divergence_score`、`outlier_annotator_ids`（非一致標記員清單）；與 `AnnotatorRiskAssessment` 分離儲存與顯示。
 - **SmallSampleFlag**: 小樣本估計旗標，包含 `output_type`、`completed_annotator_count`、`is_small_sample`（`completed_annotator_count < IAA_SMALL_SAMPLE_THRESHOLD`）。
-- **LowConsistencySampleEntry**: 一致性最低樣本清單單筆項目，包含 `output_type`、`sample_id`、`divergence_score`、`divergence_metric_name`（依型別而異：`vote_split` / `value_dispersion` / `pairwise_f1` / `non_o_token_disagreement_rate`）、`text_summary`。
+- **LowConsistencySampleEntry**: 一致性最低樣本清單單筆項目，包含 `output_type`、`sample_id`、`divergence_score`、`divergence_metric_name`（依型別而異：`vote_split` / `value_dispersion` / `pairwise_f1`；**v3.0.0** 移除 `non_o_token_disagreement_rate`，`sequence_tagging` 改由 `pairwise_f1` 涵蓋）、`text_summary`。
 - **LowConsistencySampleList**: 單一輸出類型的一致性最低樣本清單，包含 `output_type`、`entries[]`（`LowConsistencySampleEntry`，依 `DISAGREEMENT_SAMPLE_SORT` 排序，上限 `LOW_CONSISTENCY_SAMPLE_LIST_SIZE`）；僅 `LOW_CONSISTENCY_SAMPLE_SCOPE` 範圍內型別產生本清單；分歧度計算與資料寫入路徑皆由 017 獨立擁有，不與 `annotation-015` 現行審核單位（`ReviewUnit`）狀態機或爭議池共用資料或互相驅動（**v2.2.0 修正**：移除已廢止之 v3.0.0 dry_run 仲裁「divergent」同源概念引用）。
-- **AnnotatorQualityRankingEntry**: 標記員品質排名單筆項目，包含 `output_type`、`annotator_id`、`consistency_score`、`metric_name`（依型別而異：`majority_agreement_rate` / `mad_to_mean` / `f1_to_merged_reference` / `token_majority_agreement_rate`）、`rank`、`small_sample_flag`。
+- **AnnotatorQualityRankingEntry**: 標記員品質排名單筆項目，包含 `output_type`、`annotator_id`、`consistency_score`、`metric_name`（依型別而異：`majority_agreement_rate` / `mad_to_mean` / `f1_to_merged_reference`；**v3.0.0** 移除 `token_majority_agreement_rate`，`sequence_tagging` 改由 `f1_to_merged_reference` 涵蓋）、`rank`、`small_sample_flag`。
 - **BoundaryDisagreementSummary**: 單一輸出類型（僅 `entity_recognition`、`sequence_tagging`）的邊界分歧統計，包含 `output_type`、`error_type_counts`（依 `BOUNDARY_ERROR_TYPES` 分類的案例數）、`examples[]`（`BoundaryDisagreementExample`）。
 - **BoundaryDisagreementExample**: 單一邊界分歧案例，包含 `sample_id`、`error_type`（`BOUNDARY_ERROR_TYPES`）、`annotator_spans[]`（各標記員標記的邊界範圍，供比對顯示）。
 - **AnnotatorModificationRateEntry**（v2.2.0 新增，見 FR-040）：標記員被修改率單筆項目，包含 `task_id`、`run_type`、`trial_round?`、`annotator_id`、`output_type`（`ANNOTATOR_MODIFICATION_RATE_SCOPE`，8 型全納）、`modified_units`（分子：經審核員實際更動答案之審核單位數，依 `annotation-015` FR-052 差異比對，非 `REVIEW_UNIT_STATUS.MODIFIED` 狀態計數）、`reviewed_units`（分母：已有至少一位審核員提交決策之審核單位數，排除 `pending`）、`modification_rate`（`modified_units / reviewed_units`）、`small_sample_flag`（沿用 `IAA_SMALL_SAMPLE_THRESHOLD`）。與 `AnnotatorQualityRankingEntry` 為分屬不同區塊的獨立實體，不共用資料結構或呈現位置（理由見規格常數區「標記員被修改率」）。
@@ -575,7 +623,6 @@ flowchart LR
 - **SC-021**: 任務層級 `x/y` 達標徽章正確反映 `IAA_COMPOSITE_BADGE_FORMAT`，且 `y = 0`（僅 `free_text`）時顯示 `not_applicable` 狀態而非 `0/0` 或空白。
 - **SC-022**: 尚無 Dry Run 資料時，可由 `outputs[]` 靜態算出 `y` 的任務會顯示 `—/{y} 待完成 Dry Run`，不顯示 `0/{y}`。
 - **SC-023**: 完成標記員數 `n < IAA_SMALL_SAMPLE_THRESHOLD` 時，指標旁正確顯示小樣本估計警示徽章，且不影響達標判定與點估計顯示。
-- **SC-024**: `sequence_tagging` 的 Token-level Alpha 計算正確遮罩全體標記員皆標為 `O` 的 token，不因 `O` 佔多數造成指標虛高。
 - **SC-025**: `multi_label` 巨集平均計算正確排除正例出現次數 `< IAA_LABEL_MIN_POSITIVE` 的稀有標籤，並顯示排除清單。
 - **SC-026**: `LOW_CONSISTENCY_SAMPLE_SCOPE`（7 型）皆能正確顯示依 `DISAGREEMENT_SAMPLE_SORT` 排序、依型別採對應分歧度計算單位的一致性最低樣本清單；`free_text` 不顯示本清單；清單旁正確顯示 017 自行定義（不外推 `annotation-015` 仲裁規則）的說明文字。
 - **SC-027**: `ANNOTATOR_QUALITY_RANKING_SCOPE`（7 型）皆能正確顯示依型別對應一致率計算方式排序的標記員品質排名；`free_text` 不參與排名；完成樣本數不足 `IAA_SMALL_SAMPLE_THRESHOLD` 的標記員正確顯示小樣本估計警示且未被剔除。
@@ -584,6 +631,10 @@ flowchart LR
 - **SC-030**（v2.2.0 新增，FR-039）：α 計算輸入正確排除審核員修正值、`task-management-014` FR-005h 排除作業與 bypass 缺值；已停用成員之既有標記正確仍計入。
 - **SC-031**（v2.2.0 新增，FR-040）：「標記員被修改率」表格中，`modified_units` 計數正確以 `annotation-015` FR-052 差異比對結果為準（而非 `REVIEW_UNIT_STATUS.MODIFIED` 狀態值），`reviewed_units` 正確排除 `pending` 審核單位。
 - **SC-032**（v2.2.0 新增，FR-040）：`ANNOTATOR_MODIFICATION_RATE_SCOPE`（8 型全納，含 `free_text`）皆能正確顯示於任務層級表格；表格位置在逐輸出類型子區塊迴圈之外，不逐型另建子區塊。
+- **SC-033**（v3.0.0 新增，FR-041）：以固定的 `spans[]` 與文本重複匯出，三種 `EXPORT_TAGGING_SCHEMES` 各自產出的序列逐字元穩定；字元級路徑不呼叫任何切詞引擎，無 span 的樣本輸出與文本等長的全 `O` 序列，且方案選擇未寫回任務 config。
+- **SC-034**（v3.0.0 新增，FR-042）：詞級匯出於缺少 `tokenizer.engine` 或 `tokenizer.version` 時正確阻擋並說明原因；成功匯出時 metadata 完整寫入，邊界落在 token 內部的 span 依 `SPAN_TOKEN_ALIGNMENT_MODE = expand` 擴張且被計入擴張筆數，已儲存的 `spans[]` 未被回寫。
+- **SC-035**（v3.0.0 新增，FR-043）：`IAA_UNCALIBRATED_TYPES` 中的型別正確顯示主指標點估計值與中性「待實證校準」標示，畫面不存在門檻數值、達標／未達標文案與綠紅色彩，且未沿用 `IAA_GATE_EXCLUDED_TYPES` 的「不適用—由審核員評估」文案。
+- **SC-036**（v3.0.0 新增，FR-043、FR-024A）：任務層級 `x/y` 徽章正確將 `IAA_UNCALIBRATED_TYPES` 命中型別排除於 `x` 與 `y` 兩側並計入「· {N} 型排除」後綴；`outputs[]` 僅含兩類排除型別時輸出 `IAA_SUMMARY_STATES = not_applicable`，不顯示 `0/0`。
 
 ---
 
@@ -591,6 +642,7 @@ flowchart LR
 
 | Version | Date | Change Summary |
 | --- | --- | --- |
+| 3.0.0 | 2026-09-09 | **`sequence_tagging` 遷移至 span 模型：匯出層 BIO 推導契約 + IAA 主指標改 u-α（major，BREAKING）**（issue #581，OpenSpec change `seq-tagging-span-export-metrics`）：`task-management/013-task-new` v7.0.0 破壞性移除 `tokenization` 與 `tagging_scheme` 兩個任務設定欄位、`annotation/015-annotation-workspace` v6.0.0 將 `sequence_tagging` 的標記結果改為字元 offset 的 `spans[]`，017 原本依附 token 座標系的統計母體與 IAA 指標全數失去對象。本版三項新增、七項修訂。**新增 FR-041**（匯出層 BIO 序列推導契約，SSoT）：新增常數 `EXPORT_TAGGING_SCHEMES = BIO \| BIOES \| IOB2`、`EXPORT_DEFAULT_TAGGING_SCHEME = BIO`、`EXPORT_TOKEN_UNITS = character \| word`、`EXPORT_DEFAULT_TOKEN_UNIT = character`；推導僅適用 `sequence_tagging`（正確性前提為 `SPAN_OVERLAP_POLICY_BY_OUTPUT_TYPE` 鎖定 `allow_overlapping = false` 的不相交不變式）、MUST 為純函式且逐字元決定性、方案屬匯出而非任務設定、字元級為預設且不需 tokenizer、三方案自同一組 span 推導、空 span 樣本輸出等長全 `O` 序列。**新增 FR-042**（詞級 tokenizer metadata 與對齊擴張報告）：新增常數 `SPAN_TOKEN_ALIGNMENT_MODE = expand`；詞級匯出 MUST 寫入 `tokenizer.engine`／`tokenizer.version`，缺任一即阻擋；邊界落在 token 內部時擴張至完整 token 而非截斷或丟棄；擴張只發生於匯出產物、MUST NOT 回寫 `spans[]`。**新增 FR-043**（未校準門檻型別的中性呈現）：新增常數 `IAA_UNCALIBRATED_TYPES = sequence_tagging`，顯示數值與排序但不判紅綠、不得偷渡預設門檻、與 `IAA_GATE_EXCLUDED_TYPES` 文案 MUST NOT 共用、不阻擋流程、小樣本與「無法計算」等其餘規則照常適用。**修訂 FR-009L**（BREAKING）：統計母體由 token 序列改為 span 集合，標籤類型分佈不得出現 `B-`／`I-`／`E-`／`S-`／`O` 前綴，一段 n 字計為 1 筆，長度分佈改以字元計。**修訂 FR-012L**（BREAKING）：主指標由 Token-level Alpha（nominal）改為 Krippendorff 單位化 α（u-α），計算單位由 token 改為 span，`O` 遮罩規則廢止且不得以任何 span 等價規則取代；`IAA_THRESHOLD_TOKEN = 0.75` 正式廢止，識別名稱不得重新使用；本型別刻意不設門檻。**修訂 FR-013**：達標綠／未達標紅僅適用實際具門檻的型別，`IAA_GATE_EXCLUDED_TYPES` 與 `IAA_UNCALIBRATED_TYPES` 皆用中性樣式但文案不得互相沿用。**修訂 FR-024A**（BREAKING）：`x/y` 分母同時排除兩集合，「· {N} 型排除」後綴涵蓋兩類。**修訂 FR-035**（BREAKING）：`sequence_tagging` 逐樣本分歧度由非 `O` token 分歧率改為 pairwise span F1 strict，`divergence_metric_name` 由 `non_o_token_disagreement_rate` 改為 `pairwise_f1`。**修訂 FR-036**（BREAKING）：標記員排名一致率由與多數決 token 一致率改為與合併聚合參考值的 F1，`metric_name` 由 `token_majority_agreement_rate` 改為 `f1_to_merged_reference`。**修訂 FR-039** 第 1 點：加註未校準型別例外（無門檻可比較故不顯示未達門檻警示、不視為未通過），第 4 點補述對 nominal α 與 u-α 同等適用。同步更新 `OUTPUT_TYPE_IAA_REGISTRY` 的 `sequence_tagging` 列（主指標改 u-α、單位改 span、門檻欄留空）、規格常數區逐型分歧度與逐型一致率兩處條列、AC-2.7／AC-3.7／AC-3.8／AC-3.9／AC-3.13／AC-3.14／AC-3.16、統計總覽與品質監控兩處介面定義、實體 `SequenceTaggingStats`／`LowConsistencySampleEntry`／`AnnotatorQualityRankingEntry`。新增使用者故事 5（AC-5.1～AC-5.4）與 SC-033～SC-036；淘汰 SC-024（其所述 `O` 遮罩規則已不存在），編號不再重複使用。**範圍界線**：本版只定義推導契約與欄位語意，匯出對話框 UI、匯出入口與匯出記錄表屬 `task-management/014-task-detail`，依「一 change 一正典」規則由 issue #742 承接的 companion change 落地（維護者裁決 D3、H）；`entity_recognition` 維持既有 Pairwise Span F1 strict 主指標與門檻不動（裁決 D2）。 |
 | 2.2.2 | 2026-09-07 | **新增「試標品質判讀與開放正式標記的決策流程」圖（patch，無條文變更）**（issue #677）：本規格的 IAA 判讀規則原本只以純文字分散於規格常數區（`IAA_GATE_EXCLUDED_TYPES`、`IAA_COMPOSITE_GATE_RULE`、`IAA_SMALL_SAMPLE_THRESHOLD`、`IAA_SUMMARY_STATES`）、AC-3.16 與 FR-039，讀者必須自行拼出「一個輸出類型會走到哪一種結果」。新增 `diagrams/iaa-quality-decision-flow.html`（自給自足單檔 HTML，依 issue #528 維護者裁定 Q4：僅連結、不附 PNG），並於「流程圖」章節加上連結。圖的結構為三個判斷（要不要算一致性／算不算得出來／是否全數達標）→ 四種結果（不適用—由審核員評估、無法計算、未達標警示、全數達標）→ 一個人工決定點，共 9 節點 11 箭頭。**刻意不使用「閘門」／`gate` 字眼**：issue #677 原標題的「品質關卡」硬閘門語意與 FR-039 第 1 點「IAA 為顧問性指標⋯⋯不得阻擋使用者進入正式標記」矛盾，故改稱「判讀與決策」，並以三重視覺表達非阻擋語意——唯一的 accent 焦點節點是人工決定點、四條結果線全部以 accent 色匯流到同一終點並標註「四條路都通到這裡 · 沒有一條是門」、standfirst 明寫「這裡沒有任何一道門」；圖中不存在任何「退回修正」節點。小樣本（`IAA_SMALL_SAMPLE_THRESHOLD = 5`）依 FR-034「不阻擋達標判定」語意以編輯性旁註呈現，不佔判斷節點。圖底另附 FR-038 兩個導頁出口與 FR-029 角色限制。走 Lightweight Path：僅新增文件與連結，未新增或移除任何 FR／AC，未變更 API 契約。 |
 | 2.2.1 | 2026-09-05 | **補上 `## 功能目標` 章節與驗收情境 AC-N.N 穩定 ID（patch，無條文變更）**：本規格建立於 AC 穩定 ID 標準（spec-template v1.5.0）之前，且缺少 `## 功能目標` 章節，導致 `scripts/check-sdd.sh` 的 `SPEC_REQUIRED_HEADING`／`SPEC_REQUIRED_IDS` 規則將本檔標記為結構不完整，後續 OpenSpec change 亦無穩定情境編號可引用。本版純為結構補完：新增 `## 功能目標` 章節摘要本規格目的；依既有標準為四組使用者故事共 34 條驗收情境補上 `AC-<故事編號>.<情境序號>` 前綴（AC-1.1~1.4、AC-2.1~2.10、AC-3.1~3.17、AC-4.1~4.3）。情境文字、FR/SC 條文與編號順序皆未更動，不新增或刪除任何 FR/AC。 |
 | 2.2.0 | 2026-08-27 | **017 成為 IAA 閘門語意與標記員被修改率之跨模組唯一權威來源（SSoT，minor）**：六張 issue（#488/#489/#490/#491/#492/#456）收斂到同一根因——試標品質數值缺乏 SSoT，經維護者裁決 017 承接此角色。新增 **FR-039**（IAA 閘門語意 SSoT）：定案並升格為跨模組正典（1）IAA 為顧問性指標、`waiting_iaa_confirmation` 為軟性警告不阻擋流程（承接並升格既有 FR-034 語意）；（2）α 輸入僅限標記員原始標記，審核員修正值不計入；（3）α 以單一 `trial_round` 為計算單位、不跨回合累積；（4）`De = 0`（有效樣本 `< 2` 或有效標記員 `< 2`）時必須顯示「無法計算」，不得回退顯示 `0.00` 或阻擋流程；（5）排除規則明文引用 `task-management-014` FR-005h（排除作業不計入）與 FR-005l（停用成員既有標記仍計入），不重新定義；（6）Bypass 視為缺值，不計入分母、不得比對為空白答案。新增 **FR-040**（標記員被修改率，另立區塊）：新規格常數 `ANNOTATOR_MODIFICATION_RATE_SCOPE`（8 型全納，含 `free_text`——與 `ANNOTATOR_QUALITY_RANKING_SCOPE` 排除 `free_text` 之 7 型範圍刻意不同，理由是被修改率不依賴跨標記員比對，且是 `free_text` 唯一可能擁有的品質指標，故未併入既有 FR-036／`AnnotatorQualityRankingEntry`）；新實體 `AnnotatorModificationRateEntry`；分子明文禁止以 `annotation-015` `REVIEW_UNIT_STATUS.MODIFIED`（FR-051）狀態值計數（該狀態語意為「有改動且未達 `min_reviewers` 門檻」，會漏計所有已達門檻的改動單位），須改以 FR-052 逐輸出類型差異比對結果為準；分母排除 `pending`（未審 ≠ 未修改）；呈現形狀為任務層級表格（列 = 標記員），置於逐輸出類型迴圈之外，區塊 A-5。**run_type 範圍限縮**：指標定義本身與 `run_type` 無關（`official_run` 每筆樣本恰一位標記員、α 無法計算，被修改率為其唯一逐標記員品質訊號），但本版呈現僅落地 `dry_run` 區塊，因 quality tab 現行整體綁定 `dry_run`（`QUALITY_EMPTY_STATE_TRIGGER` 等）；`official_run` 呈現位置留待後續變更。**兩項規格可寫但原型不落實，明文記載**：(1) 排除規則一（Bypass）需要 `annotation-015` `OutputAnswer.bypass` 旗標帶入原型 `convertSubmissionAnswer()` 的 CompactAnswer 輸出（現況不帶）；(2) 排除規則二（`ExcludedAnnotationAssignment`）需要後端共用儲存，原型排除清單現為 task-detail 頁面區域記憶體變數、標記工作區零知悉。新增使用者故事 3 驗收情境 16、17 與 SC-029 ~ SC-032。**修正反向懸空引用**：規格常數區「逐型一致性最低樣本清單」段落、FR-035A、行為規則段落、`LowConsistencySampleList` 實體、規格相依性表 `annotation-015` 列、SC-026 共 6 處原引用 `annotation-015`（v3.0.0）dry_run 共識仲裁流程中的「divergent」分歧項為同源概念、並宣告「仲裁行為以 `annotation-015` 為準」——該流程已於 `annotation-015` v4.0.0（見其「使用者故事 3」的「⚠️ v4.0.0 適用範圍再次收斂（BREAKING）」段落）整批廢止，繼續援引將形成 017 ↔ 015 循環授權（017 已為 IAA SSoT，卻將仲裁權威外推回已死流程）；修正為 017 自行定義一致性最低樣本清單，不再外推仲裁規則，並改引用 `annotation-015` 現行審核單位狀態機（`ReviewUnit`／`REVIEW_UNIT_STATUS`，FR-051）與爭議池作為對照說明。規格相依性表同步更新 `task-management-014`／`annotation-015` 兩列，明確列出 FR-005h／FR-005l／FR-051／FR-052／`OutputAnswer.bypass` 為本版新增之上游引用。 |
