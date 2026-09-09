@@ -1,8 +1,11 @@
 /**
  * Traceability: openspec/changes/seq-tagging-span-export-metrics/specs/dataset/017-dataset-analysis-detail/spec.md
- *   FR-041 (AC-5.1, AC-5.2)
+ *   FR-041 (AC-5.1, AC-5.2), FR-042 (AC-5.3, AC-5.4)
  *
- * issue #581 change 3, group 3, task 3.1 -- character-level half.
+ * issue #581 change 3, group 3, tasks 3.1 (character level) and 3.3 (word
+ * level). Ruling H keeps the screen-observable half of AC-5.3/AC-5.4 -- the
+ * expansion summary, its disclosure, the blocked-export notice -- in issue
+ * #742; only the data the screen would read is asserted here.
  *
  * FR-041 makes 017 the single authority for turning a `sequence_tagging`
  * `spans[]` into a tag sequence. Ruling D4 puts that derivation in
@@ -30,6 +33,19 @@ const MODULE_URL = '/pages/shared/span-tagging-export.js';
 const TEXT = '台積電董事長出席';
 const ORG_SPAN = { start: 0, end: 3, label: 'ORG' };
 
+/* AC-5.3 names the boundary that matters: an engine that keeps 董事長 as one
+ * token, against a span that stops inside it. The module is handed token
+ * boundaries rather than an engine handle -- FR-041 rule 2 forbids any
+ * environment-dependent input, and a tokenizer called at derive time would be
+ * exactly that. Naming the engine and version is still required by FR-042
+ * rule 1, so both travel as plain metadata. */
+const TOKENS = [
+  { start: 0, end: 3 },
+  { start: 3, end: 6 },
+  { start: 6, end: 8 },
+];
+const TOKENIZER = { engine: 'fixture-jieba', version: '0.42.1' };
+
 type Span = { start: number; end: number; label: string };
 type DerivedSequence = {
   tags: string[];
@@ -37,6 +53,20 @@ type DerivedSequence = {
   token_unit: string;
   expansions: unknown[];
   tokenizer?: unknown;
+};
+/* The word path can answer in two shapes -- a derived sequence, or the refusal
+ * AC-5.4 requires -- so every field is optional here and each test says which
+ * shape it expects. */
+type WordResult = {
+  tags?: string[];
+  tagging_scheme?: string;
+  token_unit?: string;
+  tokenizer?: { engine?: string; version?: string };
+  alignment_mode?: string;
+  expanded_span_count?: number;
+  expansions?: unknown[];
+  blocked?: boolean;
+  reason?: string;
 };
 
 async function loadModule(page: Page): Promise<void> {
@@ -60,6 +90,21 @@ async function derive(
       return mod.deriveSequence(input.text, input.spans, input.options);
     },
     { text, spans, options }
+  );
+}
+
+async function deriveWord(
+  page: Page,
+  spans: Span[],
+  options: Record<string, unknown>
+): Promise<WordResult> {
+  return page.evaluate(
+    (input: { text: string; spans: Span[]; options: Record<string, unknown> }) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const mod = (window as any).LabelSuiteSpanTaggingExport;
+      return mod.deriveSequence(input.text, input.spans, input.options);
+    },
+    { text: TEXT, spans, options }
   );
 }
 
@@ -180,5 +225,168 @@ test.describe('FR-041 span-to-sequence derivation, character level', () => {
     expect(empty.tags).not.toEqual([]);
     expect(empty.tagging_scheme).toBe('BIO');
     expect(empty.token_unit).toBe('character');
+  });
+});
+
+test.describe('FR-042 word-level alignment and tokenizer metadata', () => {
+  test('AC-5.3: a span ending inside a token expands to the whole token and is reported', async ({ page }) => {
+    await loadModule(page);
+
+    /* 董事 (3..5) stops inside 董事長 (3..6). FR-042 rule 2 allows exactly one
+     * outcome: grow to the token. Truncating to 3..5, dropping the span and
+     * skipping the sample are each forbidden by name. */
+    const result = await deriveWord(page, [{ start: 3, end: 5, label: 'TITLE' }], {
+      token_unit: 'word',
+      tokenizer: TOKENIZER,
+      tokens: TOKENS,
+    });
+
+    /* One tag per token, not per character: the unit of the sequence is what
+     * `token_unit` selects, so a character-length array here would mean the
+     * option was recorded but never applied. */
+    expect(result.tags).toEqual(['O', 'B-TITLE', 'O']);
+    expect(result.tags).toHaveLength(TOKENS.length);
+    expect(result.token_unit).toBe('word');
+    expect(result.tokenizer).toEqual(TOKENIZER);
+    expect(result.alignment_mode).toBe('expand');
+    expect(result.expanded_span_count).toBe(1);
+    /* AC-5.3 requires the original text, the expanded text and the offset
+     * deltas to be individually listable, so the record is compared whole --
+     * a count without the per-item detail cannot satisfy the AC. Deltas are
+     * expanded minus original, so growth reads negative at the start edge and
+     * positive at the end edge. */
+    expect(result.expansions).toEqual([
+      {
+        label: 'TITLE',
+        original_start: 3,
+        original_end: 5,
+        original_text: '董事',
+        expanded_start: 3,
+        expanded_end: 6,
+        expanded_text: '董事長',
+        start_delta: 0,
+        end_delta: 1,
+      },
+    ]);
+  });
+
+  test('AC-5.3: expansion crosses token boundaries, and an aligned span reports nothing', async ({ page }) => {
+    await loadModule(page);
+
+    /* 積電董事 (1..5) starts inside 台積電 and ends inside 董事長, so it must
+     * cover both tokens rather than pick the better-overlapping one. */
+    const crossing = await deriveWord(page, [{ start: 1, end: 5, label: 'ORG' }], {
+      token_unit: 'word',
+      tokenizer: TOKENIZER,
+      tokens: TOKENS,
+    });
+    expect(crossing.tags).toEqual(['B-ORG', 'I-ORG', 'O']);
+    expect(crossing.expanded_span_count).toBe(1);
+    expect(crossing.expansions).toEqual([
+      {
+        label: 'ORG',
+        original_start: 1,
+        original_end: 5,
+        original_text: '積電董事',
+        expanded_start: 0,
+        expanded_end: 6,
+        expanded_text: '台積電董事長',
+        start_delta: -1,
+        end_delta: 1,
+      },
+    ]);
+
+    /* 出席 (6..8) already sits on token boundaries. FR-042 rule 3 makes 0 the
+     * value that suppresses the summary, so it must be a real 0 and an empty
+     * list -- not a missing field the screen would have to guess about. */
+    const aligned = await deriveWord(page, [{ start: 6, end: 8, label: 'ACT' }], {
+      token_unit: 'word',
+      tokenizer: TOKENIZER,
+      tokens: TOKENS,
+    });
+    expect(aligned.tags).toEqual(['O', 'O', 'B-ACT']);
+    expect(aligned.expanded_span_count).toBe(0);
+    expect(aligned.expansions).toEqual([]);
+  });
+
+  test('AC-5.3: expanding for export never writes back to the stored spans', async ({ page }) => {
+    await loadModule(page);
+
+    const stored = await page.evaluate(
+      (input: { text: string; tokens: unknown; tokenizer: unknown }) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mod = (window as any).LabelSuiteSpanTaggingExport;
+        const spans = [{ start: 3, end: 5, label: 'TITLE' }];
+        const options = {
+          token_unit: 'word',
+          tokenizer: input.tokenizer,
+          tokens: input.tokens,
+        };
+        mod.deriveSequence(input.text, spans, options);
+        mod.deriveSequence(input.text, spans, options);
+        return spans;
+      },
+      { text: TEXT, tokens: TOKENS, tokenizer: TOKENIZER }
+    );
+
+    /* FR-042 rule 4: the annotator's character offsets stay authoritative.
+     * Comparing the whole array catches an in-place widening that a length
+     * check would sail past. */
+    expect(stored).toEqual([{ start: 3, end: 5, label: 'TITLE' }]);
+  });
+
+  test('AC-5.4: a missing tokenizer version or engine blocks the derivation outright', async ({ page }) => {
+    await loadModule(page);
+
+    const noVersion = await deriveWord(page, [{ start: 3, end: 5, label: 'TITLE' }], {
+      token_unit: 'word',
+      tokenizer: { engine: TOKENIZER.engine },
+      tokens: TOKENS,
+    });
+    expect(noVersion.blocked).toBe(true);
+    /* "未產生任何匯出檔" at the data layer means no sequence to write: a
+     * blocked answer that still carries tags would let a caller export it. */
+    expect(Object.prototype.hasOwnProperty.call(noVersion, 'tags')).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(noVersion, 'expansions')).toBe(false);
+    /* The reason names the missing field so issue #742 can render something
+     * more useful than "export failed"; the wording itself is #742's call. */
+    expect(noVersion.reason).toContain('version');
+
+    const noEngine = await deriveWord(page, [{ start: 3, end: 5, label: 'TITLE' }], {
+      token_unit: 'word',
+      tokenizer: { version: TOKENIZER.version },
+      tokens: TOKENS,
+    });
+    expect(noEngine.blocked).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(noEngine, 'tags')).toBe(false);
+    expect(noEngine.reason).toContain('engine');
+  });
+
+  test('AC-5.4: falling back to character level succeeds and carries no word-level metadata', async ({ page }) => {
+    await loadModule(page);
+
+    const blocked = await deriveWord(page, [{ start: 3, end: 5, label: 'TITLE' }], {
+      token_unit: 'word',
+      tokenizer: { engine: TOKENIZER.engine },
+      tokens: TOKENS,
+    });
+    expect(blocked.blocked).toBe(true);
+
+    /* The same call with the word-level options still attached: FR-042 rule 5
+     * makes the character path drop them, so an implementation that copies
+     * whatever it was handed into the metadata is caught here rather than in
+     * a downstream file that claims a tokenizer it never used. */
+    const fallback = await deriveWord(page, [{ start: 3, end: 5, label: 'TITLE' }], {
+      token_unit: 'character',
+      tokenizer: TOKENIZER,
+      tokens: TOKENS,
+    });
+    expect(fallback.blocked).toBeUndefined();
+    expect(fallback.tags).toEqual(['O', 'O', 'O', 'B-TITLE', 'I-TITLE', 'O', 'O', 'O']);
+    expect(fallback.tags).toHaveLength(TEXT.length);
+    expect(Object.prototype.hasOwnProperty.call(fallback, 'tokenizer')).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(fallback, 'alignment_mode')).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(fallback, 'expanded_span_count')).toBe(false);
+    expect(fallback.expansions).toEqual([]);
   });
 });
