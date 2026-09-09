@@ -47,14 +47,95 @@
     if (EXPORT_TOKEN_UNITS.indexOf(unit) === -1) {
       throw new Error('span-tagging-export: unknown token_unit ' + unit);
     }
-    if (unit === 'word') {
-      /* FR-042 (word-level alignment and tokenizer metadata) lands in task
-       * 3.4. Failing loudly beats silently deriving character-level tags
-       * under a `word` label, which would produce an export file whose
-       * metadata contradicts its own contents. */
-      throw new Error('span-tagging-export: token_unit word is not implemented yet');
-    }
     return unit;
+  }
+
+  /* FR-042 rule 1: the same spans run through a different tokenizer, or a
+   * different version of one, yield a different sequence. Without both fields
+   * the export cannot be reproduced, so it does not happen at all. The refusal
+   * is a returned value rather than a thrown error -- a blocked export is an
+   * expected outcome the caller reports, not a programming mistake. */
+  function missingTokenizerField(tokenizer) {
+    var meta = tokenizer || {};
+    if (!meta.engine) return 'engine';
+    if (!meta.version) return 'version';
+    return null;
+  }
+
+  /* FR-042 rule 2: a span boundary inside a token grows to the whole token.
+   * Truncating, dropping the span and skipping the sample are each ruled out
+   * by name, so any overlap at all pulls the token in. */
+  function expandToTokens(span, tokens) {
+    var first = -1;
+    var last = -1;
+    var i;
+    for (i = 0; i < tokens.length; i += 1) {
+      if (tokens[i].end <= span.start || tokens[i].start >= span.end) continue;
+      if (first === -1) first = i;
+      last = i;
+    }
+    if (first === -1) return null;
+    return { first: first, last: last, start: tokens[first].start, end: tokens[last].end };
+  }
+
+  function deriveWordSequence(source, list, scheme, opts) {
+    var missing = missingTokenizerField(opts.tokenizer);
+    var tokens = opts.tokens || [];
+    var tags = [];
+    var expansions = [];
+    var i;
+    var span;
+    var range;
+    var prefixes;
+    var offset;
+
+    if (missing) {
+      /* Nothing derived, nothing to export: a refusal that still carried tags
+       * would let a caller write the file it was told not to write. */
+      return {
+        blocked: true,
+        reason: 'span-tagging-export: tokenizer.' + missing + ' is required for token_unit word',
+      };
+    }
+
+    for (i = 0; i < tokens.length; i += 1) tags.push(OUTSIDE_TAG);
+
+    for (i = 0; i < list.length; i += 1) {
+      span = list[i];
+      if (!span || span.end <= span.start) continue;
+      range = expandToTokens(span, tokens);
+      if (!range) continue;
+      prefixes = tagsForSpan(scheme, range.last - range.first + 1);
+      for (offset = 0; offset < prefixes.length; offset += 1) {
+        tags[range.first + offset] = prefixes[offset] + '-' + span.label;
+      }
+      /* FR-042 rule 3: an expansion the annotator cannot see is an edit made
+       * on their behalf. Deltas are expanded minus original, so the direction
+       * of the growth stays readable at each edge. */
+      if (range.start !== span.start || range.end !== span.end) {
+        expansions.push({
+          label: span.label,
+          original_start: span.start,
+          original_end: span.end,
+          original_text: source.slice(span.start, span.end),
+          expanded_start: range.start,
+          expanded_end: range.end,
+          expanded_text: source.slice(range.start, range.end),
+          start_delta: range.start - span.start,
+          end_delta: range.end - span.end,
+        });
+      }
+    }
+
+    return {
+      tags: tags,
+      tagging_scheme: scheme,
+      token_unit: 'word',
+      tokenizer: { engine: opts.tokenizer.engine, version: opts.tokenizer.version },
+      alignment_mode: SPAN_TOKEN_ALIGNMENT_MODE,
+      expanded_span_count: expansions.length,
+      expansions: expansions,
+    };
   }
 
   /* FR-041 rule 5: the three schemes are presentation differences over one
@@ -84,6 +165,8 @@
     var prefixes;
     var offset;
 
+    if (unit === 'word') return deriveWordSequence(source, list, scheme, opts);
+
     /* FR-041 rule 6: a sample with no spans is still a sample. It gets a
      * full-length all-O sequence, never an empty array and never a skip. */
     for (i = 0; i < source.length; i += 1) tags.push(OUTSIDE_TAG);
@@ -100,6 +183,11 @@
     /* The stored spans are never touched: 015's FR-052 makes the annotator's
      * character offsets the authoritative value, and re-exporting under a
      * different scheme must not require re-annotating (FR-041 rule 3). */
+    /* FR-042 rule 5: the character path writes no tokenizer metadata, no
+     * alignment mode and no expansion count, even when the caller handed them
+     * over -- a file claiming a tokenizer it never ran is worse than one that
+     * says nothing. Expansions stay an empty list because a character can not
+     * be expanded, which is also what suppresses the summary. */
     return {
       tags: tags,
       tagging_scheme: scheme,
