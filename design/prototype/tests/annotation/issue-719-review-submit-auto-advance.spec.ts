@@ -141,7 +141,13 @@ test.describe('AC-3.55 clauses 1-2: successful review submit advances in-place',
     await page.reload();
 
     const loads = countLoads(page);
-    await page.getByTestId('ws-review-row').first().getByTestId('ws-review-row-approve').click();
+    /* FR-099 §7 (delta 7d1df391): a row decided 通過 on every outKey
+       finalizes the unit, which MUST stay put (AC-3.39/FR-053) rather than
+       advance -- see the dedicated finalization-exemption test below. This
+       scenario's premise is a submit that does NOT finalize, so it decides
+       修正 (with its FR-089 required reason) instead, deriving 爭議中. */
+    await page.getByTestId('ws-review-row').first().getByTestId('ws-review-row-modify').click();
+    await page.getByTestId('ws-review-reason').fill('審核修正理由（測試）');
     await page.getByTestId('ws-review-submit-btn').click();
 
     // in-place advance: same page, both halves of the unit identity move together
@@ -177,7 +183,9 @@ test.describe('AC-3.55 clause 3: a pending unit wins over a disputed unit enumer
     await page.reload();
 
     const loads = countLoads(page);
-    await page.getByTestId('ws-review-row').first().getByTestId('ws-review-row-approve').click();
+    // Non-finalizing decision (see FR-099 §7 note above): 修正, not 通過.
+    await page.getByTestId('ws-review-row').first().getByTestId('ws-review-row-modify').click();
+    await page.getByTestId('ws-review-reason').fill('審核修正理由（測試）');
     await page.getByTestId('ws-review-submit-btn').click();
 
     await expect.poll(() => activeSampleItem(page).getAttribute('data-sample-id')).toBe('sent-002');
@@ -203,7 +211,9 @@ test.describe('AC-3.55 clause 4: no actionable units remain -> return to the lis
     await seedSubmission(page, 'annotator', 'sent-001', 'sad', { annotatorId: 'kioleemg12' });
     await page.reload();
 
-    await page.getByTestId('ws-review-row').first().getByTestId('ws-review-row-approve').click();
+    // Non-finalizing decision (see FR-099 §7 note above): 修正, not 通過.
+    await page.getByTestId('ws-review-row').first().getByTestId('ws-review-row-modify').click();
+    await page.getByTestId('ws-review-reason').fill('審核修正理由（測試）');
 
     /* Assert on the REQUESTED navigation URL, not page.url() after landing:
        annotation-list.html re-normalises its own address on boot
@@ -252,7 +262,14 @@ test.describe('AC-3.55 clause 5 (reverse guard): a blocked review submit navigat
 });
 
 test.describe('AC-3.56 clause 6: a successful arbitration submit advances the same way', () => {
-  test('an eligible arbiter finalizing a disputed unit advances in place to the next pending unit', async ({ page }) => {
+  test('a non-finalizing arbitration decision (含兩者皆非) advances in place to the next pending unit', async ({ page }) => {
+    /* FR-099 §7 (delta 7d1df391): resolving every dispute item (adopt_a /
+       adopt_b) finalizes the unit, which MUST stay put rather than advance
+       -- see the dedicated finalization-exemption test below. This
+       scenario's premise is an arbitration submit that does NOT finalize,
+       so at least one item is voted 兩者皆非 (FR-061 §3 keeps the unit
+       爭議中), proving the review path and the arbitration path share the
+       same advance-in-place mechanism. */
     await pinReviewUnits(page, {
       'sent-001': [{ annotator: 'kioleemg12', answers: { single_label: 'sad' } }],
       'sent-002': [{ annotator: '113450022', answers: { single_label: 'positive' } }],
@@ -265,7 +282,7 @@ test.describe('AC-3.56 clause 6: a successful arbitration submit advances the sa
 
     await expect(page.getByTestId('ws-arbitration-card')).toBeVisible();
     const loads = countLoads(page);
-    await page.getByTestId('ws-arbitration-choose-b').click();
+    await page.getByTestId('ws-arbitration-choose-reject').click();
     await fillArbitrationReasons(page);
     await page.getByTestId('ws-arbitration-submit').click();
 
@@ -278,12 +295,18 @@ test.describe('AC-3.56 clause 6: a successful arbitration submit advances the sa
   });
 });
 
-test.describe('AC-3.56 clause 7: a not-yet-finalized reject vote must not become the next target', () => {
-  test('the same unit the arbiter just voted 兩者皆非 on is excluded, so an otherwise-empty task returns to the list', async ({ page }) => {
-    // The disputed unit is the ONLY unit on the task: if the reject-voting
-    // arbiter's own FR-060 eligibility on it were (incorrectly) still
-    // counted, findNextActionableReviewUnit() would hand the same unit
-    // straight back to her. It must instead find nothing left to do.
+test.describe('AC-3.56 clause 7: a not-yet-finalized 兩者皆非 vote keeps the arbiter eligible on the same unit', () => {
+  test('the sole disputed unit the arbiter just voted 兩者皆非 on remains actionable and IS the next target -- the workspace stays on its arbitration view, it does not return to the list', async ({ page }) => {
+    /* FR-099 §4 second bullet (delta 7d1df391): a 兩者皆非 vote leaves the
+       unit 爭議中 (FR-061 §3) and writes NO reviewer bucket at all (FR-061
+       §4). FR-060 §2's non-participant test is "no reviewer bucket under
+       this reviewerId", so the voting arbiter still passes it and remains
+       an eligible arbiter on this very unit (FR-065's re-vote semantics
+       depend on exactly this). With no other actionable unit on the task,
+       findNextActionableReviewUnit() MUST return this unit itself, and the
+       workspace MUST stay on the arbitration view rather than navigate to
+       annotation-list -- the opposite of what an earlier draft of this
+       contract asserted before the delta was revised. */
     await pinReviewUnits(page, {
       'sent-001': [{ annotator: 'kioleemg12', answers: { single_label: 'sad' } }],
     });
@@ -293,16 +316,22 @@ test.describe('AC-3.56 clause 7: a not-yet-finalized reject vote must not become
     await page.reload();
 
     await expect(page.getByTestId('ws-arbitration-card')).toBeVisible();
-    const returnRequest = page.waitForRequest((req) => req.url().includes('annotation-list.html'), { timeout: 5000 });
+    const loads = countLoads(page);
+    let sawListReturn = false;
+    page.on('request', (req) => {
+      if (req.url().includes('annotation-list.html')) sawListReturn = true;
+    });
     await page.getByTestId('ws-arbitration-choose-reject').click();
     await fillArbitrationReasons(page);
     await page.getByTestId('ws-arbitration-submit').click();
 
-    const url = new URL((await returnRequest).url());
-    expect(url.searchParams.get('notice')).toBe('no_actionable_review');
-    expect(url.searchParams.has('sample_id')).toBe(false);
-    await expect(page).toHaveURL(/annotation-list\.html\?/);
-    await expect(page.getByTestId('list-no-actionable-notice')).toBeVisible();
+    // still on the same unit's arbitration view -- no switch, no navigation
+    await expect(page.getByTestId('ws-arbitration-card')).toBeVisible();
+    const url = new URL(page.url());
+    expect(url.searchParams.get('sample_id')).toBe('sent-001');
+    expect(loads.value).toBe(0);
+    expect(sawListReturn).toBe(false);
+    await expect(page.getByTestId('list-no-actionable-notice')).toHaveCount(0);
   });
 });
 
@@ -325,6 +354,63 @@ test.describe('AC-3.56 clause 8 (reverse guard): a blocked arbitration submit na
     const url = new URL(page.url());
     expect(url.searchParams.get('sample_id')).toBe('sent-001');
     expect(url.pathname).toContain('annotation-workspace.html');
+    expect(loads.value).toBe(0);
+  });
+});
+
+/* FR-099 §7 (delta 7d1df391): a submit that FINALIZES the unit is exempt
+ * from this whole change -- AC-3.39/FR-053 already require it to stay put
+ * and render the read-only finalized card in place. Both regression-floor
+ * cases below pass under TODAY's code (no advance logic exists yet at
+ * all), which is the point: they pin the exemption so a future advance
+ * implementation cannot regress it by treating "finalizing" the same as
+ * "not finalizing". */
+test.describe('FR-099 clause 7 (finalization exemption): a review submit that finalizes the unit stays in place', () => {
+  test('逐項全數 通過 finalizes the unit locally -- no advance to the other pending unit, no navigation, exactly one finalized card', async ({ page }) => {
+    await pinReviewUnits(page, {
+      'sent-001': [{ annotator: 'kioleemg12', answers: { single_label: 'positive' } }],
+      'sent-002': [{ annotator: '113450022', answers: { single_label: 'negative' } }],
+    });
+    await page.goto(workspaceUrl({ sampleId: 'sent-001', role: 'reviewer', annotatorId: 'kioleemg12', reviewerId: PARTICIPANT }));
+    await seedSubmission(page, 'annotator', 'sent-001', 'sad', { annotatorId: 'kioleemg12' });
+    await seedSubmission(page, 'annotator', 'sent-002', 'joy', { annotatorId: '113450022' });
+    await page.reload();
+
+    const loads = countLoads(page);
+    await page.getByTestId('ws-review-row').first().getByTestId('ws-review-row-approve').click();
+    await page.getByTestId('ws-review-submit-btn').click();
+
+    await expect(page.getByTestId('ws-review-finalized-card')).toHaveCount(1);
+    await expect.poll(() => activeSampleItem(page).getAttribute('data-sample-id')).toBe('sent-001');
+    await expect.poll(() => activeSampleItem(page).getAttribute('data-annotator-id')).toBe('kioleemg12');
+    const url = new URL(page.url());
+    expect(url.searchParams.get('sample_id')).toBe('sent-001');
+    expect(url.searchParams.get('annotator_id')).toBe('kioleemg12');
+    expect(loads.value).toBe(0);
+  });
+});
+
+test.describe('FR-099 clause 7 (finalization exemption): an arbitration submit that finalizes the unit stays in place', () => {
+  test('逐項採 A／採 B 全數落定 finalizes the unit locally -- no advance to the other pending unit, no navigation, exactly one finalized card', async ({ page }) => {
+    await pinReviewUnits(page, {
+      'sent-001': [{ annotator: 'kioleemg12', answers: { single_label: 'sad' } }],
+      'sent-002': [{ annotator: '113450022', answers: { single_label: 'positive' } }],
+    });
+    await page.goto(workspaceUrl({ sampleId: 'sent-001', role: 'reviewer', annotatorId: 'kioleemg12', reviewerId: ARBITER }));
+    await seedSubmission(page, 'annotator', 'sent-001', 'sad', { annotatorId: 'kioleemg12' });
+    await seedSubmission(page, 'reviewer', 'sent-001', 'fear', { annotatorId: 'kioleemg12', reviewerId: PARTICIPANT });
+    await seedSubmission(page, 'annotator', 'sent-002', 'positive', { annotatorId: '113450022' });
+    await page.reload();
+
+    await expect(page.getByTestId('ws-arbitration-card')).toBeVisible();
+    const loads = countLoads(page);
+    await page.getByTestId('ws-arbitration-choose-b').click();
+    await fillArbitrationReasons(page);
+    await page.getByTestId('ws-arbitration-submit').click();
+
+    await expect(page.getByTestId('ws-review-finalized-card')).toHaveCount(1);
+    const url = new URL(page.url());
+    expect(url.searchParams.get('sample_id')).toBe('sent-001');
     expect(loads.value).toBe(0);
   });
 });
