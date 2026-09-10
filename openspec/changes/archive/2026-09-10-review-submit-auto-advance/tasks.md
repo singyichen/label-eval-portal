@@ -44,7 +44,7 @@
 > **最終群組**：是。本組執行 `/opsx:archive` 與正典回寫，並收集 Source-Verify 證據。
 > **相依**：群組 1 全部完成且證據已由主 session 核實。
 
-- [ ] 2.1 執行 `~/Library/pnpm/openspec archive review-submit-auto-advance --yes`，並確認衍生視圖 `openspec/specs/annotation/015-annotation-workspace/spec.md` 已合併本次 delta。驗證：`openspec validate --changes` 通過且 `openspec/changes/review-submit-auto-advance/` 已移入 `openspec/changes/archive/` [@main]
+- [x] 2.1 執行 `~/Library/pnpm/openspec archive review-submit-auto-advance --yes`，並確認衍生視圖 `openspec/specs/annotation/015-annotation-workspace/spec.md` 已合併本次 delta。驗證：`openspec validate --changes` 通過且 `openspec/changes/review-submit-auto-advance/` 已移入 `openspec/changes/archive/`。主 session 複驗：change 現位於 `2026-09-10-review-submit-auto-advance`，衍生視圖之 `:713` 為 FR-099 需求標題、`:743`／`:753`／`:761` 三條情境標題分別為 AC-3.55／AC-3.56／SC-004Y，CLI 回報 `+ 1, ~ 0, - 0`，`openspec validate --changes` 為 1 passed／0 failed [@main]
 - [ ] 2.2 回寫正典 `specs/annotation/015-annotation-workspace/spec.md`：版本 v6.1.0 → v6.2.0，於需求規格區新增 FR-099 全條、於使用者故事 3 新增 AC-3.55 與 AC-3.56、於成功標準區新增 SC-004Y，並新增 v6.2.0 Changelog 條目。驗證：`scripts/check-sdd.sh` 與 `scripts/check-spec-artifacts.sh` 皆 exit 0 [@main]
 - [ ] 2.3 執行 Source-Verify gate（gate 4）：衍生視圖中每一處正典引用（FR／AC／SC ID、章節、檔案路徑、issue／PR 編號、被改寫的條文子句）必須逐一以 `grep` 於正典定位；並逐項比對衍生視圖與正典兩份文件的 FR／AC／SC ID 集合，確認無任何 ID 只存在於其中一份。`#### Scenario:` 標題為 AC ID 的權威來源，掃描時必須同時掃需求標題與情境標題。驗證：全部引用可定位、兩份文件 ID 集合一致 [@main]
 
