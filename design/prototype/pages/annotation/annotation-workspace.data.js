@@ -2576,11 +2576,20 @@
       });
   }
 
-  /* issue #551: true when at least one reviewer's side of this item is a
-     naked reject (PURE_REJECT_VALUE) rather than a proposed value. */
+  /* issue #551 (extended by issue #750): true when at least one reviewer's
+     side of this item is not a proposed value -- a naked reject
+     (PURE_REJECT_VALUE) or a bypass (`null`, design.md D2's "bypass 不存值"
+     sentinel from getDisputeItems()). Both cannot be tallied as a vote for
+     any candidate value: resolveDisputeConvergence() otherwise counts a
+     lone `null` as a valid winner at N=1 (the single-owner model's only
+     reviewer count), silently overwriting whatever the arbiter or the
+     project leader's exception-pool resolution actually decided --
+     annotation-list.html's getFinalizedOverwrites() reads that convergence
+     result before consulting stored arbitration state at all. */
   function hasPureReject(item) {
     return Object.keys(item.reviewerValues).some(function (reviewerId) {
-      return item.reviewerValues[reviewerId] === PURE_REJECT_VALUE;
+      var value = item.reviewerValues[reviewerId];
+      return value === PURE_REJECT_VALUE || value == null;
     });
   }
 
