@@ -1946,21 +1946,26 @@
    * distinguishable through tallying, rendering and arbitration. */
   var PURE_REJECT_VALUE = ' __PURE_REJECT__';
 
+  /* Decisions that must not read as agreement on an outKey just because
+   * compareOutputAnswer() sees no diff: `modify`/`bypass` (FR-051, spec.md
+   * line 740: "任一項決策為 `modify` 或 `bypass` → `disputed`" -- a same-value
+   * `modify` or a `bypass` left on the pre-filled preview panel is still a
+   * real decision, not agreement), plus the retired `reject` (issue #551 --
+   * kept for the pre-issue-#596 dry_run demo seed rows that still carry it,
+   * e.g. issue #502's T014 dry-05; `reject` has not been a selectable
+   * REVIEW_DECISIONS value since issue #596, but existing stored submissions
+   * predating that migration must keep deriving the same status they always
+   * have). Shared by anyReviewerChanged() and getDisputeItems() so the two
+   * stay a single source of truth for which decisions force a dispute. */
+  var DISPUTE_FORCING_DECISIONS = { modify: true, bypass: true, reject: true };
+
   /* True when ANY reviewer's answer differs from the annotator's on ANY of
-   * the task's output keys, OR any reviewer's decision on an outKey is one
-   * that must not read as agreement just because compareOutputAnswer() sees
-   * no diff: `modify`/`bypass` (FR-051: "任一項決策為 modify 或 bypass ->
-   * disputed" -- a same-value `modify` or a `bypass` left on the pre-filled
-   * preview panel is still a real decision, not agreement), or the retired
-   * `reject` (issue #551 -- kept for the pre-issue-#596 dry_run demo seed
-   * rows that still carry it, e.g. issue #502's T014 dry-05; `reject` has
-   * not been a selectable REVIEW_DECISIONS value since issue #596, but
-   * existing stored submissions predating that migration must keep deriving
-   * the same status they always have). This single predicate picks the lane
-   * in FR-051: false -> finalized (unanimous approve), true -> disputed
-   * until resolved (design.md D1).
+   * the task's output keys, OR any reviewer's decision on an outKey is in
+   * DISPUTE_FORCING_DECISIONS. This single predicate picks the lane in
+   * FR-051: false -> finalized (unanimous approve), true -> disputed until
+   * resolved (design.md D1).
    *
-   * issue #750: `modify`/`bypass` were missing from this list entirely --
+   * issue #750: `modify`/`bypass` were missing from this check entirely --
    * only `reject` was checked, so a same-value `bypass` or `modify` was
    * silently read as agreement and the unit finalized instead of disputed. */
   function anyReviewerChanged(annotatorSubmission, reviewerSubmissions, keys) {
@@ -1973,7 +1978,7 @@
         ).equal;
         if (!equal) return true;
         var decision = reviewerOutKeyDecision(reviewerSubmission, outKey);
-        return decision === 'modify' || decision === 'bypass' || decision === 'reject';
+        return !!DISPUTE_FORCING_DECISIONS[decision];
       });
     });
   }
@@ -2181,11 +2186,14 @@
            compareOutputAnswer() has nothing to report -- synthesize one
            whole-outKey diff so the decision still becomes an arbitrable
            dispute item instead of silently vanishing (anyReviewerChanged()
-           already routes the unit to `disputed` for these two decisions
-           plus the retired `reject`; without this, `bypass`/`modify` would
-           have no item left to resolve that dispute with). Granularity is
-           the outKey itself (there is no differing sub-key to point at),
-           matching the single_label/free_text "no merge key" shape.
+           already routes the unit to `disputed` for every
+           DISPUTE_FORCING_DECISIONS member; without this, `bypass`/`modify`
+           would have no item left to resolve that dispute with). The three
+           branches below enumerate DISPUTE_FORCING_DECISIONS' members
+           individually because each needs a different synthesized shape.
+           Granularity is the outKey itself (there is no differing sub-key
+           to point at), matching the single_label/free_text "no merge key"
+           shape.
            `reviewer: null` for `bypass` -- design.md D2's "bypass 不存值"
            makes an absent value the reliable bypass signal, the same
            null/'' reading arbitrationBChoiceText() and formatDisputeValue()
