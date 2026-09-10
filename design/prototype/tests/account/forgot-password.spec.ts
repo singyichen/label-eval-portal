@@ -93,6 +93,10 @@ test.describe('Forgot Password page — form validation (spec 004 US1 scenario 3
 });
 
 test.describe('Forgot Password page — loading lock (spec 004 FR-003 / SC-006)', () => {
+  // The assertion sequence below routinely takes longer than the 1200ms
+  // simulated submit delay under full-suite worker contention (issue #744).
+  test.describe.configure({ retries: 2 });
+
   const languages = [
     { name: 'Traditional Chinese', toggle: false, loading: '載入中' },
     { name: 'English', toggle: true, loading: 'Loading' },
