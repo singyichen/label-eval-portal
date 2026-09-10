@@ -1,5 +1,5 @@
 ---
-功能分支: docs/issue-590-relation-offsets-propose
+功能分支: docs/issue-719-review-autoadvance
 建立日期: 2026-04-23
 版本: 6.1.0
 狀態: Draft
