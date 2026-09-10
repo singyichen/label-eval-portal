@@ -3979,6 +3979,12 @@
        that skipped it, so an arbiter's count never advanced until some
        unrelated action (e.g. prev/next) happened to re-render it. */
     renderSampleNav();
+    /* issue #719: shares the exact same "where next" step as
+       handleReviewSubmit() -- every early return above (no open items, an
+       incomplete decision, a missing reject reason) is guaranteed to have
+       exited before submitArbitration() runs, so this line is only reached
+       once that write has landed. */
+    advanceToNextActionableReviewUnit();
   }
 
   /* FR-095 final exception pool disposition screen (issue #596, task 6.3).
@@ -4727,6 +4733,33 @@
     return pendingKeys;
   }
 
+  /* issue #719 (FR-099, SC-004Y clause 2): the single shared "what's next
+     for this reviewer" step, called once each from the tail of
+     handleReviewSubmit() and handleArbitrationSubmit() -- both call sites
+     sit after their own write has already landed, so every earlier guard
+     that returns before the write (issue #307 empty unit, issue #308
+     finalized, FR-083 pending decisions, an incomplete arbitration) is
+     guaranteed to have exited before this ever runs. FR-099 §7 / AC-3.39 /
+     FR-053: a submit that finalizes the unit locally must stay put and show
+     the read-only finalized card instead of advancing, so this re-checks
+     the SAME derivation (currentReviewUnitStatus(), the existing wrapper
+     around getReviewUnitStatus()) that decides the finalized card renders
+     at all -- there is no second finalize judgement here. "Which unit is
+     actionable" defers entirely to the data layer's own next-actionable
+     lookup, called below; selectSample() takes BOTH halves of the
+     review-unit identity (sample_id AND annotator_id) since the unit is
+     addressed by that pair, not sample_id alone. */
+  function advanceToNextActionableReviewUnit() {
+    var workspaceData = window.LabelSuiteAnnotationWorkspaceData;
+    if (currentReviewUnitStatus() === workspaceData.REVIEW_UNIT_STATUS.FINALIZED) return;
+    var next = workspaceData.findNextActionableReviewUnit(currentProfile.id, currentRunType, currentIdentity.reviewerId);
+    if (next) {
+      selectSample(next.sampleId, next.annotatorId);
+    } else {
+      window.location.href = buildListReturnUrl() + '&notice=no_actionable_review';
+    }
+  }
+
   function handleReviewSubmit() {
     var history = document.getElementById('wsReviewHistory');
     if (!history) return;
@@ -4841,6 +4874,11 @@
        the FINALIZED guard above with no feedback at all. */
     renderReviewerWorkspace();
     showToast(t('wsReviewSubmitSuccess'));
+    /* issue #719: hand off to the shared "where next" step -- the write
+       above already landed, so every early return earlier in this function
+       (issue #307 empty unit, issue #308 finalized, FR-083 pending
+       decisions) is guaranteed to have exited before this line runs. */
+    advanceToNextActionableReviewUnit();
   }
 
 
