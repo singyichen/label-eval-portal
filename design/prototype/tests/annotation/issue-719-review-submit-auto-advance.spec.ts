@@ -141,12 +141,19 @@ test.describe('AC-3.55 clauses 1-2: successful review submit advances in-place',
     await page.reload();
 
     const loads = countLoads(page);
+    const row = page.getByTestId('ws-review-row').first();
     /* FR-099 §7 (delta 7d1df391): a row decided 通過 on every outKey
        finalizes the unit, which MUST stay put (AC-3.39/FR-053) rather than
        advance -- see the dedicated finalization-exemption test below. This
-       scenario's premise is a submit that does NOT finalize, so it decides
-       修正 (with its FR-089 required reason) instead, deriving 爭議中. */
-    await page.getByTestId('ws-review-row').first().getByTestId('ws-review-row-modify').click();
+       scenario's premise is a submit that does NOT finalize. anyReviewerChanged()
+       (annotation-workspace.data.js) derives 爭議中 from an ANSWER-VALUE
+       difference alone -- REVIEW_DECISIONS carries no 'reject' member any
+       more, so picking 修正 without also changing the correction value would
+       still derive 已定稿. Pick a single_label chip different from the
+       annotator's seeded 'sad' answer so the submitted reviewer value
+       actually differs. */
+    await row.getByTestId('ws-review-correct-single_label').getByTestId('ws-single-label-chip-negative').click();
+    await row.getByTestId('ws-review-row-modify').click();
     await page.getByTestId('ws-review-reason').fill('審核修正理由（測試）');
     await page.getByTestId('ws-review-submit-btn').click();
 
@@ -183,8 +190,14 @@ test.describe('AC-3.55 clause 3: a pending unit wins over a disputed unit enumer
     await page.reload();
 
     const loads = countLoads(page);
+    const row = page.getByTestId('ws-review-row').first();
     // Non-finalizing decision (see FR-099 §7 note above): 修正, not 通過.
-    await page.getByTestId('ws-review-row').first().getByTestId('ws-review-row-modify').click();
+    // anyReviewerChanged() derives 爭議中 from an answer-value difference
+    // alone (see the clause-1-2 test's comment) -- pick a single_label chip
+    // different from the annotator's seeded 'neutral' answer so the
+    // submitted reviewer value actually differs.
+    await row.getByTestId('ws-review-correct-single_label').getByTestId('ws-single-label-chip-negative').click();
+    await row.getByTestId('ws-review-row-modify').click();
     await page.getByTestId('ws-review-reason').fill('審核修正理由（測試）');
     await page.getByTestId('ws-review-submit-btn').click();
 
@@ -211,8 +224,14 @@ test.describe('AC-3.55 clause 4: no actionable units remain -> return to the lis
     await seedSubmission(page, 'annotator', 'sent-001', 'sad', { annotatorId: 'kioleemg12' });
     await page.reload();
 
+    const row = page.getByTestId('ws-review-row').first();
     // Non-finalizing decision (see FR-099 §7 note above): 修正, not 通過.
-    await page.getByTestId('ws-review-row').first().getByTestId('ws-review-row-modify').click();
+    // anyReviewerChanged() derives 爭議中 from an answer-value difference
+    // alone (see the clause-1-2 test's comment) -- pick a single_label chip
+    // different from the annotator's seeded 'sad' answer so the submitted
+    // reviewer value actually differs.
+    await row.getByTestId('ws-review-correct-single_label').getByTestId('ws-single-label-chip-negative').click();
+    await row.getByTestId('ws-review-row-modify').click();
     await page.getByTestId('ws-review-reason').fill('審核修正理由（測試）');
 
     /* Assert on the REQUESTED navigation URL, not page.url() after landing:
