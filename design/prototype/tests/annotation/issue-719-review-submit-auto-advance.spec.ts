@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { test, expect, type Page } from '@playwright/test';
 import { buildWorkspaceUrl, fillArbitrationReasons, patchDataFile, skipGuidelineModal } from './_workspace-helpers';
 
@@ -324,5 +326,57 @@ test.describe('AC-3.56 clause 8 (reverse guard): a blocked arbitration submit na
     expect(url.searchParams.get('sample_id')).toBe('sent-001');
     expect(url.pathname).toContain('annotation-workspace.html');
     expect(loads.value).toBe(0);
+  });
+});
+
+/* SC-004Y clause 2 (spec 015): the review-submit and arbitration-submit
+ * paths MUST derive "what's next" and "where does the list return go" from
+ * the SAME two functions, and "which units are actionable" MUST have
+ * exactly one implementation in the whole workspace. This is a structural
+ * claim -- no sequence of clicks can prove a single shared function is
+ * being called from two call sites versus two near-identical copies -- so
+ * it is checked by scanning the source file itself, mirroring this
+ * project's existing precedent for source-level ban-word/occurrence
+ * assertions (shared/language-switch-consistency.spec.ts's
+ * fs.readFileSync + path.resolve(__dirname, ...) pattern for reading a
+ * page source file from a spec under tests/, and
+ * annotation/issue-525-banner-simplify.spec.ts:206's
+ * `text.split(needle).length - 1` occurrence-count idiom). */
+test.describe('SC-004Y clause 2: one shared next-unit function, one shared list-return builder, one actionable-unit judgement', () => {
+  const CONFIG_PATH = path.resolve(__dirname, '../../pages/annotation/annotation-workspace.config.js');
+  const source = fs.readFileSync(CONFIG_PATH, 'utf8');
+
+  function occurrences(needle: string): number {
+    return source.split(needle).length - 1;
+  }
+
+  test('findNextActionableReviewUnit( is called exactly once -- both submit handlers must share one call site, not each carry their own copy', () => {
+    // Currently 0: this is the missing-call Red evidence this task adds.
+    // A future count of 2 would mean handleReviewSubmit() and
+    // handleArbitrationSubmit() each grew their own private call instead
+    // of sharing one, defeating the point of a single derivation function.
+    expect(occurrences('findNextActionableReviewUnit(')).toBe(1);
+  });
+
+  test("'annotation-list.html?' appears exactly once -- buildListReturnUrl() must stay the sole writer of the list-return URL (FR-081 §3)", () => {
+    // Already 1 today (inside buildListReturnUrl() itself) -- this is a
+    // regression floor: it must not grow a second, independently-built
+    // query string for either submit path to return to.
+    expect(occurrences('annotation-list.html?')).toBe(1);
+  });
+
+  test('REVIEW_UNIT_ACTION_PRIORITY does not appear in the config file -- actionable-unit priority must live only in the data layer', () => {
+    // Already 0 today -- regression floor. The action-rank table belongs
+    // exclusively to annotation-workspace.data.js's
+    // findNextActionableReviewUnit(); config.js may only call it.
+    expect(occurrences('REVIEW_UNIT_ACTION_PRIORITY')).toBe(0);
+  });
+
+  test('reviewUnitActionRank does not appear in the config file -- there must be exactly one actionable-rank implementation, in the data layer', () => {
+    // Already 0 today -- regression floor, same reasoning as the previous
+    // assertion: a second ranking function in config.js would mean two
+    // independent "what's actionable" judgements that can silently drift
+    // apart.
+    expect(occurrences('reviewUnitActionRank')).toBe(0);
   });
 });
