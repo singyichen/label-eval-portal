@@ -1947,11 +1947,19 @@
   var PURE_REJECT_VALUE = ' __PURE_REJECT__';
 
   /* True when ANY reviewer's answer differs from the annotator's on ANY of
-   * the task's output keys, OR any reviewer rejected an outKey without
-   * changing its value (issue #551: a naked reject must not read as
-   * agreement just because compareOutputAnswer() sees no diff). This single
-   * predicate picks the lane in FR-051: false -> finalized (unanimous
-   * approve), true -> disputed until resolved (design.md D1). */
+   * the task's output keys, OR any reviewer decided `modify`/`bypass` on an
+   * outKey without changing its value (FR-051: "任一項決策為 modify 或
+   * bypass -> disputed" -- the decision itself is decisive, a same-value
+   * `modify` or a `bypass` left on the pre-filled preview panel must not
+   * read as agreement just because compareOutputAnswer() sees no diff).
+   * This single predicate picks the lane in FR-051: false -> finalized
+   * (unanimous approve), true -> disputed until resolved (design.md D1).
+   *
+   * issue #750: this used to only check `decision === 'reject'` here --
+   * dead since issue #596 retired `reject` from REVIEW_DECISIONS in favor
+   * of `['approve', 'modify', 'bypass']`, so a same-value `bypass` or
+   * `modify` was silently read as agreement and the unit finalized instead
+   * of disputed. */
   function anyReviewerChanged(annotatorSubmission, reviewerSubmissions, keys) {
     return reviewerSubmissions.some(function (reviewerSubmission) {
       return keys.some(function (outKey) {
@@ -1961,7 +1969,8 @@
           convertSubmissionAnswer(outKey, reviewerSubmission.answers)
         ).equal;
         if (!equal) return true;
-        return reviewerOutKeyDecision(reviewerSubmission, outKey) === 'reject';
+        var decision = reviewerOutKeyDecision(reviewerSubmission, outKey);
+        return decision === 'modify' || decision === 'bypass';
       });
     });
   }
@@ -2163,14 +2172,32 @@
           annotatorAnswer,
           convertSubmissionAnswer(outKey, submission.answers)
         ).diffs;
-        /* issue #551: a reject with no correction produces no FR-052 diff
-           (the value is unchanged), so compareOutputAnswer() has nothing to
-           report -- synthesize one whole-outKey diff so the reject still
-           becomes a dispute item instead of silently vanishing. Granularity
-           is the outKey itself (there is no differing sub-key to point at),
-           matching the single_label/free_text "no merge key" shape. */
-        if (!diffs.length && reviewerOutKeyDecision(submission, outKey) === 'reject') {
-          diffs = [{ key: outKey, annotator: annotatorAnswer, reviewer: PURE_REJECT_VALUE }];
+        /* issue #750 (was issue #551's `reject` case, dead since issue #596
+           retired `reject` from REVIEW_DECISIONS): a `bypass` with no stored
+           value, or a `modify` left at the annotator's own value, produces
+           no FR-052 diff (the compared value is unchanged), so
+           compareOutputAnswer() has nothing to report -- synthesize one
+           whole-outKey diff so the decision still becomes an arbitrable
+           dispute item instead of silently vanishing (anyReviewerChanged()
+           already routes the unit to `disputed` for these two decisions;
+           without this, it would have no item left to resolve that dispute
+           with). Granularity is the outKey itself (there is no differing
+           sub-key to point at), matching the single_label/free_text "no
+           merge key" shape.
+           `reviewer: null` for `bypass` -- design.md D2's "bypass 不存值"
+           makes an absent value the reliable bypass signal, the same
+           null/'' reading arbitrationBChoiceText() and formatDisputeValue()
+           already use, so the B choice renders as 無法判定 with no PR-551
+           PURE_REJECT_VALUE sentinel needed. `reviewer: annotatorAnswer` for
+           `modify` -- the reviewer did submit a real replacement value, it
+           merely equals the annotator's. */
+        if (!diffs.length) {
+          var decision = reviewerOutKeyDecision(submission, outKey);
+          if (decision === 'bypass') {
+            diffs = [{ key: outKey, annotator: annotatorAnswer, reviewer: null }];
+          } else if (decision === 'modify') {
+            diffs = [{ key: outKey, annotator: annotatorAnswer, reviewer: annotatorAnswer }];
+          }
         }
         diffs.forEach(function (diff) {
           var id = outKey + '::' + diff.key;
