@@ -16,8 +16,8 @@
 
 > **相依與平行性**：0.1 與 0.2 必須同批提交，兩者分開則 `scripts/check-sdd.sh` 的 `ACTIVE_CHANGE_STAGE` 會因分支欄與正典 frontmatter 不一致而報錯。本群組不動任何產品程式。
 
-- [ ] 0.1 修改 `specs/STATUS.md`，將 `annotation-015` 之狀態由 in-progress 更新為 change-open、分支欄改為本 change 的分支並填入 change 名稱。驗證：`grep -n 'annotation-015' specs/STATUS.md` 之分支欄為本 change 分支，且 Project SDD lint 之 `ACTIVE_CHANGE_STAGE` 維持 0 筆 [@main]
-- [ ] 0.2 修改 `specs/annotation/015-annotation-workspace/spec.md` 之 frontmatter 功能分支欄，使其與 `specs/STATUS.md` 分支欄一致；本任務只改 frontmatter，不動任何 FR／AC／SC 條文。驗證：正典 frontmatter 之 `功能分支` 與 `specs/STATUS.md` 分支欄逐字相同，且 Project SDD lint 之 `ACTIVE_CHANGE_STAGE` 維持 0 筆 [@main]
+- [x] 0.1 修改 `specs/STATUS.md`，將 `annotation-015` 之狀態由 in-progress 更新為 change-open、分支欄改為本 change 的分支並填入 change 名稱。驗證：`grep -n 'annotation-015' specs/STATUS.md` 之分支欄為本 change 分支，且 Project SDD lint 之 `ACTIVE_CHANGE_STAGE` 維持 0 筆 [@main]
+- [x] 0.2 修改 `specs/annotation/015-annotation-workspace/spec.md` 之 frontmatter 功能分支欄，使其與 `specs/STATUS.md` 分支欄一致；本任務只改 frontmatter，不動任何 FR／AC／SC 條文。驗證：正典 frontmatter 之 `功能分支` 與 `specs/STATUS.md` 分支欄逐字相同，且 Project SDD lint 之 `ACTIVE_CHANGE_STAGE` 維持 0 筆 [@main]
 
 ## 1. 送出後自動前進（FR-099 全條）
 
@@ -29,7 +29,7 @@
 > **為何兩條送出路徑合為一組**：`handleReviewSubmit()` 與 `handleArbitrationSubmit()` 共用同一個前進函式（FR-099 第 1 點之單一推導來源要求），拆組會使第二組的實作任務無事可做；兩者的差異只在呼叫點，故以同一組 Red 契約的不同測試案例覆蓋。
 > **範圍界線**：不得新增第二個網址寫入點（FR-099 第 2 點）、不得另立返回網址建構器（FR-099 第 5 點）、不得加入「排除目前單位」之特例判斷（FR-099 第 4 點）。
 
-- [ ] 1.1 新增 `design/prototype/tests/annotation/issue-719-review-submit-auto-advance.spec.ts` 之 Red 契約，覆蓋 AC-3.55 與 AC-3.56 之全部子句：審核送出成功後切換至 `findNextActionableReviewUnit()` 選出的單位且網址 `sample_id`／`annotator_id` 同步、剛送出的單位不成為目標、`pending` 優先於列舉順序在前的可仲裁 `disputed`、已無可處理單位時導頁網址同時帶 FR-081 檢視狀態鍵與 `notice=no_actionable_review` 且不帶 `sample_id`、落地頁渲染 `list-no-actionable-notice`、被 FR-083 擋下的送出停留原單位、仲裁送出走同一套規則、裁定為「兩者皆非」之單位不成為前進目標、被擋下的仲裁送出不產生導覽。導頁類斷言之對象必須為該次導頁所請求之網址而非落地後之 `page.url()`（沿用 AC-4.43 與 AC-4.33 之驗證方式，清單於 boot 時會依 UXC-11 重寫自身網址）。驗證：`PW_PORT=8971 corepack pnpm playwright test tests/annotation/issue-719-review-submit-auto-advance.spec.ts` 出現失敗，失敗原因為兩個送出函式尾段皆無任何導覽 [@senior-qa]
+- [x] 1.1 新增 `design/prototype/tests/annotation/issue-719-review-submit-auto-advance.spec.ts` 之 Red 契約，覆蓋 AC-3.55 與 AC-3.56 之全部子句：審核送出成功後切換至 `findNextActionableReviewUnit()` 選出的單位且網址 `sample_id`／`annotator_id` 同步、剛送出的單位不成為目標、`pending` 優先於列舉順序在前的可仲裁 `disputed`、已無可處理單位時導頁網址同時帶 FR-081 檢視狀態鍵與 `notice=no_actionable_review` 且不帶 `sample_id`、落地頁渲染 `list-no-actionable-notice`、被 FR-083 擋下的送出停留原單位、仲裁送出走同一套規則、裁定為「兩者皆非」之單位不成為前進目標、被擋下的仲裁送出不產生導覽。導頁類斷言之對象必須為該次導頁所請求之網址而非落地後之 `page.url()`（沿用 AC-4.43 與 AC-4.33 之驗證方式，清單於 boot 時會依 UXC-11 重寫自身網址）。驗證：`PW_PORT=8971 corepack pnpm playwright test tests/annotation/issue-719-review-submit-auto-advance.spec.ts` 出現失敗，失敗原因為兩個送出函式尾段皆無任何導覽。已於 `69a0e37a`（AC-3.55／AC-3.56 七條行為契約）與 `f6ba8a1f`（SC-004Y 第 2 條原始碼掃描：`findNextActionableReviewUnit(` 出現次數須為 1、現為 0）兩次提交；主 session 以 `PW_PORT=8974` 獨立複驗為 6 failed／5 passed [@senior-qa]
 - [ ] 1.2 （Green）修改 `design/prototype/pages/annotation/annotation-workspace.config.js`：新增一個共用的送出後前進函式，以 `window.LabelSuiteAnnotationWorkspaceData.findNextActionableReviewUnit()` 取得目標並以 `selectSample(sampleId, annotatorId)` 於同頁切換，無目標時導向 `buildListReturnUrl()` 之網址附加 `notice=no_actionable_review`；`handleReviewSubmit()` 與 `handleArbitrationSubmit()` 兩處尾段各呼叫一次，且僅於實際寫入成功之後呼叫。不得複製第二套可處理判定、不得新增第二個 query 建構器、不得加入排除目前單位的特例。驗證：`PW_PORT=8971 corepack pnpm playwright test tests/annotation/issue-719-review-submit-auto-advance.spec.ts` 全綠 [@senior-frontend]
 - [ ] 1.3 依 INVENTORY_FRESHNESS 以 `node scripts/gen-screen-inventory.mjs` 重生 `design/system/screen-inventory.md` 並**單獨提交**（產品原型檔已變更）。驗證：`scripts/check-sdd.sh` 之 `INVENTORY_FRESHNESS` 為 0 筆 [@main]
 - [ ] 1.4 執行群組 1 回歸並保存證據。驗證：`cd design/prototype && corepack pnpm typecheck` 與 `PW_PORT=8972 corepack pnpm playwright test tests/annotation` 皆 exit 0；`PW_PORT=8973 corepack pnpm playwright test tests/dashboard` exit 0（確認 FR-073 第一個消費端未受影響） [@main]
